@@ -1,0 +1,17 @@
+Shandalar Tools – Roadmap v1
+  - Clean CLI with argparse
+  - Improve output formatting
+  - Basic error handling (missing file / invalid edition)
+  - README with usage example
+
+Shandalar Tools - v2
+  - Deck translation (Shandalar <-> Forge)
+  - Config-driven rule system
+  - Performance improvements if needed
+
+Ideas
+  - Batch processing
+  - Optional JSON output
+  - Logging
+  - Tests
+  - More aggressive sanitization (e.g. strip punctuation)
