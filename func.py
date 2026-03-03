@@ -1,6 +1,7 @@
 import const
 import csv
 import chardet
+import sys
 
 # Returns the card name embedded within a row of edition data.
 #   row (array) = the row e.g. as loaded via csv reader.
@@ -44,10 +45,17 @@ def get_csv_encoding(file_name):
 # Returns a list of cards from the given edition.
 def get_edition_cards(edition_name):
     cards = []
-    edition_data = get_csv_column(const.data_path_editions + "/" + edition_name + ".txt", 0, ',', 0, '[cards]')
+    try:
+        edition_data = get_csv_column(get_edition_file_path(edition_name), 0, ',', 0, '[cards]')
+    except FileNotFoundError:
+        return False, None
     for r in edition_data:
         cards.append(edition_data_row_to_card(r))
-    return cards
+    return True, cards
+
+# Returns the file path of an edition from a string.
+def get_edition_file_path(edition_name):
+    return const.data_path_editions + "/" + edition_name + ".txt"
 
 # Returns the list of editions from the config file.
 def get_editions_list():
@@ -60,27 +68,43 @@ def get_shandalar_cards():
 
 # Returns a list containing all cards that do not exist in Shandalar from the given set.
 def get_unsupported_cards(cards):
+    print('Checking incompatible cards...')
     unsupported_cards = []
-    shandalar_cards = sanitize_card_list(get_shandalar_cards())
+    shandalar_cards = sanitize_array(get_shandalar_cards())
     
     for c in cards:
-        if sanitize_card_name(c) not in shandalar_cards:
+        if sanitize_name(c) not in shandalar_cards:
             unsupported_cards.append(c)
+    print('Found ' + str(len(unsupported_cards)) + ' incompatible cards.')
     return unsupported_cards
 
 # Add all cards from the given editions to the cards array.            
 def populate_cards(cards, editions):
+    editions_loaded = set()
+
+    print('Compiling source card list...')
     for e in editions:
-        cards = list(set(cards + get_edition_cards(e)))
+        print('Loading ' + e + '...')
+        if sanitize_name(e) in editions_loaded:
+            print('Duplicate detected. Skipping ' + e + '.')
+        else:    
+            success, edition_cards = get_edition_cards(e)
+            if not success:
+                print('Could not load file at ' + get_edition_file_path(e) + '.')
+                print('Terminating application.')
+                sys.exit(1)
+            else:
+                cards = list(set(cards + edition_cards))
+                editions_loaded.add(sanitize_name(e))        
     return cards
 
-# Returns a sanitized card list. Removes leading/trailing spaces from all card names and converts them to lowercase.
-def sanitize_card_list(cards):
+# Returns a sanitized array. Removes leading/trailing spaces from all card names and converts them to lowercase.
+def sanitize_array(cards):
     cards_sanitized = []
     for c in cards:
-        cards_sanitized.append(sanitize_card_name(c))
+        cards_sanitized.append(sanitize_name(c))
     return cards_sanitized
 
-# Returns a sanitized card name string. Removes leading/trailing spaces and converts to lowercase.
-def sanitize_card_name(name):
+# Returns a sanitized name string. Removes leading/trailing spaces and converts to lowercase.
+def sanitize_name(name):
     return name.strip().lower()
