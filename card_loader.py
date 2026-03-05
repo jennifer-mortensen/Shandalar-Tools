@@ -1,15 +1,12 @@
 import const
 import csv
 import chardet
-import sys
+import os
 
 # Returns the card name embedded within a row of edition data.
 #   row (array) = the row e.g. as loaded via csv reader.
 def edition_data_row_to_card(row):
-    columns = row.split(' ')
-    row_right = ' '.join(columns[const.editions_card_name_starting_column:])
-    card = row_right.split(' @')[0]
-    return card
+    return ' '.join(row.split(' ')[const.editions_card_name_starting_column:]).split(' @')[0]
 
 # Returns the column of a csv file as an array.
 #   file_name (string) = the name (and path) of the file
@@ -42,68 +39,30 @@ def get_csv_encoding(file_name):
     with open(file_name, 'rb') as file:
         return chardet.detect(file.read())['encoding']
 
-# Returns a list of cards from the given edition.
+# Returns a set of cards from the given edition.
 def get_edition_cards(edition_name):
-    cards = []
     try:
         edition_data = get_csv_column(get_edition_file_path(edition_name), 0, ',', 0, '[cards]')
     except FileNotFoundError:
-        return False, None
-    for r in edition_data:
-        cards.append(edition_data_row_to_card(r))
-    return True, cards
+        return None
+    
+    return {edition_data_row_to_card(r) for r in edition_data}
 
 # Returns the file path of an edition from a string.
 def get_edition_file_path(edition_name):
-    return const.data_path_editions + "/" + edition_name + ".txt"
+    return os.path.join(const.data_path_editions + "/" + edition_name + ".txt")
 
 # Returns the list of editions from the config file.
 def get_editions_list():
-    editions = get_csv_column(const.file_config, 0)
-    return editions
+    return get_csv_column(const.file_config, 0)
 
 # Returns the list of cards supported in Shandalar.
 def get_shandalar_cards():
-    return get_csv_column(const.file_shandalar_csv, const.shandalar_card_name_column)
+    return set(get_csv_column(const.file_shandalar_csv, const.shandalar_card_name_column))
 
-# Returns a list containing all cards that do not exist in Shandalar from the given set.
-def get_unsupported_cards(cards):
-    print('Checking incompatible cards...')
-    unsupported_cards = []
-    shandalar_cards = sanitize_array(get_shandalar_cards())
-    
-    for c in cards:
-        if sanitize_name(c) not in shandalar_cards:
-            unsupported_cards.append(c)
-    print('Found ' + str(len(unsupported_cards)) + ' incompatible cards.')
-    return unsupported_cards
-
-# Add all cards from the given editions to the cards array.            
-def populate_cards(cards, editions):
-    editions_loaded = set()
-
-    print('Compiling source card list...')
-    for e in editions:
-        print('Loading ' + e + '...')
-        if sanitize_name(e) in editions_loaded:
-            print('Duplicate detected. Skipping ' + e + '.')
-        else:    
-            success, edition_cards = get_edition_cards(e)
-            if not success:
-                print('Could not load file at ' + get_edition_file_path(e) + '.')
-                print('Terminating application.')
-                sys.exit(1)
-            else:
-                cards = list(set(cards + edition_cards))
-                editions_loaded.add(sanitize_name(e))        
-    return cards
-
-# Returns a sanitized array. Removes leading/trailing spaces from all card names and converts them to lowercase.
-def sanitize_array(cards):
-    cards_sanitized = []
-    for c in cards:
-        cards_sanitized.append(sanitize_name(c))
-    return cards_sanitized
+# Returns a sanitized set. Removes leading/trailing spaces from all card names and converts them to lowercase.
+def sanitize_set(cards):
+    return {sanitize_name(c) for c in cards}
 
 # Returns a sanitized name string. Removes leading/trailing spaces and converts to lowercase.
 def sanitize_name(name):
