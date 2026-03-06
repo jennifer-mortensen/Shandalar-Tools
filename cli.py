@@ -1,29 +1,57 @@
-import csv
+import argparse
 import card_loader
+import const
 import sys
 
 # Main entry point.
 def main():
-    cards = get_card_pool(card_loader.get_editions_list())
+    args = parse_args()
+
+    cards = get_card_pool(card_loader.get_editions_list(args.editions))
     unsupported_cards = get_unsupported_cards(cards)
 
     unsupported_cards.sort()
-    print('Writing unsupported cards to output.txt...')
-    with open('output.txt', 'w', encoding = 'utf-8') as file:
-        file.write('; '.join(unsupported_cards))
+    print(f"Writing unsupported cards to {args.output}...")
+    with open(args.output, "w", encoding="utf-8") as file:
+        file.write("; ".join(unsupported_cards))
 
-print('Compilation complete!')
+    print("Compilation complete!")
+
+def normalize_editions_filename(filename):
+    return f'{filename}.csv' if '.' not in filename else filename
+
+def normalize_output_filename(filename):
+    return f'{filename}.txt' if '.' not in filename else filename
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        prog="shandalar-tools", 
+        description="Check card compability between Shandalar and MTG:Forge."
+        )
+    parser.add_argument(
+        "-o", "--output",
+        type=normalize_output_filename,
+        default="output.txt",
+        help="File to write unsupported cards to."
+    )
+    parser.add_argument(
+        "-e", "--editions",
+        type=normalize_editions_filename,
+        default=const.file_config,
+        help="CSV file listing the editions to load."                  
+    )
+    return parser.parse_args()
 
 # Returns a list containing all cards that do not exist in Shandalar from the given set.
 def get_unsupported_cards(cards):
-    print('Checking incompatible cards...')
+    print("Checking incompatible cards...")
     unsupported_cards = []
     shandalar_cards = card_loader.sanitize_set(card_loader.get_shandalar_cards())
     
     for c in cards:
         if card_loader.sanitize_name(c) not in shandalar_cards:
             unsupported_cards.append(c)
-    print('Found ' + str(len(unsupported_cards)) + ' incompatible cards.')
+    print(f"Found {str(len(unsupported_cards))} incompatible coards.")
     return unsupported_cards
 
 # Returns a set containing all cards from the given editions.           
@@ -31,16 +59,16 @@ def get_card_pool(editions):
     editions_loaded = set()
     cards = set()
 
-    print('Compiling source card list...')
+    print("Compiling source card list...")
     for e in editions:
-        print('Loading ' + e + '...')
+        print(f"Loading {e} ...")
         if card_loader.sanitize_name(e) in editions_loaded:
-            print('Duplicate detected. Skipping ' + e + '.')
+            print(f"Duplicate detected. Skipping {e}.")
         else:    
             edition_cards = card_loader.get_edition_cards(e)
             if edition_cards is None:
-                print('Could not load file at ' + card_loader.get_edition_file_path(e) + '.')
-                print('Terminating application.')
+                print(f"Error: Could not load file at {card_loader.get_edition_file_path(e)}.")
+                print("Terminating.")
                 sys.exit(1)
             else:
                 cards.update(edition_cards)

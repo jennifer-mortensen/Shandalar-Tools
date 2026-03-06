@@ -52,9 +52,9 @@ def get_edition_cards(edition_name):
 def get_edition_file_path(edition_name):
     return os.path.join(const.data_path_editions + "/" + edition_name + ".txt")
 
-# Returns the list of editions from the config file.
-def get_editions_list():
-    return get_csv_column(const.file_config, 0)
+# Returns the list of editions from a csv config file.
+def get_editions_list(csv_filename):
+    return get_csv_column(csv_filename, 0)
 
 # Returns the list of cards supported in Shandalar.
 def get_shandalar_cards():

@@ -1,5 +1,4 @@
 Shandalar Tools – Roadmap v1
-  - Clean CLI with argparse
   - Improve output formatting
   - Basic error handling (missing file / invalid edition)
   - README with usage example
