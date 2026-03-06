@@ -6,7 +6,7 @@ import os
 # Returns the card name embedded within a row of edition data.
 #   row (array) = the row e.g. as loaded via csv reader.
 def edition_data_row_to_card(row):
-    return ' '.join(row.split(' ')[const.editions_card_name_starting_column:]).split(' @')[0]
+    return " ".join(row.split(" ")[const.editions_card_name_starting_column:]).split(" @")[0]
 
 # Returns the column of a csv file as an array.
 #   file_name (string) = the name (and path) of the file
@@ -14,14 +14,14 @@ def edition_data_row_to_card(row):
 #   csv_delimiter (string) = the delimiter used to separate columns
 #   starting_index (int) = the starting row number      
 #   starting_header (string) = the header from which to start reading data; the header itself will be ignored
-def get_csv_column(file_name, column_number, csv_delimiter = ',', starting_index = 0, starting_header = ''):
+def get_csv_column(file_name, column_number, csv_delimiter = ",", starting_index = 0, starting_header = ""):
     return_val = []
     read_data = True
 
-    if(starting_header != '' or starting_index > 0):
+    if(starting_header != "" or starting_index > 0):
         read_data = False
 
-    with open(file_name, newline = '', encoding = get_csv_encoding(file_name)) as csvfile:
+    with open(file_name, newline = "", encoding = get_csv_encoding(file_name)) as csvfile:
         reader = csv.reader(csvfile, delimiter = csv_delimiter)
         for i, row in enumerate(reader):
             if(read_data == True):
@@ -29,20 +29,20 @@ def get_csv_column(file_name, column_number, csv_delimiter = ',', starting_index
                     # Stop reading once we find no further data.
                     break    
                 return_val.append(row[column_number])
-            elif(row != [] and (starting_header == '' or row[0] == starting_header) and i >= starting_index):
+            elif(row != [] and (starting_header == "" or row[0] == starting_header) and i >= starting_index):
                 read_data = True
 
     return return_val
 
 # Get the encoding type for the file.
 def get_csv_encoding(file_name):
-    with open(file_name, 'rb') as file:
-        return chardet.detect(file.read())['encoding']
+    with open(file_name, "rb") as file:
+        return chardet.detect(file.read())["encoding"]
 
 # Returns a set of cards from the given edition.
 def get_edition_cards(edition_name):
     try:
-        edition_data = get_csv_column(get_edition_file_path(edition_name), 0, ',', 0, '[cards]')
+        edition_data = get_csv_column(get_edition_file_path(edition_name), 0, ',', 0, "[cards]")
     except FileNotFoundError:
         return None
     

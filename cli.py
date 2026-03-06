@@ -9,8 +9,8 @@ def main():
 
     cards = get_card_pool(card_loader.get_editions_list(args.editions))
     unsupported_cards = get_unsupported_cards(cards)
+    unsupported_cards = format_cards_forge(unsupported_cards, True)
 
-    unsupported_cards.sort()
     print(f"Writing unsupported cards to {args.output}...")
     with open(args.output, "w", encoding="utf-8") as file:
         file.write("; ".join(unsupported_cards))
@@ -18,15 +18,17 @@ def main():
     print("Compilation complete!")
 
 def normalize_editions_filename(filename):
-    return f'{filename}.csv' if '.' not in filename else filename
+    return f"{filename}.csv" if "." not in filename else filename
 
 def normalize_output_filename(filename):
-    return f'{filename}.txt' if '.' not in filename else filename
+    return f"{filename}.txt" if "." not in filename else filename
 
 def parse_args():
     parser = argparse.ArgumentParser(
         prog="shandalar-tools", 
-        description="Check card compability between Shandalar and MTG:Forge."
+        description="Check card compability between Shandalar and MTG:Forge.",
+        epilog="Examples:\n  %(prog)s\n  %(prog)s -e custom_sets.csv\n  %(prog)s -o unsupported.txt",
+        formatter_class=argparse.RawDescriptionHelpFormatter
         )
     parser.add_argument(
         "-o", "--output",
@@ -38,20 +40,20 @@ def parse_args():
         "-e", "--editions",
         type=normalize_editions_filename,
         default=const.file_config,
-        help="CSV file listing the editions to load."                  
+        help="CSV file listing editions to load."                  
     )
     return parser.parse_args()
 
 # Returns a list containing all cards that do not exist in Shandalar from the given set.
 def get_unsupported_cards(cards):
-    print("Checking incompatible cards...")
+    print("Checking unsupported cards...")
     unsupported_cards = []
     shandalar_cards = card_loader.sanitize_set(card_loader.get_shandalar_cards())
     
     for c in cards:
         if card_loader.sanitize_name(c) not in shandalar_cards:
             unsupported_cards.append(c)
-    print(f"Found {str(len(unsupported_cards))} incompatible coards.")
+    print(f"Found {str(len(unsupported_cards))} unsupported coards.")
     return unsupported_cards
 
 # Returns a set containing all cards from the given editions.           
@@ -77,3 +79,13 @@ def get_card_pool(editions):
 
 if __name__ == "__main__":
     main()
+
+# Formats output for the MTG Forge format.
+def format_cards_forge(cards, sort_cards):
+    print("Formatting cards to MTG Forge format...")
+    
+    formatted_cards = cards.copy()
+    if sort_cards:
+        formatted_cards.sort()
+
+    return formatted_cards
