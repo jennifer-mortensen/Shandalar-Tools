@@ -7,13 +7,15 @@ import sys
 def main():
     args = parse_args()
 
-    cards = get_card_pool(card_loader.get_editions_list(args.editions))
+    editions = card_loader.get_editions_list(args.editions)
+    cards = get_card_pool(editions)
+
     unsupported_cards = get_unsupported_cards(cards)
-    unsupported_cards = format_cards_forge(unsupported_cards, True)
+    forge_format = generate_forge_format(unsupported_cards, True, generate_edition_codes(editions))
 
     print(f"Writing unsupported cards to {args.output}...")
     with open(args.output, "w", encoding="utf-8") as file:
-        file.write("; ".join(unsupported_cards))
+        file.write(forge_format)
 
     print("Compilation complete!")
 
@@ -26,7 +28,7 @@ def normalize_output_filename(filename):
 def parse_args():
     parser = argparse.ArgumentParser(
         prog="shandalar-tools", 
-        description="Check card compability between Shandalar and MTG:Forge.",
+        description="Check card compatibility between Shandalar and MTG:Forge.",
         epilog="Examples:\n  %(prog)s\n  %(prog)s -e custom_sets.csv\n  %(prog)s -o unsupported.txt",
         formatter_class=argparse.RawDescriptionHelpFormatter
         )
@@ -53,7 +55,7 @@ def get_unsupported_cards(cards):
     for c in cards:
         if card_loader.sanitize_name(c) not in shandalar_cards:
             unsupported_cards.append(c)
-    print(f"Found {str(len(unsupported_cards))} unsupported coards.")
+    print(f"Found {len(unsupported_cards)} unsupported cards.")
     return unsupported_cards
 
 # Returns a set containing all cards from the given editions.           
@@ -77,15 +79,39 @@ def get_card_pool(editions):
                 editions_loaded.add(card_loader.sanitize_name(e))        
     return cards
 
-if __name__ == "__main__":
-    main()
-
 # Formats output for the MTG Forge format.
-def format_cards_forge(cards, sort_cards):
+def generate_forge_format(cards, sort_cards, edition_codes):
     print("Formatting cards to MTG Forge format...")
     
     formatted_cards = cards.copy()
     if sort_cards:
         formatted_cards.sort()
 
-    return formatted_cards
+    banned_cards = "; ".join(formatted_cards)
+    set_codes = ", ".join(edition_codes)
+
+    forge_format = const.forge_format_body_standard.format(
+        banned_cards = banned_cards,
+        set_codes = set_codes
+    )
+
+    return forge_format
+
+# Returns a set of edition codes for the given editions list.
+def generate_edition_codes(editions):
+    # To do: filter out duplicates earlier in the pipeline
+    print("Generating edition codes...")
+    edition_codes = set()
+
+    for e in editions:
+        code = card_loader.get_edition_code(e)
+        if code is None:
+            print(f"Could not resolve set code for {e}.")
+            print("Terminating.")
+            sys.exit(1)
+        edition_codes.add(code)
+
+    return edition_codes
+
+if __name__ == "__main__":
+    main()

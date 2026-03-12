@@ -9,3 +9,12 @@ file_config = "config.csv"
 # CSV column pointers.
 editions_card_name_starting_column = 2
 shandalar_card_name_column = 0
+
+# MTG Forge format descriptions.
+forge_format_body_standard = """[format]
+Name:Standard
+Order:101
+Subtype:Standard
+Type:Sanctioned
+Banned: {banned_cards}
+Sets: {set_codes}"""

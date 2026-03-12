@@ -4,9 +4,10 @@ import chardet
 import os
 
 # Returns the card name embedded within a row of edition data.
-#   row (array) = the row e.g. as loaded via csv reader.
+#   row (string) = a Forge card line from the edition File
 def edition_data_row_to_card(row):
-    return " ".join(row.split(" ")[const.editions_card_name_starting_column:]).split(" @")[0]
+    line = row.split(" @", 1)[0]
+    return " ".join(line.split()[const.editions_card_name_starting_column:])
 
 # Returns the column of a csv file as an array.
 #   file_name (string) = the name (and path) of the file
@@ -21,32 +22,99 @@ def get_csv_column(file_name, column_number, csv_delimiter = ",", starting_index
     if(starting_header != "" or starting_index > 0):
         read_data = False
 
-    with open(file_name, newline = "", encoding = get_csv_encoding(file_name)) as csvfile:
+    with open(file_name, newline = "", encoding = get_file_encoding(file_name)) as csvfile:
         reader = csv.reader(csvfile, delimiter = csv_delimiter)
-        for i, row in enumerate(reader):
+        for i, row in enumerate(reader):      
             if(read_data == True):
                 if(row == []):
-                    # Stop reading once we find no further data.
-                    break    
+                    # Ignore empty lines.
+                    continue    
                 return_val.append(row[column_number])
             elif(row != [] and (starting_header == "" or row[0] == starting_header) and i >= starting_index):
                 read_data = True
 
     return return_val
 
+# Returns a text section from a text file.
+#   file_name (string) = the name (and path) of the file
+#   start_prefix (string) = the prefix where we should begin reading text (e.g. [cards])
+#   end_prefixes (list) = list of prefixes to stop reading at
+#   skip_prefixes (list) = list of prefixes for lines from where data should not be read (default: "['#']")
+#   max_line (int) = maximum number of lines to read
+#   skip_header (boolean) = if true and a start_prefix is set, do not read the first line
+def get_text_file_section(file_name, start_prefix = None, end_prefixes = None, skip_prefixes = None, max_lines = None, skip_header = True):
+    section_lines = []
+    read_data = False
+
+    # Normalize prefixes
+    if start_prefix is not None:
+        start_prefix = start_prefix.lower()
+    end_prefixes = [p.lower() for p in (end_prefixes or [])]
+    skip_prefixes = [p.lower() for p in (skip_prefixes or ['#'])]
+
+    with open(file_name, encoding = get_file_encoding(file_name)) as text_file:
+        for line in text_file:
+            line = line.strip()
+            line_lower = line.lower()
+            
+            if not read_data:
+                # If we aren't reading data yet, check if we should begin doing so now.                
+                if start_prefix is None or line_lower.startswith(start_prefix):
+                    read_data = True
+                    # Skip the first line if we were waiting for a prefix. This avoids including
+                    # section headers.
+                    if start_prefix is not None and skip_header:
+                        continue
+                # We're still not reading data, so continue to the next line.
+                else:
+                    continue
+
+            # If we have been reading data, check if we should stop doing so now.
+            elif end_prefixes and any(line_lower.startswith(prefix) for prefix in end_prefixes):
+                break            
+
+            # Skip blank lines and compare to our list of prefixes to see if we should ignore this line.
+            if line == "" or any(line_lower.startswith(prefix) for prefix in skip_prefixes):
+                continue
+
+            section_lines.append(line)
+            if max_lines is not None and len(section_lines) >= max_lines:
+                break
+
+    return section_lines
+
 # Get the encoding type for the file.
-def get_csv_encoding(file_name):
+def get_file_encoding(file_name):
     with open(file_name, "rb") as file:
         return chardet.detect(file.read())["encoding"]
 
 # Returns a set of cards from the given edition.
 def get_edition_cards(edition_name):
     try:
-        edition_data = get_csv_column(get_edition_file_path(edition_name), 0, ',', 0, "[cards]")
+        edition_data = get_text_file_section(get_edition_file_path(edition_name), "[cards]", ["["])
     except FileNotFoundError:
         return None
     
     return {edition_data_row_to_card(r) for r in edition_data}
+
+# Returns the scryfall code for an edition.
+def get_edition_code(edition_name):
+    start_prefix = "ScryfallCode="
+    max_lines = 1
+    skip_header = False
+
+    try:
+        scryfall_field = get_text_file_section(get_edition_file_path(edition_name), start_prefix, None, None, max_lines, skip_header)
+    except FileNotFoundError:
+        print("File not found error")
+        return None
+    
+    try:
+        print("ScryfallField = " + str(scryfall_field))
+        return scryfall_field[0].split("=", 1)[1]
+    except IndexError:
+        print("Index error")
+        return None
 
 # Returns the file path of an edition from a string.
 def get_edition_file_path(edition_name):
