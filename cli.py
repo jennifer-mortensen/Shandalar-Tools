@@ -11,7 +11,8 @@ def main():
     cards = get_card_pool(editions)
 
     unsupported_cards = get_unsupported_cards(cards)
-    forge_format = generate_forge_format(unsupported_cards, True, generate_edition_codes(editions))
+    user_banned_cards = get_user_banned_cards(args.user_banned)
+    forge_format = generate_forge_format(unsupported_cards, True, user_banned_cards, generate_edition_codes(editions))
 
     print(f"Writing unsupported cards to {args.output}...")
     with open(args.output, "w", encoding="utf-8") as file:
@@ -24,6 +25,9 @@ def normalize_editions_filename(filename):
 
 def normalize_output_filename(filename):
     return f"{filename}.txt" if "." not in filename else filename
+
+def normalize_user_banned_filename(filename):
+    return f"{filename}.csv" if "." not in filename else filename
 
 def parse_args():
     parser = argparse.ArgumentParser(
@@ -44,6 +48,12 @@ def parse_args():
         default=const.file_config,
         help="CSV file listing editions to load."                  
     )
+    parser.add_argument(
+        "-b", "--user_banned",
+        type=normalize_user_banned_filename,
+        default=const.file_user_banned,
+        help="CSV file listing user-designated cards to ban."                  
+    )    
     return parser.parse_args()
 
 # Returns a list containing all cards that do not exist in Shandalar from the given set.
@@ -80,14 +90,17 @@ def get_card_pool(editions):
     return cards
 
 # Formats output for the MTG Forge format.
-def generate_forge_format(cards, sort_cards, edition_codes):
+def generate_forge_format(cards, sort_cards, user_banned_cards, edition_codes):
     print("Formatting cards to MTG Forge format...")
     
-    formatted_cards = cards.copy()
+    formatted_cards = list(cards)
     if sort_cards:
         formatted_cards.sort()
 
+    if user_banned_cards:
+        formatted_cards += user_banned_cards
     banned_cards = "; ".join(formatted_cards)
+
     set_codes = ", ".join(edition_codes)
 
     forge_format = const.forge_format_body_standard.format(
@@ -112,6 +125,16 @@ def generate_edition_codes(editions):
         edition_codes.add(code)
 
     return edition_codes
+
+# Returns a list of user-banned cards.
+def get_user_banned_cards(filename):
+    print("Loading user-banned cards...")
+
+    user_banned_cards = card_loader.get_csv_column(filename, 0, ",", 0, "", ["#"])
+    if not user_banned_cards:
+        print("Could not find user-banned cards.")
+
+    return user_banned_cards
 
 if __name__ == "__main__":
     main()

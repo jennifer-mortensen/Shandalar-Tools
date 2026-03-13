@@ -15,32 +15,36 @@ def edition_data_row_to_card(row):
 #   csv_delimiter (string) = the delimiter used to separate columns
 #   starting_index (int) = the starting row number      
 #   starting_header (string) = the header from which to start reading data; the header itself will be ignored
-def get_csv_column(file_name, column_number, csv_delimiter = ",", starting_index = 0, starting_header = ""):
-    return_val = []
+#   skip_prefixes (list) = list of prefixes used to designate that a row should not be read
+def get_csv_column(file_name, column_number, csv_delimiter = ",", starting_index = 0, starting_header = "", skip_prefixes = None):
+    csv_column = []
     read_data = True
 
     if(starting_header != "" or starting_index > 0):
         read_data = False
 
-    with open(file_name, newline = "", encoding = get_file_encoding(file_name)) as csvfile:
-        reader = csv.reader(csvfile, delimiter = csv_delimiter)
-        for i, row in enumerate(reader):      
-            if(read_data == True):
-                if(row == []):
-                    # Ignore empty lines.
-                    continue    
-                return_val.append(row[column_number])
-            elif(row != [] and (starting_header == "" or row[0] == starting_header) and i >= starting_index):
-                read_data = True
+    try:
+        with open(file_name, newline = "", encoding = get_file_encoding(file_name)) as csvfile:
+            reader = csv.reader(csvfile, delimiter = csv_delimiter)
+            for i, row in enumerate(reader):      
+                if read_data:
+                    if not row or (skip_prefixes and any(row[0].startswith(prefix) for prefix in skip_prefixes)):
+                        # Ignore empty lines or those that start with a given prefix to be skipped.
+                        continue    
+                    csv_column.append(row[column_number])
+                elif(row != [] and (starting_header == "" or row[0] == starting_header) and i >= starting_index):
+                    read_data = True
+    except FileNotFoundError:
+        return None
 
-    return return_val
+    return csv_column
 
 # Returns a text section from a text file.
 #   file_name (string) = the name (and path) of the file
 #   start_prefix (string) = the prefix where we should begin reading text (e.g. [cards])
 #   end_prefixes (list) = list of prefixes to stop reading at
 #   skip_prefixes (list) = list of prefixes for lines from where data should not be read (default: "['#']")
-#   max_line (int) = maximum number of lines to read
+#   max_lines (int) = maximum number of lines to read
 #   skip_header (boolean) = if true and a start_prefix is set, do not read the first line
 def get_text_file_section(file_name, start_prefix = None, end_prefixes = None, skip_prefixes = None, max_lines = None, skip_header = True):
     section_lines = []
@@ -52,34 +56,37 @@ def get_text_file_section(file_name, start_prefix = None, end_prefixes = None, s
     end_prefixes = [p.lower() for p in (end_prefixes or [])]
     skip_prefixes = [p.lower() for p in (skip_prefixes or ['#'])]
 
-    with open(file_name, encoding = get_file_encoding(file_name)) as text_file:
-        for line in text_file:
-            line = line.strip()
-            line_lower = line.lower()
-            
-            if not read_data:
-                # If we aren't reading data yet, check if we should begin doing so now.                
-                if start_prefix is None or line_lower.startswith(start_prefix):
-                    read_data = True
-                    # Skip the first line if we were waiting for a prefix. This avoids including
-                    # section headers.
-                    if start_prefix is not None and skip_header:
+    try:
+        with open(file_name, encoding = get_file_encoding(file_name)) as text_file:
+            for line in text_file:
+                line = line.strip()
+                line_lower = line.lower()
+                
+                if not read_data:
+                    # If we aren't reading data yet, check if we should begin doing so now.                
+                    if start_prefix is None or line_lower.startswith(start_prefix):
+                        read_data = True
+                        # Skip the first line if we were waiting for a prefix. This avoids including
+                        # section headers.
+                        if start_prefix is not None and skip_header:
+                            continue
+                    # We're still not reading data, so continue to the next line.
+                    else:
                         continue
-                # We're still not reading data, so continue to the next line.
-                else:
+
+                # If we have been reading data, check if we should stop doing so now.
+                elif end_prefixes and any(line_lower.startswith(prefix) for prefix in end_prefixes):
+                    break            
+
+                # Skip blank lines and compare to our list of prefixes to see if we should ignore this line.
+                if line == "" or any(line_lower.startswith(prefix) for prefix in skip_prefixes):
                     continue
 
-            # If we have been reading data, check if we should stop doing so now.
-            elif end_prefixes and any(line_lower.startswith(prefix) for prefix in end_prefixes):
-                break            
-
-            # Skip blank lines and compare to our list of prefixes to see if we should ignore this line.
-            if line == "" or any(line_lower.startswith(prefix) for prefix in skip_prefixes):
-                continue
-
-            section_lines.append(line)
-            if max_lines is not None and len(section_lines) >= max_lines:
-                break
+                section_lines.append(line)
+                if max_lines is not None and len(section_lines) >= max_lines:
+                    break
+    except FileNotFoundError:
+        return None
 
     return section_lines
 
@@ -90,9 +97,8 @@ def get_file_encoding(file_name):
 
 # Returns a set of cards from the given edition.
 def get_edition_cards(edition_name):
-    try:
-        edition_data = get_text_file_section(get_edition_file_path(edition_name), "[cards]", ["["])
-    except FileNotFoundError:
+    edition_data = get_text_file_section(get_edition_file_path(edition_name), "[cards]", ["["])
+    if not edition_data:
         return None
     
     return {edition_data_row_to_card(r) for r in edition_data}
@@ -103,17 +109,15 @@ def get_edition_code(edition_name):
     max_lines = 1
     skip_header = False
 
-    try:
-        scryfall_field = get_text_file_section(get_edition_file_path(edition_name), start_prefix, None, None, max_lines, skip_header)
-    except FileNotFoundError:
-        print("File not found error")
+    scryfall_field = get_text_file_section(get_edition_file_path(edition_name), start_prefix, None, None, max_lines, skip_header)
+    
+    if not scryfall_field:
+        print("Error: could not find edition codes.")
         return None
     
     try:
-        print("ScryfallField = " + str(scryfall_field))
         return scryfall_field[0].split("=", 1)[1]
     except IndexError:
-        print("Index error")
         return None
 
 # Returns the file path of an edition from a string.
