@@ -55,7 +55,7 @@ python cli.py -o unsupported.txt
 -e, --editions
 Specify the CSV file listing editions to load.
 
--b, --user_banned
+-b, --user-banned
 Specify the CSV file listing user-designated cards to ban.
 
 Example:

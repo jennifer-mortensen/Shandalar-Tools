@@ -49,7 +49,7 @@ def parse_args():
         help="CSV file listing editions to load."                  
     )
     parser.add_argument(
-        "-b", "--user_banned",
+        "-b", "--user-banned",
         type=normalize_user_banned_filename,
         default=const.file_user_banned,
         help="CSV file listing user-designated cards to ban."                  
