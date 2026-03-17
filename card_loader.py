@@ -18,21 +18,22 @@ def edition_data_row_to_card(row):
 #   skip_prefixes (list) = list of prefixes used to designate that a row should not be read
 def get_csv_column(file_name, column_number, csv_delimiter = ",", starting_index = 0, starting_header = "", skip_prefixes = None):
     csv_column = []
-    read_data = True
-
-    if(starting_header != "" or starting_index > 0):
-        read_data = False
+    read_data = not (starting_header or starting_index > 0)
 
     try:
         with open(file_name, newline = "", encoding = get_file_encoding(file_name)) as csvfile:
             reader = csv.reader(csvfile, delimiter = csv_delimiter)
             for i, row in enumerate(reader):      
+                header_condition_met = not starting_header or (row and row[0] == starting_header)
                 if read_data:
-                    if not row or (skip_prefixes and any(row[0].startswith(prefix) for prefix in skip_prefixes)):
+                    if not row or (skip_prefixes and any(row[0].startswith(p) for p in skip_prefixes)):
                         # Ignore empty lines or those that start with a given prefix to be skipped.
                         continue    
-                    csv_column.append(row[column_number])
-                elif(row != [] and (starting_header == "" or row[0] == starting_header) and i >= starting_index):
+                    if column_number < len(row):
+                        csv_column.append(row[column_number])
+                    else:
+                        print(f"Error: could not find csv data at row {i}, column {column_number} in {file_name}: {row}")
+                elif row and header_condition_met and i >= starting_index:
                     read_data = True
     except FileNotFoundError:
         return None
@@ -48,7 +49,7 @@ def get_csv_column(file_name, column_number, csv_delimiter = ",", starting_index
 #   skip_header (boolean) = if true and a start_prefix is set, do not read the first line
 def get_text_file_section(file_name, start_prefix = None, end_prefixes = None, skip_prefixes = None, max_lines = None, skip_header = True):
     section_lines = []
-    read_data = False
+    read_data = start_prefix is None
 
     # Normalize prefixes
     if start_prefix is not None:
@@ -63,23 +64,21 @@ def get_text_file_section(file_name, start_prefix = None, end_prefixes = None, s
                 line_lower = line.lower()
                 
                 if not read_data:
-                    # If we aren't reading data yet, check if we should begin doing so now.                
-                    if start_prefix is None or line_lower.startswith(start_prefix):
-                        read_data = True
-                        # Skip the first line if we were waiting for a prefix. This avoids including
-                        # section headers.
-                        if start_prefix is not None and skip_header:
-                            continue
-                    # We're still not reading data, so continue to the next line.
-                    else:
+                    # If we're still not reading data, then abort this loop if the start condition isn't met.            
+                    if not line_lower.startswith(start_prefix):
                         continue
 
+                    read_data = True
+                    # Skip the first line if told to do so.
+                    if skip_header:
+                        continue
+ 
                 # If we have been reading data, check if we should stop doing so now.
                 elif end_prefixes and any(line_lower.startswith(prefix) for prefix in end_prefixes):
                     break            
 
                 # Skip blank lines and compare to our list of prefixes to see if we should ignore this line.
-                if line == "" or any(line_lower.startswith(prefix) for prefix in skip_prefixes):
+                if not line or any(line_lower.startswith(prefix) for prefix in skip_prefixes):
                     continue
 
                 section_lines.append(line)
@@ -92,37 +91,54 @@ def get_text_file_section(file_name, start_prefix = None, end_prefixes = None, s
 
 # Get the encoding type for the file.
 def get_file_encoding(file_name):
-    with open(file_name, "rb") as file:
-        return chardet.detect(file.read())["encoding"]
+    encodings_to_try = ["utf-8", "utf-8-sig", "cp1252", "latin-1"]
+
+    for enc in encodings_to_try:
+        try:
+            with open(file_name, encoding=enc) as f:
+                f.read()
+            return enc
+        except UnicodeDecodeError:
+            continue
+
+    # Fallback — nothing failed, but still return something safe
+    return "latin-1"
 
 # Returns a set of cards from the given edition.
 def get_edition_cards(edition_name):
     edition_data = get_text_file_section(get_edition_file_path(edition_name), "[cards]", ["["])
+
+    if not edition_name:
+        print("Error: edition_name is None or empty.")
+        return None  
+
     if not edition_data:
         return None
     
     return {edition_data_row_to_card(r) for r in edition_data}
 
-# Returns the scryfall code for an edition.
 def get_edition_code(edition_name):
-    start_prefix = "ScryfallCode="
-    max_lines = 1
-    skip_header = False
+    prefix = "ScryfallCode="
 
-    scryfall_field = get_text_file_section(get_edition_file_path(edition_name), start_prefix, None, None, max_lines, skip_header)
-    
+    scryfall_field = get_text_file_section(get_edition_file_path(edition_name), start_prefix=prefix, max_lines=1, skip_header=False)
+
     if not scryfall_field:
         print("Error: could not find edition codes.")
         return None
-    
-    try:
-        return scryfall_field[0].split("=", 1)[1]
-    except IndexError:
+
+    line = scryfall_field[0]
+
+    if not line.startswith(prefix):
+        print(f"Error: malformed ScryfallCode line: {line}")
         return None
+
+    return line[len(prefix):]
 
 # Returns the file path of an edition from a string.
 def get_edition_file_path(edition_name):
-    return os.path.join(const.data_path_editions + "/" + edition_name + ".txt")
+    if not edition_name:
+        return None    
+    return os.path.join(const.data_path_editions, edition_name + ".txt")
 
 # Returns the list of editions from a csv config file.
 def get_editions_list(csv_filename):
