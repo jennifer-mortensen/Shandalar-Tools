@@ -1,21 +1,65 @@
-# Paths to data folders.
-data_path_cards = "Data/cardsfolder"
-data_path_editions = "Data/editions"
+# ==============================
+# FILE PATHS
+# ==============================
+# TODO: Convert to os.path.join with BASE_DIR to avoid cwd dependency
 
-# Paths to data and config files.
-file_shandalar_csv = "Data/Shandalar Card List.csv"
-file_config = "config.csv"
-file_user_banned = "user_banned.csv"
+# Data folders
+DATA_PATH_CARDS = "Data/cardsfolder"
+DATA_PATH_EDITIONS = "Data/editions"
 
-# CSV column pointers.
-editions_card_name_starting_column = 2
-shandalar_card_name_column = 0
+# Data / Config Files
+FILE_SHANDALAR_CSV = "Data/Shandalar Card List.csv"
+FILE_NAME_CONFIG = "config"
+FILE_TYPE_CONFIG = "csv"
+FILE_NAME_OUTPUT = "output"
+FILE_TYPE_OUTPUT = "txt"
+FILE_NAME_USER_BANNED = "user_banned"
+FILE_TYPE_USER_BANNED = "csv"
 
-# MTG Forge format descriptions.
-forge_format_body_standard = """[format]
+# ==============================
+# FILE ENCODING
+# ==============================
+DEFAULT_ENCODING = "utf-8"
+FALLBACK_ENCODING = "latin-1"
+FILE_ENCODINGS = ["utf-8", "utf-8-sig", "cp1252", "latin-1"]
+
+# ==============================
+# FILE NAMING
+# ==============================
+EDITION_FILE_SUFFIX = ".txt"
+
+# ==============================
+# CSV / TEXT PARSING
+# ==============================
+DEFAULT_CSV_DELIMITER = ","
+COMMENT_PREFIX = "#"
+
+# ==============================
+# SHANDALAR DATA
+# ==============================
+SHANDALAR_CARD_NAME_STARTING_COLUMN = 0
+
+# ==============================
+# FORGE DATA
+# ==============================
+EDITIONS_CARD_NAME_STARTING_COLUMN = 2
+FORGE_CARDS_HEADER = "[cards]"
+FORGE_EDITION_CARD_DELIMITER = " @"
+SCRYFALL_CODE_PREFIX = "ScryfallCode="
+
+# ==============================
+# FORGE FORMAT CONSTRUCTORS
+# ==============================
+
+FORGE_FORMAT_BODY_STANDARD = """[format]
 Name:Standard
 Order:101
 Subtype:Standard
 Type:Sanctioned
 Banned: {banned_cards}
 Sets: {set_codes}"""
+
+# ==============================
+# OUTPUT / DISPLAY
+# ==============================
+PREVIEW_LIMIT = 5
