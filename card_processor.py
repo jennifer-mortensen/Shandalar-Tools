@@ -11,7 +11,6 @@ def get_card_pool(editions):
     editions_loaded = set()
     cards = set()
 
-    print("Compiling source card list...")
     for e in editions:
         print(f"Loading {e}...")
         sanitized_edition_name = card_loader.sanitize_name(e)
@@ -21,7 +20,7 @@ def get_card_pool(editions):
 
         edition_cards = card_loader.get_edition_cards(e)
         if edition_cards is None:
-            sys.exit(f"Error: Could not load file at {card_loader.get_edition_file_path(e)}.")
+            raise FileNotFoundError(f"Error: Could not load file at {card_loader.get_edition_file_path(e)}.")
 
         cards.update(edition_cards)
         editions_loaded.add(sanitized_edition_name)
@@ -48,8 +47,6 @@ def generate_edition_codes(editions):
 
 # Returns a list containing all cards that do not exist in Shandalar from the given set.
 def get_unsupported_cards(cards, shandalar_lookup):
-    print("Checking unsupported cards...")
-
     unsupported_cards = [c for c in cards if card_loader.sanitize_name(c) not in shandalar_lookup]
     print(f"Found {len(unsupported_cards)} unsupported cards.")
     
@@ -61,8 +58,6 @@ def get_unsupported_cards(cards, shandalar_lookup):
 
 # Formats output for the MTG Forge format.
 def generate_forge_format(cards, user_banned_cards, edition_codes, sort_cards=True):
-    print("Formatting cards to MTG Forge format...")
-
     # Base list (sorted for readability if enabled)
     formatted_cards = sorted(cards) if sort_cards else list(cards)
 
@@ -89,7 +84,7 @@ def generate_forge_format(cards, user_banned_cards, edition_codes, sort_cards=Tr
                 f"Warning: {len(duplicates)} duplicate entries detected "
                 f"in user-banned list (preserved as-is). "
                 f"Examples: {preview}"
-                + ("..." if len(duplicates) > {const.PREVIEW_LIMIT} else "")
+                + ("..." if len(duplicates) > const.PREVIEW_LIMIT else "")
             )
 
     banned_cards = "; ".join(formatted_cards)
@@ -99,6 +94,10 @@ def generate_forge_format(cards, user_banned_cards, edition_codes, sort_cards=Tr
         banned_cards=banned_cards,
         set_codes=set_codes
     )
+
+    if not forge_format:
+        # If we're here, we've probably encountered a bug.
+        raise ValueError("Failed to generate MTG Forge format output.")
 
     return forge_format
 

@@ -13,7 +13,7 @@ def get_edition_code(edition_name):
     
     prefix = const.SCRYFALL_CODE_PREFIX
 
-    scryfall_field = get_text_file_section(get_edition_file_path(edition_name), start_prefix=prefix, max_lines=1, skip_header=False)
+    scryfall_field = get_text_file_section(get_edition_file_path(edition_name), start_prefix=const.SCRYFALL_CODE_PREFIX, max_lines=1, skip_header=False)
 
     if not scryfall_field:
         print("Error: could not find edition codes.")
@@ -21,11 +21,11 @@ def get_edition_code(edition_name):
 
     line = scryfall_field[0]
 
-    if not line.lower().startswith(prefix.lower()):
+    if not line.lower().startswith(const.SCRYFALL_CODE_PREFIX.lower()):
         print(f"Error: malformed ScryfallCode line: {line}")
         return None
 
-    return line[len(prefix):]
+    return line[len(const.SCRYFALL_CODE_PREFIX):]
 
 # Returns a set of cards from the given edition.
 def get_edition_cards(edition_name):

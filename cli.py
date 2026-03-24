@@ -2,25 +2,57 @@ import argparse
 import card_loader
 import card_processor
 import const
-import os
 import sys
 
 # Main entry point.
 def main():
     args = parse_args()
 
+    print("Checking editions to load...")
     editions = card_loader.get_editions_list(args.editions)
-    cards = card_processor.get_card_pool(editions)
+    if editions is None:
+        fail(f"Could not find editions file: {args.editions}")
+    elif len(editions) == 0:
+        fail(f"Editions file is empty: {args.editions}")
 
+    print("Compiling source card list...")
+    try:
+        cards = card_processor.get_card_pool(editions)
+    except FileNotFoundError as e:
+        fail(e)
+    if not cards:
+        fail("No cards were loaded from the provided editions. All edition files may be empty or invalid.")
+
+    print("Checking unsupported cards...")
     unsupported_cards = card_processor.get_unsupported_cards(cards, card_processor.build_shandalar_lookup())
+    if not unsupported_cards:
+        print(f"Warning: No unsupported cards found among {len(cards)} cards. This is highly unusual and may indicate an issue with the input data or configuration.")
+    
+    print("Loading user-banned cards...")
     user_banned_cards = card_loader.get_user_banned_cards(args.user_banned)
-    forge_format = card_processor.generate_forge_format(unsupported_cards, user_banned_cards, card_processor.generate_edition_codes(editions))
+    if user_banned_cards is None:
+        print("Could not find user-banned cards.")
+    elif len(user_banned_cards) == 0:
+        print("User-banned cards was found, but list was empty.")
+
+    print("Formatting cards to MTG Forge format...")
+    try:
+        forge_format = card_processor.generate_forge_format(unsupported_cards, user_banned_cards, card_processor.generate_edition_codes(editions))
+    except ValueError as e:
+        fail(e)        
 
     print(f"Writing unsupported cards to {args.output}...")
-    with open(args.output, "w", encoding=const.DEFAULT_ENCODING) as file:
-        file.write(forge_format)
+    try:
+        with open(args.output, "w", encoding=const.DEFAULT_ENCODING) as file:
+            file.write(forge_format)
+    except OSError as e:
+        fail(f"Could not write to output file: {e}")
 
     print("Compilation complete!")
+
+def fail(message):
+    print(f"Error: {message}")
+    sys.exit(1)
 
 def parse_args():
     parser = argparse.ArgumentParser(
