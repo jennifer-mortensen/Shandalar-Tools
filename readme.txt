@@ -134,15 +134,21 @@ No additional configuration is required as long as file structure is preserved.
 ROADMAP
 =======
 
-v2:
+v2 (Deck Translator):
 
-* Deck translation (Shandalar ↔ Forge)
-* Config-driven rule system
+* Deck translation between Shandalar and Forge
 * Performance improvements (if needed)
 
-v3:
+v2.5 (Refinement & Flexibility):
 
-* Data updater (e.g., migrate data from installed Forge to Shandalar Tools)
+* Refinements to existing architecture
+* Add header column in user_banned to organize user-generated section headers
+* Support for more output formats (i.e. not just "Standard")
+* Configure Shandalar data set via params (e.g. "classic" vs. "ProJared")
+
+v3 (Data Updater):
+
+* Migrate data from an existing Forge installation into Shandalar Tools
 
 PURPOSE
 =======
