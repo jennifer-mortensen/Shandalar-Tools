@@ -2,46 +2,47 @@ SHANDALAR TOOLS
 ===============
 
 A Python command-line utility for generating MTG Forge format restrictions
-compatible with the Shandalar mod.
+compatible with Shandalar mods.
 
-MTG Forge supports cards from many expansions, but the Shandalar mod only
-implements a subset of them. This tool scans Forge edition files and creates a 
+MTG Forge supports cards from many expansions, but Shandalar only
+implements a subset of them. This tool scans Forge edition files and creates a
 format definition that bans cards not supported by Shandalar.
 
 This allows decks to be built in Forge while ensuring they remain compatible
-with the Shandalar mod.
+with Shandalar mods.
+
+NOTE: By default, this tool assumes the 2016 "ProJared" version of Shandalar.
+To use a different data source, see "DATA UPDATES" below.
 
 FEATURES
+========
 
 * Loads card lists from MTG Forge edition files
 * Compares them against the Shandalar card pool
 * Generates a Forge format file banning unsupported cards
 * Supports optional user ban lists for custom restrictions
-* Handles duplicate editions
+* Handles duplicate editions gracefully
 * Detects file encodings automatically
+
+On success, a format file will be written and a summary printed to the console.
 
 REQUIREMENTS
 ============
 
 * Python 3.9+
-* chardet
-
-Install dependencies:
-
-* pip install chardet
 
 USAGE
 =====
 
 Basic usage:
 
-python cli.py
+python main.py
 
 This will:
 
-* Load editions listed in config.csv
+* Load editions listed in the configuration file
 * Compare them against the Shandalar card list
-* Generate a Forge format file containing unsupported cards
+* Generate a Forge format file of unsupported cards (default: Standard.txt)
 
 OPTIONS
 =======
@@ -50,7 +51,7 @@ OPTIONS
 Specify the output file.
 
 Example:
-python cli.py -o unsupported.txt
+python main.py -o unsupported.txt
 
 -e, --editions
 Specify the CSV file listing editions to load.
@@ -59,14 +60,13 @@ Specify the CSV file listing editions to load.
 Specify the CSV file listing user-designated cards to ban.
 
 Example:
-python cli.py -e custom_sets.csv
+python main.py -e custom_sets.csv
 
 CONFIGURATION
 =============
 
-config.csv
-
-Contains a list of edition names corresponding to Forge edition files.
+The editions configuration file (default: config.csv) contains a list of
+edition names corresponding to Forge edition files.
 
 Example:
 
@@ -82,44 +82,84 @@ Data/editions/
 EXAMPLE OUTPUT
 ==============
 
+Checking editions to load...
 Compiling source card list...
-Loading Ice Age...
-Loading Homelands...
-
+INFO: Loading Ninth Edition...
+INFO: Loading Revised Edition...
+INFO: Loading Ice Age...
+INFO: Loading Homelands...
+INFO: Loading Alliances...
+INFO: Loading Time Spiral...
+INFO: Loading Ninth edition...
+WARNING: Duplicate detected. Skipping Ninth edition.
+INFO: Loading Coldsnap...
+INFO: Loading Fallen Empires...
+INFO: Loading The Dark...
 Checking unsupported cards...
-Found 642 unsupported cards.
-
-Writing unsupported cards to output.txt...
+INFO: Found 557 unsupported cards.
+Loading user-banned cards...
+Formatting cards to MTG: Forge format...
+INFO: Generating edition codes...
+Writing unsupported cards to Standard.txt...
 Compilation complete!
 
 PROJECT STRUCTURE
 =================
 
-cli.py
-Command line interface and main pipeline logic
+core/
+    card_loader.py  
+        File parsing and data extraction utilities  
 
-card_loader.py
-File parsing and card extraction utilities
+    card_processor.py  
+        Core processing and transformation logic  
 
-const.py
-Constants and format templates
+    const.py  
+        Constants and format templates  
 
-Data/
-Shandalar card list and Forge edition files
+DATA UPDATES
+============
+
+This tool relies on external data files:
+
+* Forge edition files sourced from MTG: Forge (Data/editions/)
+* Shandalar card list sourced from Shandalar (data/Shandalar Card List.csv)
+
+To update data:
+
+1. Replace the existing data files with updated versions from your MTG: Forge installation or other sources.
+2. Ensure filenames and structure remain consistent.
+
+No additional configuration is required as long as file structure is preserved.
 
 ROADMAP
 =======
 
-Planned improvements:
-* Deck translation tool between MTG Forge and Shandalar
-* Additional compatibility validation tools
-* Improved CLI options and logging
-* Additional internal cleanup
+v2:
+
+* Deck translation (Shandalar ↔ Forge)
+* Config-driven rule system
+* Performance improvements (if needed)
+
+v3:
+
+* Data updater (e.g., migrate data from installed Forge to Shandalar Tools)
 
 PURPOSE
 =======
 
-This project was created to streamline deck building for a Shandalar mod by
+This project was created to streamline deck building for Shandalar mods
 ensuring that decks created in MTG Forge only contain cards supported by the
-game. It was built as a practical tool to automate compatibility checks
-between the two systems.
+game.
+
+It serves as both a practical utility and a demonstration of structured data
+processing, error handling, and CLI application design.
+
+DESIGN NOTES
+============
+
+* Loader functions may return None when a file is missing, allowing the CLI
+  layer to determine whether the input is optional or required.
+* Empty collections represent valid but empty data and are handled separately
+  from missing inputs.
+* Errors related to malformed data raise exceptions and terminate execution
+  early to prevent invalid output generation.
