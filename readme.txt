@@ -152,7 +152,20 @@ ensuring that decks created in MTG: Forge only contain cards supported by the
 game.
 
 It serves as both a practical utility and a demonstration of structured data
-processing, error handling, and CLI application design.
+processing, error handling, and CLI application design developed through
+iterative refinement.
+
+This tool was developed iteratively through real-world use. As new edge cases
+and data inconsistencies were encountered (e.g., missing files, encoding issues,
+duplicate editions), the design was refined to handle them explicitly and
+reliably.
+
+The current structure reflects those iterations, prioritizing clear data flow,
+explicit error handling, and separation between CLI, loading, and processing
+logic.
+
+In other words, I designed this project for real world use, not to sit in
+a Git repository. Expect it to evolve with time.
 
 DESIGN NOTES
 ============
@@ -163,3 +176,23 @@ DESIGN NOTES
   from missing inputs.
 * Errors related to malformed data raise exceptions and terminate execution
   early to prevent invalid output generation.
+
+DATA HANDLING PRINCIPLES
+========================
+
+This project separates data loading, validation, and application control:
+
+* Loader functions may return None when data cannot be found. This allows the
+  calling layer to decide whether the input is optional or required.
+
+* Empty collections (e.g., []) represent valid but empty data and are handled
+  separately from missing inputs.
+
+* The CLI layer is responsible for validating required inputs and determining
+  whether execution should continue or terminate.
+
+* Helper validation functions may terminate execution early (via sys.exit) when
+  encountering invalid or missing required data.
+
+* Exceptions are used for malformed or unexpected data, ensuring that invalid
+  states do not silently propagate through the system.
