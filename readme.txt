@@ -170,7 +170,7 @@ The current structure reflects those iterations, prioritizing clear data flow,
 explicit error handling, and separation between CLI, loading, and processing
 logic.
 
-In other words, I designed this project for real world use, not to sit in
+In other words: I designed this project for real world use, not to sit in
 a Git repository. Expect it to evolve with time.
 
 DESIGN NOTES
