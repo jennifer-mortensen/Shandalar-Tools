@@ -108,7 +108,6 @@ def get_file_encoding(filename):
     # Safe fallback if no encoding detected
     return const.FALLBACK_ENCODING
 
-
 # NOTE:
 # This function returns None if the file cannot be found.
 # Callers are responsible for determining whether a missing file is an error

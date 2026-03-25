@@ -1,10 +1,10 @@
 SHANDALAR TOOLS
 ===============
 
-A Python command-line utility for generating MTG Forge format restrictions
+A Python command-line utility for generating MTG: Forge format restrictions
 compatible with Shandalar mods.
 
-MTG Forge supports cards from many expansions, but Shandalar only
+MTG: Forge supports cards from many expansions, but Shandalar only
 implements a subset of them. This tool scans Forge edition files and creates a
 format definition that bans cards not supported by Shandalar.
 
@@ -17,7 +17,7 @@ To use a different data source, see "DATA UPDATES" below.
 FEATURES
 ========
 
-* Loads card lists from MTG Forge edition files
+* Loads card lists from MTG: Forge edition files
 * Compares them against the Shandalar card pool
 * Generates a Forge format file banning unsupported cards
 * Supports optional user ban lists for custom restrictions
@@ -148,7 +148,7 @@ PURPOSE
 =======
 
 This project was created to streamline deck building for Shandalar mods
-ensuring that decks created in MTG Forge only contain cards supported by the
+ensuring that decks created in MTG: Forge only contain cards supported by the
 game.
 
 It serves as both a practical utility and a demonstration of structured data
