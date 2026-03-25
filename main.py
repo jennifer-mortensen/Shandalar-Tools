@@ -2,6 +2,7 @@ from core import card_loader, card_processor, const
 import argparse
 import logging
 import sys
+from typing import NoReturn
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 
@@ -9,7 +10,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 # MAIN ENTRY POINT
 # ==============================
 
-def main():
+def main() -> None:
     args = parse_args()
     editions = load_editions(args.editions)
     source_cards = compile_source_cards(editions)
@@ -28,7 +29,7 @@ def main():
 # output = file to output format to (i.e. the generated Forge format)
 # editions = the file containing a list of editions to be loaded
 # user_banned = the file containing optional additional cards to be added to the banned list
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="shandalar-tools", 
         description="Check card compatibility between Shandalar and MTG: Forge.",
@@ -56,19 +57,20 @@ def parse_args():
     return parser.parse_args()         
 
 # Loads and returns user-defined editions file as a list.
-def load_editions(editions_filename):
+def load_editions(editions_filename) -> list[str]:
     print("Checking editions to load...")
     try:
         editions = card_loader.get_editions_list(editions_filename)
     except ValueError as e:
         fail(e)
 
-    require_non_empty(editions, "editions file", editions_filename)    
+    require_non_empty(editions, "editions file", editions_filename)
+    assert editions is not None # narrow type for type checker after validation
 
     return editions
 
 # Returns all existing cards from the given editions as a set.
-def compile_source_cards(editions):
+def compile_source_cards(editions) -> set[str]:
     print("Compiling source card list...")
     try:
         source_cards = card_processor.get_card_pool(editions)
@@ -81,7 +83,7 @@ def compile_source_cards(editions):
     return source_cards
 
 # Compares the given cards to Shandalar's data and returns unsupported cards as a list.
-def compute_unsupported_cards(source_cards):
+def compute_unsupported_cards(source_cards) -> list[str]:
     print("Checking unsupported cards...")
     try:
         shandalar_lookup = card_processor.build_shandalar_lookup()        
@@ -95,7 +97,7 @@ def compute_unsupported_cards(source_cards):
     return unsupported_cards
 
 # Loads and returns user-defined bans as a list.    
-def load_user_banned_cards(user_banned_file_name):
+def load_user_banned_cards(user_banned_file_name) -> list[str] | None:
     print("Loading user-banned cards...")
     try:
         user_banned_cards = card_loader.get_user_banned_cards(user_banned_file_name)
@@ -107,7 +109,7 @@ def load_user_banned_cards(user_banned_file_name):
     return user_banned_cards 
 
 # Using the given pool of unsupported cards (i.e. not included in Shandalar), user-defined bans, and editions, generate a valid Forge format and return as a string.
-def format_cards(unsupported_cards, user_banned_cards, editions):
+def format_cards(unsupported_cards, user_banned_cards, editions) -> str:
     print("Formatting cards to MTG: Forge format...")
     try:
         forge_format = card_processor.generate_forge_format(unsupported_cards, user_banned_cards, card_processor.generate_edition_codes(editions))
@@ -117,7 +119,7 @@ def format_cards(unsupported_cards, user_banned_cards, editions):
     return forge_format    
 
 # Writes the forget format string to the given output file.
-def write_forge_format(forge_format, output_filename):
+def write_forge_format(forge_format, output_filename) -> None:
     print(f"Writing unsupported cards to {output_filename}...")
     try:
         with open(output_filename, "w", encoding=const.DEFAULT_ENCODING) as file:
@@ -130,30 +132,27 @@ def write_forge_format(forge_format, output_filename):
 # ==============================
 
 # Exits the program with the given error.
-def fail(message):
+def fail(message) -> NoReturn:
     print(f"ERROR: {message}")
     sys.exit(1)
 
 # Verifies that the file contains useful data.
 # Specify whether the file did not exist or if it was empty on failure.
 # Terminates the application.
-def require_non_empty(data, name, filename):
+def require_non_empty(data, name, filename) -> None:
     if data is None:
         fail(f"Could not find {name}: {filename}")
-    if len(data) == 0:
+    elif len(data) == 0:
         fail(f"{name.capitalize()} is empty: {filename}")
-    return data
 
 # Verifies that the file contains useful data.
 # Specify whether the file did not exist or if it was empty on failure.
 # Warns the user.
-def handle_optional(data, name):
+def handle_optional(data, name) -> None:
     if data is None:
         print(f"WARNING: Could not find {name}.")
-        return None
-    if len(data) == 0:
-        print(f"WARNING: {name.capitalize()} was found, but list was empty.")
-    return data    
+    elif len(data) == 0:
+        print(f"WARNING: {name.capitalize()} was found, but list was empty.")  
 
 # ==============================
 

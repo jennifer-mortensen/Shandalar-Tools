@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 # ==============================
 
 # Returns the matching Scryfall Code for the given edition name.
-def get_edition_code(edition_name):
+def get_edition_code(edition_name) -> str:
     if not edition_name:
         raise ValueError("edition_name returned empty.")
 
@@ -29,7 +29,7 @@ def get_edition_code(edition_name):
     return line[len(const.SCRYFALL_CODE_PREFIX):]
 
 # Returns a set of cards from the given edition.
-def get_edition_cards(edition_name):
+def get_edition_cards(edition_name) -> set[str]:
     if not edition_name:
         raise ValueError(f"Edition name was invalid: {edition_name}") 
     
@@ -39,19 +39,19 @@ def get_edition_cards(edition_name):
         logger.warning(f"Card list for edition {edition_name} returned empty.")
         return set()
     
-    return {_edition_data_row_to_card(r) for r in edition_data}
+    return {_edition_data_row_to_card_name(r) for r in edition_data}
 
 # Returns the list of editions from a csv config file.
-def get_editions_list(csv_filename):
+def get_editions_list(csv_filename) -> list[str]:
     return get_csv_column(csv_filename, 0, skip_prefixes=[const.COMMENT_PREFIX])
 
 # Returns the list of cards supported in Shandalar.
-def get_shandalar_cards():
+def get_shandalar_cards() -> set[str]:
     cards = get_csv_column(const.FILE_SHANDALAR_CSV, const.SHANDALAR_CARD_NAME_STARTING_COLUMN)
     return set(cards) if cards else set()
 
 # Returns a list of user-banned cards.
-def get_user_banned_cards(filename):
+def get_user_banned_cards(filename) -> list[str]:
     # Optional file: None means file not found
     return get_csv_column(filename, 0, skip_prefixes=[const.COMMENT_PREFIX])
 
@@ -71,7 +71,7 @@ def get_user_banned_cards(filename):
 #   starting_index (int) = the starting row number      
 #   starting_header (string) = the header from which to start reading data; the header itself will be ignored
 #   skip_prefixes (list) = list of prefixes used to designate that a row should not be read
-def get_csv_column(filename, column_number, csv_delimiter=const.DEFAULT_CSV_DELIMITER, starting_index=0, starting_header="", skip_prefixes=None):
+def get_csv_column(filename, column_number, csv_delimiter=const.DEFAULT_CSV_DELIMITER, starting_index=0, starting_header="", skip_prefixes=None) -> list[str] | None:
     csv_column = []
     read_data = not (starting_header or starting_index > 0)
 
@@ -96,7 +96,7 @@ def get_csv_column(filename, column_number, csv_delimiter=const.DEFAULT_CSV_DELI
     return csv_column
 
 # Get the encoding type for the file.
-def get_file_encoding(filename):
+def get_file_encoding(filename) -> str:
     for enc in const.FILE_ENCODINGS:
         try:
             with open(filename, encoding=enc) as f:
@@ -120,7 +120,7 @@ def get_file_encoding(filename):
 #   skip_prefixes (list) = list of prefixes for lines from where data should not be read (default: "['#']")
 #   max_lines (int) = maximum number of lines to read
 #   skip_header (boolean) = if true and a start_prefix is set, do not read the first line
-def get_text_file_section(filename, start_prefix=None, end_prefixes=None, skip_prefixes=None, max_lines=None, skip_header=True):
+def get_text_file_section(filename, start_prefix=None, end_prefixes=None, skip_prefixes=None, max_lines=None, skip_header=True) -> list[str] | None:
     section_lines = []
     read_data = start_prefix is None
 
@@ -167,21 +167,21 @@ def get_text_file_section(filename, start_prefix=None, end_prefixes=None, skip_p
 # ==============================
 
 # Returns the file path of an edition from a string.
-def get_edition_file_path(edition_name):
+def get_edition_file_path(edition_name: str) -> str:
     if not edition_name:
-        return None    
+        raise ValueError(f"Invalid edition name: {edition_name}")
     return os.path.join(const.DATA_PATH_EDITIONS, edition_name + const.EDITION_FILE_SUFFIX)
 
 # Returns a normalized filename, which includes the given extension (if not already present).
-def normalize_filename(filename, extension):
+def normalize_filename(filename, extension) -> str:
     return filename if os.path.splitext(filename)[1] else f"{filename}.{extension}"
 
 # Returns a sanitized name string. Removes leading/trailing spaces and converts to lowercase.
-def sanitize_name(name):
+def sanitize_name(name) -> str:
     return name.strip().lower()
 
 # Returns a sanitized set. Removes leading/trailing spaces from all card names and converts them to lowercase.
-def sanitize_set(cards):
+def sanitize_set(cards) -> set[str]:
     return {sanitize_name(c) for c in cards}
 
 # ==============================
@@ -190,6 +190,6 @@ def sanitize_set(cards):
 
 # Returns the card name embedded within a row of edition data.
 #   row (string) = a Forge card line from the edition File
-def _edition_data_row_to_card(row):
+def _edition_data_row_to_card_name(row) -> str:
     line = row.split(const.FORGE_EDITION_CARD_DELIMITER, 1)[0]
     return " ".join(line.split()[const.EDITIONS_CARD_NAME_STARTING_COLUMN:])
