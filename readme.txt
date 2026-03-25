@@ -148,7 +148,7 @@ v2.5 (Refinement & Flexibility):
 
 v3 (Data Updater):
 
-* Migrate data from an existing Forge installation into Shandalar Tools
+* Sync data from the Forge repository to ensure that new editions are supported automatically
 
 PURPOSE
 =======
