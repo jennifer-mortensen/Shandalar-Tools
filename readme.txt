@@ -170,15 +170,6 @@ a Git repository. Expect it to evolve with time.
 DESIGN NOTES
 ============
 
-* Loader functions may return None when a file is missing, allowing the CLI
-  layer to determine whether the input is optional or required.
-
-* Empty collections represent valid but empty data and are handled separately
-  from missing inputs.
-
-* Errors related to malformed data raise exceptions and terminate execution
-  early to prevent invalid output generation.
-
 This project separates data loading, validation, and application control:
 
 * Loader functions may return None when data cannot be found. This allows the
