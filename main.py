@@ -14,7 +14,7 @@ def main() -> None:
     initiate_logging()
     args = parse_args()
     editions = load_editions(args.editions)
-    source_cards = compile_source_cards(editions)
+    source_cards = build_source_cards(editions)
     unsupported_cards = compute_unsupported_cards(source_cards)
     user_banned_cards = load_user_banned_cards(args.user_banned)
     forge_format = format_cards(unsupported_cards, user_banned_cards, editions)
@@ -92,7 +92,7 @@ def load_editions(editions_filename) -> list[str]:
     return editions
 
 # Returns all existing cards from the given editions as a set.
-def compile_source_cards(editions) -> set[str]:
+def build_source_cards(editions) -> set[str]:
     logger.info("Compiling source card list...")
     try:
         source_cards = card_processor.get_card_pool(editions)
@@ -140,7 +140,7 @@ def format_cards(unsupported_cards, user_banned_cards, editions) -> str:
 
     return forge_format    
 
-# Writes the forget format string to the given output file.
+# Writes the Forget format string to the given output file.
 def write_forge_format(forge_format, output_filename) -> None:
     logger.info("Writing unsupported cards to %s...", output_filename)
     try:
