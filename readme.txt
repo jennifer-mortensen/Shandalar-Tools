@@ -25,6 +25,8 @@ FEATURES
 * Detects file encodings automatically
 
 On success, a format file will be written and a summary printed to the console.
+A log file (default: app.log) is also generated containing detailed diagnostic
+information, including full duplicate lists and debugging output.
 
 REQUIREMENTS
 ============

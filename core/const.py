@@ -14,6 +14,16 @@ FILE_NAME_OUTPUT = "Standard"
 FILE_TYPE_OUTPUT = "txt"
 FILE_NAME_USER_BANNED = "user_banned"
 FILE_TYPE_USER_BANNED = "csv"
+FILE_NAME_LOG = "app"
+FILE_TYPE_LOG = "log"
+
+# ==============================
+# LOGGER CONSTANTS
+# ==============================
+
+LOGGER_FORMAT_CLI = "%(levelname)s: %(message)s"
+LOGGER_FORMAT_FILE = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+LOGGER_WRITE_BEHAVIOR = "w" # "w" = overwrite each run
 
 # ==============================
 # FILE ENCODING

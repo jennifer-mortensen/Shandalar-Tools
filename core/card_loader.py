@@ -36,7 +36,7 @@ def get_edition_cards(edition_name) -> set[str]:
     edition_data = get_text_file_section(get_edition_file_path(edition_name), const.FORGE_CARDS_HEADER, ["["])
 
     if not edition_data:
-        logger.warning(f"Card list for edition {edition_name} returned empty.")
+        logger.warning("Card list for edition %s returned empty.", edition_name)
         return set()
     
     return {_edition_data_row_to_card_name(r) for r in edition_data}

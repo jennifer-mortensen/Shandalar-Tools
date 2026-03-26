@@ -4,13 +4,14 @@ import logging
 import sys
 from typing import NoReturn
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logger = logging.getLogger(__name__)
 
 # ==============================
 # MAIN ENTRY POINT
 # ==============================
 
 def main() -> None:
+    initiate_logging()
     args = parse_args()
     editions = load_editions(args.editions)
     source_cards = compile_source_cards(editions)
@@ -19,11 +20,32 @@ def main() -> None:
     forge_format = format_cards(unsupported_cards, user_banned_cards, editions)
     write_forge_format(forge_format, args.output)
 
-    print("Compilation complete!")
+    logger.info("Compilation complete!")
 
 # ==============================
 # HIGH LEVEL FUNCTIONS
 # ==============================
+
+# Prepares and initiates the formatter.
+# Separates high-level CLI log from DEBUG, which is added to a log file (default: tools.log)
+def initiate_logging() -> None:
+    formatter = logging.Formatter(const.LOGGER_FORMAT_FILE)
+
+    # CLI-level logging. Prioritize readability.
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(logging.Formatter(const.LOGGER_FORMAT_CLI))
+
+    # File-level logging. Full fidelity.
+    file_handler = logging.FileHandler(
+        card_loader.normalize_filename(const.FILE_NAME_LOG, const.FILE_TYPE_LOG),
+        mode=const.LOGGER_WRITE_BEHAVIOR, encoding=const.DEFAULT_ENCODING)
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(formatter)
+
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+    root.handlers = [console, file_handler]
 
 # Prepares args.
 # output = file to output format to (i.e. the generated Forge format)
@@ -58,7 +80,7 @@ def parse_args() -> argparse.Namespace:
 
 # Loads and returns user-defined editions file as a list.
 def load_editions(editions_filename) -> list[str]:
-    print("Checking editions to load...")
+    logger.info("Checking editions to load...")
     try:
         editions = card_loader.get_editions_list(editions_filename)
     except ValueError as e:
@@ -71,7 +93,7 @@ def load_editions(editions_filename) -> list[str]:
 
 # Returns all existing cards from the given editions as a set.
 def compile_source_cards(editions) -> set[str]:
-    print("Compiling source card list...")
+    logger.info("Compiling source card list...")
     try:
         source_cards = card_processor.get_card_pool(editions)
     except ValueError as e:
@@ -84,7 +106,7 @@ def compile_source_cards(editions) -> set[str]:
 
 # Compares the given cards to Shandalar's data and returns unsupported cards as a list.
 def compute_unsupported_cards(source_cards) -> list[str]:
-    print("Checking unsupported cards...")
+    logger.info("Checking unsupported cards...")
     try:
         shandalar_lookup = card_processor.build_shandalar_lookup()        
     except ValueError as e:
@@ -92,13 +114,13 @@ def compute_unsupported_cards(source_cards) -> list[str]:
     
     unsupported_cards = card_processor.get_unsupported_cards(source_cards, shandalar_lookup)        
     if not unsupported_cards:
-        print(f"WARNING: No unsupported cards found among {len(source_cards)} cards. This is highly unusual and may indicate an issue with the input data or configuration.")
+        logger.warning("No unsupported cards found among %d cards. This is highly unusual and may indicate an issue with the input data or configuration.", len(source_cards))
 
     return unsupported_cards
 
 # Loads and returns user-defined bans as a list.    
 def load_user_banned_cards(user_banned_file_name) -> list[str] | None:
-    print("Loading user-banned cards...")
+    logger.info("Loading user-banned cards...")
     try:
         user_banned_cards = card_loader.get_user_banned_cards(user_banned_file_name)
     except ValueError as e:
@@ -110,7 +132,7 @@ def load_user_banned_cards(user_banned_file_name) -> list[str] | None:
 
 # Using the given pool of unsupported cards (i.e. not included in Shandalar), user-defined bans, and editions, generate a valid Forge format and return as a string.
 def format_cards(unsupported_cards, user_banned_cards, editions) -> str:
-    print("Formatting cards to MTG: Forge format...")
+    logger.info("Formatting cards to MTG: Forge format...")
     try:
         forge_format = card_processor.generate_forge_format(unsupported_cards, user_banned_cards, card_processor.generate_edition_codes(editions))
     except ValueError as e:
@@ -120,7 +142,7 @@ def format_cards(unsupported_cards, user_banned_cards, editions) -> str:
 
 # Writes the forget format string to the given output file.
 def write_forge_format(forge_format, output_filename) -> None:
-    print(f"Writing unsupported cards to {output_filename}...")
+    logger.info("Writing unsupported cards to %s...", output_filename)
     try:
         with open(output_filename, "w", encoding=const.DEFAULT_ENCODING) as file:
             file.write(forge_format)
@@ -133,7 +155,7 @@ def write_forge_format(forge_format, output_filename) -> None:
 
 # Exits the program with the given error.
 def fail(message) -> NoReturn:
-    print(f"ERROR: {message}")
+    logger.error(message)
     sys.exit(1)
 
 # Verifies that the file contains useful data.
@@ -150,9 +172,9 @@ def require_non_empty(data, name, filename) -> None:
 # Warns the user.
 def handle_optional(data, name) -> None:
     if data is None:
-        print(f"WARNING: Could not find {name}.")
+        logger.warning("Could not find %s.", name)
     elif len(data) == 0:
-        print(f"WARNING: {name.capitalize()} was found, but list was empty.")  
+        logger.warning("%s was found, but list was empty.", name.capitalize())  
 
 # ==============================
 

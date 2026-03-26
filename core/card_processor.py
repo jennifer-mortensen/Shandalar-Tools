@@ -13,10 +13,10 @@ def get_card_pool(editions) -> set[str]:
     cards = set()
 
     for e in editions:
-        logger.info(f"Loading {e}...")
+        logger.info("Loading %s...", e)
         sanitized_edition_name = card_loader.sanitize_name(e)
         if sanitized_edition_name in editions_loaded:
-            logger.warning(f"Duplicate detected. Skipping {e}.")
+            logger.warning("Duplicate detected. Skipping %s.", e)
             continue
 
         edition_cards = card_loader.get_edition_cards(e)
@@ -44,7 +44,7 @@ def generate_edition_codes(editions) -> set[str]:
 # Returns a list containing all cards that do not exist in Shandalar from the given set.
 def get_unsupported_cards(cards, shandalar_lookup) -> list[str]:
     unsupported_cards = [c for c in cards if card_loader.sanitize_name(c) not in shandalar_lookup]
-    logger.info(f"Found {len(unsupported_cards)} unsupported cards.")
+    logger.info("Found %d unsupported cards.", len(unsupported_cards))
     
     return unsupported_cards
 
@@ -56,32 +56,31 @@ def get_unsupported_cards(cards, shandalar_lookup) -> list[str]:
 def generate_forge_format(cards, user_banned_cards, edition_codes, sort_cards=True) -> str:
     # Base list (sorted for readability if enabled)
     formatted_cards = sorted(cards) if sort_cards else list(cards)
+    seen = set()
+    duplicates = set()
 
     # Append user-banned cards without altering order or removing duplicates
     for c in user_banned_cards or []:
         if c not in cards:
             formatted_cards.append(c)
+        if c in seen:
+            duplicates.add(c)
+        else:
+            seen.add(c)            
 
     # Warn about duplicates in user list
-    if user_banned_cards:
-        seen = set()
-        duplicates = set()
-
-        for c in user_banned_cards:
-            if c in seen:
-                duplicates.add(c)
-            seen.add(c)
-
-        if duplicates:
-            duplicates_list = sorted(duplicates)
-            preview = ", ".join(duplicates_list[:5])
-
-            logger.warning(
-                f"{len(duplicates)} duplicate entries detected "
-                f"in user-banned list (preserved as-is). "
-                f"Examples: {preview}"
-                + ("..." if len(duplicates) > const.PREVIEW_LIMIT else "")
-            )
+    if duplicates:
+        duplicates_list = sorted(duplicates)
+        preview = ", ".join(duplicates_list[:const.PREVIEW_LIMIT])
+        logger.warning(
+            "%d duplicate entries detected in user-banned list (preserved as-is). "
+            "Examples: %s%s\nFull list appended to log file (default: %s)",
+            len(duplicates),
+            preview,
+            "..." if len(duplicates) > const.PREVIEW_LIMIT else "",
+            card_loader.normalize_filename(const.FILE_NAME_LOG, const.FILE_TYPE_LOG)
+        )
+        logger.debug("Duplicate entries: %s", duplicates_list)
 
     banned_cards = "; ".join(formatted_cards)
     set_codes = ", ".join(edition_codes)
