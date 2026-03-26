@@ -1,13 +1,16 @@
+from pathlib import Path
+
 # ==============================
 # FILE PATHS
 # ==============================
-# TODO: Convert to os.path.join with BASE_DIR to avoid cwd dependency
+# TODO: Add BASE_DIR avoid cwd dependency
 
 # Data folders
-DATA_PATH_EDITIONS = "data/editions"
+DATA_DIR = Path("data")
+EDITIONS_DIR = DATA_DIR / "editions"
 
 # Data / Config Files
-FILE_SHANDALAR_CSV = "data/Shandalar Card List.csv"
+FILE_SHANDALAR_CSV = DATA_DIR / "Shandalar Card List.csv"
 FILE_NAME_CONFIG = "config"
 FILE_TYPE_CONFIG = "csv"
 FILE_NAME_OUTPUT = "Standard"

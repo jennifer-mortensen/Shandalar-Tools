@@ -1,7 +1,7 @@
 from core import const
+from pathlib import Path
 import csv
 import logging
-import os
 
 logger = logging.getLogger(__name__)
 
@@ -10,14 +10,14 @@ logger = logging.getLogger(__name__)
 # ==============================
 
 # Returns the matching Scryfall Code for the given edition name.
-def get_edition_code(edition_name) -> str:
+def get_edition_code(edition_name: str) -> str:
     if not edition_name:
-        raise ValueError("edition_name returned empty.")
+        raise ValueError("Edition name cannot be empty.")
 
     scryfall_field = get_text_file_section(get_edition_file_path(edition_name), start_prefix=const.SCRYFALL_CODE_PREFIX, max_lines=1, skip_header=False)
      
     if not scryfall_field: 
-        raise ValueError(f"Could not find edition code for {edition_name}.")        
+        raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")        
 
     line = scryfall_field[0]
 
@@ -27,7 +27,7 @@ def get_edition_code(edition_name) -> str:
     return line[len(const.SCRYFALL_CODE_PREFIX):]
 
 # Returns a set of cards from the given edition.
-def get_edition_cards(edition_name) -> set[str]:
+def get_edition_cards(edition_name: str) -> set[str]:
     if not edition_name:
         raise ValueError(f"Edition name was invalid: {edition_name}") 
     
@@ -40,7 +40,7 @@ def get_edition_cards(edition_name) -> set[str]:
     return {_edition_data_row_to_card_name(r) for r in edition_data}
 
 # Returns the list of editions from a csv config file.
-def get_editions_list(csv_filename) -> list[str]:
+def get_editions_list(csv_filename: str | Path) -> list[str]:
     return get_csv_column(csv_filename, 0, skip_prefixes=[const.COMMENT_PREFIX])
 
 # Returns the list of cards supported in Shandalar.
@@ -49,26 +49,30 @@ def get_shandalar_cards() -> set[str]:
     return set(cards) if cards else set()
 
 # Returns a list of user-banned cards.
-def get_user_banned_cards(filename) -> list[str]:
+def get_user_banned_cards(filename: str | Path) -> list[str]:
     return get_csv_column(filename, 0, skip_prefixes=[const.COMMENT_PREFIX])
 
 # ==============================
 # CSV / TEXT UTILITIES
 # ==============================
 
-# Returns the column of a csv file as an array.
-#   filename (string) = the name (and path) of the file
-#   column_number (int) = the index of the column to read
-#   csv_delimiter (string) = the delimiter used to separate columns
-#   starting_index (int) = the starting row number      
-#   starting_header (string) = the header from which to start reading data; the header itself will be ignored
-#   skip_prefixes (list) = list of prefixes used to designate that a row should not be read
-def get_csv_column(filename, column_number, csv_delimiter=const.DEFAULT_CSV_DELIMITER, starting_index=0, starting_header="", skip_prefixes=None) -> list[str]:
+# Extract a column from a CSV file with optional filtering.
+# Supports skipping rows by prefix, starting at a given index or header,
+# and ignores empty/commented lines.
+def get_csv_column(
+    filename: str | Path,
+    column_number: int,
+    csv_delimiter: str = const.DEFAULT_CSV_DELIMITER, 
+    starting_index: int = 0,
+    starting_header: str = "",
+    skip_prefixes: list[str] | None = None,
+) -> list[str]:
     csv_column = []
     read_data = not (starting_header or starting_index > 0)
 
-    with open(filename, newline = "", encoding = get_file_encoding(filename)) as csvfile:
-        reader = csv.reader(csvfile, delimiter = csv_delimiter)
+    encoding = get_file_encoding(filename)
+    with open(filename, newline="", encoding=encoding) as csvfile:
+        reader = csv.reader(csvfile, delimiter=csv_delimiter)
         for i, row in enumerate(reader):      
             header_condition_met = not starting_header or (row and row[0] == starting_header)
             if read_data:
@@ -85,10 +89,11 @@ def get_csv_column(filename, column_number, csv_delimiter=const.DEFAULT_CSV_DELI
     return csv_column
 
 # Get the encoding type for the file.
-def get_file_encoding(filename) -> str:
+def get_file_encoding(filename: str | Path) -> str:
     for enc in const.FILE_ENCODINGS:
         try:
             with open(filename, encoding=enc) as f:
+                # Full read required. Partial reads may miss encoding issues in Shandalar data.
                 f.read()
             return enc
         except UnicodeDecodeError:
@@ -97,14 +102,17 @@ def get_file_encoding(filename) -> str:
     # Safe fallback if no encoding detected
     return const.FALLBACK_ENCODING
 
-# Returns a text section from a text file.
-#   filename (string) = the name (and path) of the file
-#   start_prefix (string) = the prefix where we should begin reading text (e.g. [cards])
-#   end_prefixes (list) = list of prefixes to stop reading at
-#   skip_prefixes (list) = list of prefixes for lines from where data should not be read (default: "['#']")
-#   max_lines (int) = maximum number of lines to read
-#   skip_header (boolean) = if true and a start_prefix is set, do not read the first line
-def get_text_file_section(filename, start_prefix=None, end_prefixes=None, skip_prefixes=None, max_lines=None, skip_header=True) -> list[str]:
+# Extract a section from a text file with optional filtering.
+# Supports skipping rows by prefix, starting at a given header,
+# returning a specific number of lines, and ignores empty/commented lines.
+def get_text_file_section(
+    filename: str | Path,
+    start_prefix: str = None,
+    end_prefixes: list[str] | None = None,
+    skip_prefixes: list[str] | None = None,
+    max_lines: int = None,
+    skip_header: bool = True,
+) -> list[str]:
     section_lines = []
     read_data = start_prefix is None
 
@@ -114,7 +122,8 @@ def get_text_file_section(filename, start_prefix=None, end_prefixes=None, skip_p
     end_prefixes = [p.lower() for p in (end_prefixes or [])]
     skip_prefixes = [p.lower() for p in (skip_prefixes or ['#'])]
 
-    with open(filename, encoding = get_file_encoding(filename)) as text_file:
+    encoding = get_file_encoding(filename)
+    with open(filename, encoding=encoding) as text_file:
         for line in text_file:
             line = line.strip()
             line_lower = line.lower()
@@ -148,29 +157,30 @@ def get_text_file_section(filename, start_prefix=None, end_prefixes=None, skip_p
 # ==============================
 
 # Returns the file path of an edition from a string.
-def get_edition_file_path(edition_name: str) -> str:
+def get_edition_file_path(edition_name: str) -> Path:
     if not edition_name:
-        raise ValueError(f"Invalid edition name: {edition_name}")
-    return os.path.join(const.DATA_PATH_EDITIONS, edition_name + const.EDITION_FILE_SUFFIX)
+        raise ValueError(f"Edition name cannot be empty.")
+
+    return const.EDITIONS_DIR / f"{edition_name}{const.EDITION_FILE_SUFFIX}"
 
 # Returns a normalized filename, which includes the given extension (if not already present).
-def normalize_filename(filename, extension) -> str:
-    return filename if os.path.splitext(filename)[1] else f"{filename}.{extension}"
+def normalize_filename(filename: str, extension: str) -> Path:
+    path = Path(filename)
+    return path if path.suffix else path.with_suffix(f".{extension}")
 
 # Returns a sanitized name string. Removes leading/trailing spaces and converts to lowercase.
-def sanitize_name(name) -> str:
+def sanitize_name(name: str) -> str:
     return name.strip().lower()
 
 # Returns a sanitized set. Removes leading/trailing spaces from all card names and converts them to lowercase.
-def sanitize_set(cards) -> set[str]:
+def sanitize_set(cards: set[str]) -> set[str]:
     return {sanitize_name(c) for c in cards}
 
 # ==============================
 # PRIVATE HELPERS
 # ==============================
 
-# Returns the card name embedded within a row of edition data.
-#   row (string) = a Forge card line from the edition File
-def _edition_data_row_to_card_name(row) -> str:
+# Returns the card name embedded within a row of Forge edition data.
+def _edition_data_row_to_card_name(row: str) -> str:
     line = row.split(const.FORGE_EDITION_CARD_DELIMITER, 1)[0]
     return " ".join(line.split()[const.EDITIONS_CARD_NAME_STARTING_COLUMN:])
