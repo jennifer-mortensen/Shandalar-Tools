@@ -20,9 +20,9 @@ def main() -> None:
         editions = load_editions(args.editions)
         source_cards = build_source_cards(editions)
 
-        # Build banned card pool
-        user_banned_cards = load_user_banned_cards(args.user_banned)        
+        # Build banned card pool            
         unsupported_cards = compute_unsupported_cards(source_cards)
+        user_banned_cards = load_user_banned_cards(args.user_banned)               
 
         # Format and write
         forge_format = format_cards(unsupported_cards, user_banned_cards, editions)
