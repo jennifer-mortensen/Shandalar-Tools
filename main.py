@@ -160,7 +160,7 @@ def fail(message) -> NoReturn:
 
 # Verifies that the file contains useful data.
 # Specify whether the file did not exist or if it was empty on failure.
-# Terminates the application.https://github.com/jennifer-mortensen/Shandalar-Tools
+# Terminates the application.
 def require_non_empty(data, name, filename) -> None:
     if data is None:
         fail(f"Could not find {name}: {filename}")
