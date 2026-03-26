@@ -14,7 +14,7 @@ FILE_NAME_OUTPUT = "Standard"
 FILE_TYPE_OUTPUT = "txt"
 FILE_NAME_USER_BANNED = "user_banned"
 FILE_TYPE_USER_BANNED = "csv"
-FILE_NAME_LOG = "app"
+FILE_NAME_LOG = "shandalar_tools"
 FILE_TYPE_LOG = "log"
 
 # ==============================
