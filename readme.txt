@@ -1,6 +1,8 @@
 SHANDALAR TOOLS
 ===============
 
+Current Version: 0.9.0
+
 A Python command-line utility for generating MTG: Forge format restrictions
 compatible with Shandalar mods.
 
@@ -137,6 +139,11 @@ No additional configuration is required as long as file structure is preserved.
 
 ROADMAP
 =======
+
+v1 (Release):
+
+* Add installation (pip or simple setup)
+* Provide CLI entrypoint (run without 'python main.py')
 
 v2 (Deck Translator):
 
