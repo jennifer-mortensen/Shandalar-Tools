@@ -3,10 +3,10 @@ from pathlib import Path
 # ==============================
 # FILE PATHS
 # ==============================
-# TODO: Add BASE_DIR avoid cwd dependency
 
 # Data folders
-DATA_DIR = Path("data")
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
 EDITIONS_DIR = DATA_DIR / "editions"
 
 # Data / Config Files
