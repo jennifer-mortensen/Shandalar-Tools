@@ -29,7 +29,7 @@ def get_edition_code(edition_name: str) -> str:
 # Returns a set of cards from the given edition.
 def get_edition_cards(edition_name: str) -> set[str]:
     if not edition_name:
-        raise ValueError(f"Edition name was invalid: {edition_name}") 
+        raise ValueError("Edition name cannot be empty.") 
     
     edition_data = get_text_file_section(get_edition_file_path(edition_name), const.FORGE_CARDS_HEADER, ["["])
 
