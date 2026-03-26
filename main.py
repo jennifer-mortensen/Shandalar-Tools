@@ -10,6 +10,13 @@ logger = logging.getLogger(__name__)
 # MAIN ENTRY POINT
 # ==============================
 
+# TODO (v2.5):
+# Refactor error handling to centralize control flow in CLI layer.
+# - Remove fail() and sys.exit() from lower layers
+# - Allow loader/processor functions to raise exceptions
+# - Handle all errors in main() with a single top-level handler
+# - Distinguish expected errors (ValueError) vs unexpected (Exception)
+
 def main() -> None:
     initiate_logging()
     args = parse_args()
