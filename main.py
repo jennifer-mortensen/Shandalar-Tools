@@ -164,7 +164,7 @@ def format_cards(unsupported_cards: list[str], user_banned_cards: list[str], edi
 
     return forge_format    
 
-# Writes the Forget format string to the given output file.
+# Writes the Forge format string to the given output file.
 def write_forge_format(forge_format: str, output_filename: str | Path) -> None:
     logger.info("Writing unsupported cards to %s...", output_filename)
     try:

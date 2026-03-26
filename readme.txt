@@ -140,26 +140,35 @@ No additional configuration is required as long as file structure is preserved.
 ROADMAP
 =======
 
-v1 (Release):
+Status: v0.9.0 (feature complete, polishing for v1)
 
-* Add installation (pip or simple setup)
+## v1 (Release)
+
+* Add concrete example to README (input -> command -> output)
+* Improve README clarity (quick-start section, clearer flow)
+* Add simple installation method (pip or setup script)
 * Provide CLI entrypoint (run without 'python main.py')
+* Minor naming consistency pass (function naming conventions)
+* Review and tighten log messages for clarity
+* Final code cleanup (remove dead or redundant code)
 
-v2 (Deck Translator):
+NOTE: Core logic is considered stable; v1 focuses on usability and presentation.
+
+## v2 (Deck Translator)
 
 * Deck translation between Shandalar and Forge
-* Performance improvements (if needed)
+* Additional performance improvements (if needed)
 
-v2.5 (Refinement & Flexibility):
+## v2.5 (Refinement & Flexibility)
 
-* Refinements to existing architecture
-* Add header column in user_banned to organize user-generated section headers
-* Support for more output formats (i.e. not just "Standard")
-* Configure Shandalar data set via params (e.g. "classic" vs. "ProJared")
+* Refine existing architecture
+* Add header column in user_banned to support user-defined sections
+* Support additional output formats (not limited to "Standard")
+* Configure Shandalar dataset via parameters (e.g. "classic" vs. "ProJared")
 
-v3 (Data Updater):
+## v3 (Data Updater)
 
-* Sync data from the Forge repository to ensure that new editions are supported automatically
+* Sync data from the Forge repository to automatically support new editions
 
 PURPOSE
 =======
