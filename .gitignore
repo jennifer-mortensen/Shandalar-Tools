@@ -1,0 +1,58 @@
+# ==============================
+# Python Bytecode and Caches
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ==============================
+# Virtual Environments
+# ==============================
+.venv/
+venv/
+env/
+ENV/
+
+# ==============================
+# Distribution and Packaging
+# ==============================
+build/
+dist/
+*.egg-info/
+*.egg
+
+# PyInstaller
+*.spec
+
+# ==============================
+# Logs
+# ==============================
+*.log
+
+# ==============================
+# IDE and Editor Files
+# ==============================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ==============================
+# OS-Specific Files
+# ==============================
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Testing and Coverage
+# ==============================
+.pytest_cache/
+.coverage
+htmlcov/
+
+# ==============================
+# Installer Output
+# ==============================
+Output/
+*.exe
