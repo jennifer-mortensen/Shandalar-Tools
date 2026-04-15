@@ -8,15 +8,15 @@ logger = logging.getLogger(__name__)
 # ==============================
 
 # Returns a set containing all cards from the given editions.
-def get_card_pool(editions: list[str]) -> set[str]:
+def build_card_pool(editions: list[str]) -> set[str]:
     editions_loaded = set()
     cards = set()
 
     for e in editions:
-        logger.info("Loading %s...", e)
+        logger.info("Loading edition '%s'...", e)
         sanitized_edition_name = card_loader.sanitize_name(e)
         if sanitized_edition_name in editions_loaded:
-            logger.warning("Duplicate edition '%s' detected, skipping.", e)
+            logger.warning("Duplicate edition '%s' detected; skipping.", e)
             continue
 
         edition_cards = card_loader.get_edition_cards(e)
@@ -26,9 +26,9 @@ def get_card_pool(editions: list[str]) -> set[str]:
     return cards
 
 # Returns a set of edition codes for the given editions list.
-def generate_edition_codes(editions: list[str]) -> set[str]:
+def collect_edition_codes(editions: list[str]) -> set[str]:
     # TODO: filter out duplicates earlier in the pipeline
-    logger.info("Generating edition codes...")
+    logger.info("Generating Scryfall edition codes...")
     edition_codes = set()
 
     for e in editions:
@@ -42,9 +42,9 @@ def generate_edition_codes(editions: list[str]) -> set[str]:
 # ==============================
 
 # Returns a list containing all cards that do not exist in Shandalar from the given set.
-def get_unsupported_cards(cards: set[str], shandalar_lookup: set[str]) -> list[str]:
+def find_unsupported_cards(cards: set[str], shandalar_lookup: set[str]) -> list[str]:
     unsupported_cards = [c for c in cards if card_loader.sanitize_name(c) not in shandalar_lookup]
-    logger.info("Found %d unsupported cards.", len(unsupported_cards))
+    logger.info("Identified %d unsupported cards.", len(unsupported_cards))
     
     return unsupported_cards
 
@@ -53,7 +53,7 @@ def get_unsupported_cards(cards: set[str], shandalar_lookup: set[str]) -> list[s
 # ==============================
 
 # Formats output for the MTG Forge format.
-def generate_forge_format(cards: list[str], user_banned_cards: list[str], edition_codes: set[str], sort_cards: bool = True) -> str:
+def build_forge_format(cards: list[str], user_banned_cards: list[str], edition_codes: set[str], sort_cards: bool = True) -> str:
     # Base list (sorted for readability if enabled)
     formatted_cards = sorted(cards) if sort_cards else list(cards)
     seen = set()
@@ -73,8 +73,8 @@ def generate_forge_format(cards: list[str], user_banned_cards: list[str], editio
         duplicates_list = sorted(duplicates)
         preview = ", ".join(duplicates_list[:const.PREVIEW_LIMIT])
         logger.warning(
-            "%d duplicate entries detected in user-banned list (preserved as-is). "
-            "Examples: %s%s\nFull list appended to log file (default: %s)",
+            "%d duplicate entries detected in the user-banned list (preserved as-is). "
+            "Examples: %s%s\nFull details written to the log file (default: %s)",
             len(duplicates),
             preview,
             "..." if len(duplicates) > const.PREVIEW_LIMIT else "",
@@ -101,5 +101,5 @@ def generate_forge_format(cards: list[str], user_banned_cards: list[str], editio
 # ==============================
 
 # Returns a sanitized set of shandalar cards for comparison.
-def build_shandalar_lookup() -> set[str]:
-    return card_loader.sanitize_set(card_loader.get_shandalar_cards())
+def build_shandalar_card_lookup() -> set[str]:
+    return card_loader.sanitize_card_set(card_loader.get_shandalar_cards())

@@ -26,7 +26,7 @@ FILE_TYPE_LOG = "log"
 
 LOGGER_FORMAT_CLI = "%(levelname)s: %(message)s"
 LOGGER_FORMAT_FILE = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-LOGGER_WRITE_BEHAVIOR = "w" # "w" = overwrite each run
+LOGGER_FILE_MODE = "w" # "w" = overwrite each run
 
 # ==============================
 # FILE ENCODING
