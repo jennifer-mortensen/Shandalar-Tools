@@ -138,7 +138,7 @@ def find_unsupported_cards(card_pool: set[str]) -> list[str]:
     
     unsupported_cards = card_processor.find_unsupported_cards(card_pool, shandalar_lookup)        
     if not unsupported_cards:
-        logger.warning("No unsupported cards found among %d cards. This is unexpected and may indicate an issue with the input data or configuration.", len(source_cards))
+        logger.warning("No unsupported cards found among %d cards. This is unexpected and may indicate an issue with the input data or configuration.", len(card_pool))
 
     return unsupported_cards
 
