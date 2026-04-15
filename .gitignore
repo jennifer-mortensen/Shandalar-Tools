@@ -56,3 +56,8 @@ htmlcov/
 # ==============================
 installer/
 *.exe
+
+# ==============================
+# Release Archives
+# ==============================
+ShandalarTools_v*.zip
