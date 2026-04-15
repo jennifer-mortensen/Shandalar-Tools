@@ -1,11 +1,21 @@
 from pathlib import Path
+import sys
 
 # ==============================
 # FILE PATHS
 # ==============================
 
+def get_base_dir() -> Path:
+    # When running as a PyInstaller executable
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().parent
+
+    # When running from source
+    return Path(__file__).resolve().parent.parent
+
+
 # Data folders
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = get_base_dir()
 DATA_DIR = BASE_DIR / "data"
 EDITIONS_DIR = DATA_DIR / "editions"
 

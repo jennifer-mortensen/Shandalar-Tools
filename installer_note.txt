@@ -1,0 +1,8 @@
+Shandalar Tools Installation Notice
+
+This application is designed to run from a user-writable directory.
+Do not install it in Program Files, as Windows may prevent the
+application from writing logs, output files, and configuration updates.
+
+Recommended locations include the Documents folder or another
+portable directory.

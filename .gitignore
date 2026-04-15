@@ -54,5 +54,5 @@ htmlcov/
 # ==============================
 # Installer Output
 # ==============================
-Output/
+installer/
 *.exe
