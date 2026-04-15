@@ -1,6 +1,6 @@
 # Shandalar Tools
 
-**Current Version:** 1.0
+**Current Version:** 1.01
 
 A Python command-line utility for generating MTG: Forge format restrictions compatible with Shandalar mods.
 
@@ -230,10 +230,27 @@ In other words: this project was designed for real-world use, not merely to sit 
 
 This project separates data loading, validation, and application control:
 
-* Loader functions may return `None` when data cannot be found, allowing the calling layer to decide whether the input is optional or required.
+* Loader functions return validated data structures. Missing required files raise exceptions, while empty collections represent valid but empty data. This allows the calling layer to determine whether an input is optional or required.
 * Empty collections (e.g., `[]`) represent valid but empty data and are handled separately from missing inputs.
 * The CLI layer is responsible for validating required inputs and determining whether execution should continue or terminate.
 * Helper validation functions may terminate execution early when encountering invalid or missing required data.
 * Exceptions are used for malformed or unexpected data, ensuring that invalid states do not silently propagate through the system.
 
 This separation of concerns promotes maintainability, testability, and clarity while aligning with best practices for professional Python application design.
+
+## Version History
+
+### v1.0.1
+- Updated documentation for clarity and accuracy.
+- Added a user-friendly `readme.txt` for distribution.
+- Corrected design notes to reflect current loader behavior.
+- Improved consistency between packaged files and documentation.
+- No functional changes.
+
+### v1.0
+- Initial stable release.
+- Generates MTG: Forge format restrictions compatible with Shandalar mods.
+- Supports configurable editions and user-defined ban lists.
+- Detects duplicate editions and handles file encodings automatically.
+- Includes detailed diagnostic logging.
+- Distributed as a standalone executable with an installer and portable version.

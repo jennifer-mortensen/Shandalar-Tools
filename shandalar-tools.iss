@@ -14,7 +14,7 @@ InfoBeforeFile=installer_note.txt
 
 [Files]
 Source: "dist\shandalar-tools.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "dist\readme.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "dist\readme.txt"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\config.csv"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\user_banned.csv"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dist\config_templates.zip"; DestDir: "{app}"; Flags: ignoreversion
