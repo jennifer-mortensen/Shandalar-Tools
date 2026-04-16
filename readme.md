@@ -1,6 +1,6 @@
 # Shandalar Tools
 
-**Current Version:** 1.0.2
+**Current Version:** 1.0.3
 
 A Python command-line utility for generating MTG: Forge format restrictions compatible with Shandalar mods.
 
@@ -237,6 +237,16 @@ This project separates data loading, validation, and application control:
 This separation of concerns promotes maintainability, testability, and clarity while aligning with best practices for professional Python application design.
 
 ## Version History
+
+### v1.0.3
+- Converted inline comments to comprehensive PEP 257–compliant docstrings.
+- Refactored Forge format generation for improved clarity and maintainability.
+- Added reusable helpers for duplicate detection and sequence merging.
+- Improved duplicate detection across unsupported and user-banned lists.
+- Introduced abstract type hints (Iterable, Sequence) for greater flexibility and accuracy.
+- Ensured deterministic output by sorting edition codes.
+- Enhanced logging for clearer diagnostics and debugging.
+- Added a module-level docstring to the constants module.
 
 ### v1.0.2
 - Fixed a crash that can occur when no unsupported cards are found.

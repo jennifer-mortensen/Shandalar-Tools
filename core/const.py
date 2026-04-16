@@ -1,6 +1,12 @@
 from pathlib import Path
 import sys
 
+"""
+Centralized constants for shandalar-tools.
+
+This module defines file paths, logging formats, encoding settings,
+and MTG: Forge format templates used throughout the application.
+"""
 # ==============================
 # FILE PATHS
 # ==============================

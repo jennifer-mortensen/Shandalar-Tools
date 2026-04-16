@@ -1,5 +1,5 @@
 from core import card_loader, card_processor, const
-from pathlib import Path # used for typing
+from pathlib import Path # Used for typing.
 import argparse
 import logging
 import sys
@@ -11,6 +11,12 @@ logger = logging.getLogger(__name__)
 # ==============================
 
 def main() -> None:
+    """
+    Execute the CLI workflow for generating an MTG: Forge format file.
+
+    This function parses command-line arguments, loads and processes
+    card data, generates the Forge format, and writes the output file.
+    """    
     configure_logging()
     
     try:
@@ -25,7 +31,8 @@ def main() -> None:
         user_banned_cards = load_user_banned_cards(cli_args.user_banned)               
 
         # Format and write
-        forge_output = format_forge_output(unsupported_cards, user_banned_cards, edition_list)
+        logger.info("Formatting output for MTG: Forge...")
+        forge_output = card_processor.build_forge_format(unsupported_cards, user_banned_cards, card_processor.collect_edition_codes(edition_list))        
         write_forge_output(forge_output, cli_args.output)
 
         logger.info("Compilation completed successfully!")
@@ -45,10 +52,13 @@ def main() -> None:
 # HIGH LEVEL FUNCTIONS
 # ==============================
 
-# Configures the logger:
-# - CLI: INFO, WARNING, ERROR (human-readable)
-# - File: CLI output + DEBUG and full exception tracebacks (diagnostic detail)
 def configure_logging() -> None:
+    """
+    Configure logging for both CLI and file output.
+
+    CLI logging displays human-readable messages, while file logging
+    includes debug information and full exception tracebacks.
+    """    
     formatter = logging.Formatter(const.LOGGER_FORMAT_FILE)
 
     # CLI-level logging. Prioritize readability.
@@ -76,11 +86,14 @@ def configure_logging() -> None:
     root.setLevel(logging.DEBUG)
     root.handlers = [console, file_handler]
 
-# Prepares args.
-# output = file to output format to (i.e. the generated Forge format)
-# editions = the file containing a list of editions to be loaded
-# user_banned = the file containing optional additional cards to be added to the banned list
 def parse_cli_args() -> argparse.Namespace:
+    """
+    Parse and return command-line arguments.
+
+    Returns:
+        An argparse.Namespace containing normalized file paths for
+        input and output files.
+    """    
     parser = argparse.ArgumentParser(
         prog="shandalar-tools",
         description="Check card compatibility between Shandalar and MTG: Forge.",
@@ -108,8 +121,19 @@ def parse_cli_args() -> argparse.Namespace:
 
     return parser.parse_args()  
 
-# Loads and returns user-defined editions file as a list.
 def load_edition_list(editions_filename: str | Path) -> list[str]:
+    """
+    Load the list of editions from a configuration file.
+
+    Args:
+        editions_filename: Path to the editions CSV file.
+
+    Returns:
+        A list of edition names.
+
+    Raises:
+        ValueError: If the file is missing or empty.
+    """    
     logger.info("Loading edition list...")
 
     try:
@@ -121,8 +145,16 @@ def load_edition_list(editions_filename: str | Path) -> list[str]:
 
     return editions
 
-# Returns all existing cards from the given editions as a set.
 def build_card_pool(editions: list[str]) -> set[str]:
+    """
+    Build the card pool from the specified editions.
+
+    Args:
+        editions: A list of edition names.
+
+    Returns:
+        A set of unique card names.
+    """    
     logger.info("Building card pool from editions...")
     card_pool = card_processor.build_card_pool(editions)
 
@@ -131,8 +163,16 @@ def build_card_pool(editions: list[str]) -> set[str]:
 
     return card_pool
 
-# Compares the given cards to Shandalar's data and returns unsupported cards as a list.
 def find_unsupported_cards(card_pool: set[str]) -> list[str]:
+    """
+    Identify cards that are unsupported by Shandalar.
+
+    Args:
+        card_pool: A set of card names.
+
+    Returns:
+        A list of unsupported card names.
+    """    
     logger.info("Identifying unsupported cards...")
     shandalar_lookup = card_processor.build_shandalar_card_lookup()        
     
@@ -142,8 +182,17 @@ def find_unsupported_cards(card_pool: set[str]) -> list[str]:
 
     return unsupported_cards
 
-# Loads all cards from the user_banned file.
 def load_user_banned_cards(user_banned_filename: str | Path) -> list[str]:
+    """
+    Load user-defined banned cards from a file.
+
+    Args:
+        user_banned_filename: Path to the CSV file.
+
+    Returns:
+        A list of user-banned card names. Returns an empty list if the
+        file does not exist.
+    """    
     logger.info("Loading user-banned card list...")
 
     try:
@@ -157,15 +206,17 @@ def load_user_banned_cards(user_banned_filename: str | Path) -> list[str]:
 
     return user_banned_cards
 
-# Using the given pool of unsupported cards (i.e. not included in Shandalar), user-defined bans, and editions, generate a valid Forge format and return as a string.
-def format_forge_output(unsupported_cards: list[str], user_banned_cards: list[str], editions: list[str]) -> str:
-    logger.info("Formatting output for MTG: Forge...")
-    forge_output = card_processor.build_forge_format(unsupported_cards, user_banned_cards, card_processor.collect_edition_codes(editions))
-
-    return forge_output   
-
-# Writes the Forge format string to the given output file.
 def write_forge_output(forge_format: str, output_filename: str | Path) -> None:
+    """
+    Write the Forge format string to an output file.
+
+    Args:
+        forge_format: The generated Forge format string.
+        output_filename: Path to the output file.
+
+    Raises:
+        OSError: If the file cannot be written.
+    """    
     logger.info("Writing Forge output to %s...", output_filename)
     try:
         with open(output_filename, "w", encoding=const.DEFAULT_ENCODING) as file:
