@@ -19,7 +19,6 @@ def get_base_dir() -> Path:
     # When running from source
     return Path(__file__).resolve().parent.parent
 
-
 # Data folders
 BASE_DIR = get_base_dir()
 DATA_DIR = BASE_DIR / "data"
