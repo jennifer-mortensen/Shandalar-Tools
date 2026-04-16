@@ -163,6 +163,7 @@ def build_forge_format(cards: Sequence[str], user_banned_cards: Sequence[str], e
         set_codes=set_codes
     )
 
+    # Defensive assertion: forge_format should never be empty. If it is, something broke upstream in the formatting logic.
     assert forge_format, "Expected a valid forge_format string from build_forge_format(). Check recent changes upstream."
 
     return forge_format
