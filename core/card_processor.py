@@ -1,3 +1,16 @@
+"""
+Core data processing and transformation logic.
+
+Handles:
+- Building card pools from multiple editions
+- Generating Scryfall edition codes
+- Identifying unsupported cards via Shandalar comparison
+- Detecting duplicates across datasets
+- Merging and deduplicating card lists
+- Formatting final MTG: Forge output
+
+Serves as the central computation layer between data loading and CLI output.
+"""
 from collections.abc import Iterable, Sequence
 from core import card_loader, const
 import logging

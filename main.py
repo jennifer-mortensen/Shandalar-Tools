@@ -1,3 +1,15 @@
+"""
+CLI entry point for the Shandalar → MTG: Forge compatibility tool.
+
+Orchestrates the full workflow:
+- Parses command-line arguments
+- Loads edition and card data
+- Identifies unsupported cards
+- Incorporates user-defined bans
+- Generates and writes Forge-compatible output
+
+Also configures logging for both user-facing CLI output and detailed file logs.
+"""
 from core import card_loader, card_processor, const
 from pathlib import Path # Used for typing.
 import argparse

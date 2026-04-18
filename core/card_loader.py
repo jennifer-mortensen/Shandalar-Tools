@@ -1,3 +1,15 @@
+"""
+Data loading and file parsing utilities.
+
+Responsible for:
+- Reading edition data and extracting card names and metadata
+- Loading CSV-based configuration (editions, banned cards, Shandalar data)
+- Handling text section extraction from Forge files
+- Detecting file encodings and normalizing filenames
+- Providing sanitized, structured data to higher-level modules
+
+Acts as the primary interface between raw file data and application logic.
+"""
 from core import const
 from pathlib import Path
 import csv
