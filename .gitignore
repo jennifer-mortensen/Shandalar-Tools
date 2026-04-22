@@ -65,4 +65,7 @@ ShandalarTools_v*.zip
 # ==============================
 # PROJECT BUNDLE
 # ==============================
-bundle_project.py
+bundle_deck_translator.py
+bundle_format_generator.py
+deck_translator_dump.txt
+format_generator_dump.txt

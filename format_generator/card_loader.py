@@ -10,7 +10,7 @@ Responsible for:
 
 Acts as the primary interface between raw file data and application logic.
 """
-from core import const
+from format_generator import const
 from pathlib import Path
 import csv
 import logging

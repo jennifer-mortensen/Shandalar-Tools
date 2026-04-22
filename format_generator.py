@@ -10,7 +10,7 @@ Orchestrates the full workflow:
 
 Also configures logging for both user-facing CLI output and detailed file logs.
 """
-from core import card_loader, card_processor, const
+from format_generator import card_loader, card_processor, const
 from pathlib import Path # Used for typing.
 import argparse
 import logging

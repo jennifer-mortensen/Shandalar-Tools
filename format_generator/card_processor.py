@@ -12,7 +12,7 @@ Handles:
 Serves as the central computation layer between data loading and CLI output.
 """
 from collections.abc import Iterable, Sequence
-from core import card_loader, const
+from format_generator import card_loader, const
 import logging
 
 logger = logging.getLogger(__name__)
