@@ -61,3 +61,8 @@ installer/
 # Release Archives
 # ==============================
 ShandalarTools_v*.zip
+
+# ==============================
+# PROJECT BUNDLE
+# ==============================
+bundle_project.py
