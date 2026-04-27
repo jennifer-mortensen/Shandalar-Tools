@@ -40,7 +40,7 @@ def get_edition_code(edition_name: str) -> str:
         raise ValueError("Edition name cannot be empty.")
 
     file_path = get_edition_file_path(edition_name)
-    encoding = detect_file_encoding(file_path) # Need the encoding for read_text_section
+    encoding = detect_file_encoding(file_path)
 
     try:
         line = next(read_text_section(file_path, encoding, start_prefix=const.SCRYFALL_CODE_PREFIX))
