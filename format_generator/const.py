@@ -49,6 +49,7 @@ LOGGER_FILE_MODE = "w" # "w" = overwrite each run
 DEFAULT_ENCODING = "utf-8"
 FALLBACK_ENCODING = "latin-1"
 FILE_ENCODINGS = ["utf-8", "utf-8-sig", "cp1252", "latin-1"]
+FILE_ENCODING_READ_SIZE_DEFAULT = 10240
 
 # ==============================
 # FILE NAMING

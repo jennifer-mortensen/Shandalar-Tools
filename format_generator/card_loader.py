@@ -12,6 +12,7 @@ Acts as the primary interface between raw file data and application logic.
 """
 from format_generator import const
 from pathlib import Path
+from typing import Iterable
 import csv
 import logging
 
@@ -34,42 +35,45 @@ def get_edition_code(edition_name: str) -> str:
     Raises:
         ValueError: If the edition name is empty, malformed,
             or missing a Scryfall code.
-    """    
+    """     
     if not edition_name:
         raise ValueError("Edition name cannot be empty.")
 
-    scryfall_field = read_text_section(get_edition_file_path(edition_name), start_prefix=const.SCRYFALL_CODE_PREFIX, max_lines=1, skip_header=False)
-     
-    if not scryfall_field: 
-        raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")        
+    file_path = get_edition_file_path(edition_name)
+    encoding = detect_file_encoding(file_path) # Need the encoding for read_text_section
 
-    line = scryfall_field[0]
+    try:
+        line = next(read_text_section(file_path, encoding, start_prefix=const.SCRYFALL_CODE_PREFIX))
+    except StopIteration:
+        raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
 
     if not line.lower().startswith(const.SCRYFALL_CODE_PREFIX.lower()):
-        raise ValueError(f"Malformed Scryfall code for {edition_name} with line: {line}")            
+        raise ValueError(f"Malformed Scryfall code for {edition_name} with line: {line}")
 
-    return line[len(const.SCRYFALL_CODE_PREFIX):]
+    return line[len(const.SCRYFALL_CODE_PREFIX):] 
 
-def get_edition_cards(edition_name: str) -> set[str]:
+def get_edition_cards(edition_name: str) -> Iterable[str]:
     """
     Load all card names from a Forge edition file.
 
     Args:
         edition_name: The name of the edition.
 
-    Returns:
-        A set of card names contained in the edition.
+    Yields:
+        Card names from a Forge edition file.
     """    
     if not edition_name:
         raise ValueError("Edition name cannot be empty.") 
     
-    edition_data = read_text_section(get_edition_file_path(edition_name), const.FORGE_CARDS_HEADER, ["["])
+    file_path = get_edition_file_path(edition_name)
+    encoding = detect_file_encoding(file_path)
 
-    if not edition_data:
-        logger.warning("No cards found for edition '%s'.", edition_name)
-        return set()
-    
-    return {_parse_card_name_from_edition_row(r) for r in edition_data}
+    edition_data = read_text_section(file_path, encoding, const.FORGE_CARDS_HEADER, ["["])
+
+    for row in edition_data:
+        name = _parse_card_name_from_edition_row(row)
+        if name:
+            yield name
 
 def get_edition_list(csv_filename: str | Path) -> list[str]:
     """
@@ -90,7 +94,7 @@ def get_shandalar_cards() -> set[str]:
     Returns:
         A set of supported card names.
     """    
-    cards = read_csv_column(const.FILE_SHANDALAR_CSV, const.SHANDALAR_CARD_NAME_STARTING_COLUMN)
+    cards = read_csv_column(filename=const.FILE_SHANDALAR_CSV, column_number=const.SHANDALAR_CARD_NAME_STARTING_COLUMN, encoding_full_scan=True)
     return set(cards) if cards else set()
 
 def get_user_banned_cards(filename: str | Path) -> list[str]:
@@ -116,6 +120,7 @@ def read_csv_column(
     starting_index: int = 0,
     starting_header: str = "",
     skip_prefixes: list[str] | None = None,
+    encoding_full_scan: bool = False
 ) -> list[str]:
     """
     Extract a column of data from a CSV file with optional filtering.
@@ -127,6 +132,7 @@ def read_csv_column(
         starting_index: The row index at which to begin reading.
         starting_header: A header value that marks the start of data.
         skip_prefixes: Line prefixes that should be ignored.
+        ending_full_scan: If true, reads the whole file for encoding. If false, sniffs the first 10KB.
 
     Returns:
         A list of extracted values.
@@ -137,7 +143,7 @@ def read_csv_column(
     csv_column = []
     read_data = not (starting_header or starting_index > 0)
 
-    encoding = detect_file_encoding(filename)
+    encoding = detect_file_encoding(filename, encoding_full_scan)
     with open(filename, newline="", encoding=encoding) as csvfile:
         reader = csv.reader(csvfile, delimiter=csv_delimiter)
         for i, row in enumerate(reader):      
@@ -155,88 +161,76 @@ def read_csv_column(
 
     return csv_column
 
-def detect_file_encoding(filename: str | Path) -> str:
+def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     """
-    Detect the encoding of a file.
-
+    Detects the encoding of a file.
+    
     Args:
-        filename: Path to the file.
+        file_path: Path to the file.
+        full_scan: If True, reads the whole file. If False, sniffs the first 10KB.
+    """
+    read_size = -1 if full_scan else const.FILE_ENCODING_READ_SIZE_DEFAULT
 
-    Returns:
-        The detected encoding, or a fallback encoding if detection fails.
-    """    
+    with file_path.open('rb') as f:
+        raw_data = f.read(read_size)
+
     for enc in const.FILE_ENCODINGS:
         try:
-            with open(filename, encoding=enc) as f:
-                # Full read required. Partial reads may miss encoding issues in Shandalar data.
-                f.read()
+            raw_data.decode(enc)
             return enc
-        except UnicodeDecodeError:
+        except (UnicodeDecodeError):
             continue
 
     # Safe fallback if no encoding detected
     return const.FALLBACK_ENCODING
 
 def read_text_section(
-    filename: str | Path,
-    start_prefix: str = None,
-    end_prefixes: list[str] | None = None,
-    skip_prefixes: list[str] | None = None,
-    max_lines: int = None,
-    skip_header: bool = True,
-) -> list[str]:
+    file_path: Path,
+    encoding: str,
+    start_prefix: str | None = None,
+    end_prefix: str | list[str] | None = None,
+) -> Iterable[str]:
     """
-    Extract a section of text from a file with optional filtering.
+    Yields lines from a file that fall between specific prefixes.
 
     Args:
         filename: Path to the text file.
         start_prefix: Prefix indicating where to begin reading.
         end_prefixes: Prefixes indicating where to stop reading.
         skip_prefixes: Prefixes for lines to ignore.
-        max_lines: Maximum number of lines to read.
         skip_header: Whether to skip the starting line.
 
-    Returns:
-        A list of extracted lines.
-    """    
-    section_lines = []
-    read_data = start_prefix is None
+    Yields:
+        str: Each non-empty, stripped line found between the prefixes.
+    """
+    start_prefix = start_prefix.lower() if start_prefix else None
 
-    # Normalize prefixes
-    if start_prefix is not None:
-        start_prefix = start_prefix.lower()
-    end_prefixes = [p.lower() for p in (end_prefixes or [])]
-    skip_prefixes = [p.lower() for p in (skip_prefixes or ['#'])]
+    if isinstance(end_prefix, str):
+        end_prefixes = [end_prefix.lower()]
+    elif end_prefix:
+        end_prefixes = [p.lower() for p in end_prefix]
+    else:
+        end_prefixes = []
 
-    encoding = detect_file_encoding(filename)
-    with open(filename, encoding=encoding) as text_file:
-        for line in text_file:
-            line = line.strip()
-            line_lower = line.lower()
-               
-            if not read_data:
-                # If we're still not reading data, then abort this loop if the start condition isn't met.            
-                if not line_lower.startswith(start_prefix):
-                    continue
+    is_reading = start_prefix is None
 
-                read_data = True
-                # Skip the first line if told to do so.
-                if skip_header:
-                    continue
- 
-            # If we have been reading data, check if we should stop doing so now.
-            elif end_prefixes and any(line_lower.startswith(prefix) for prefix in end_prefixes):
-                break            
-
-            # Skip blank lines and compare to our list of prefixes to see if we should ignore this line.
-            if not line or any(line_lower.startswith(prefix) for prefix in skip_prefixes):
+    with file_path.open('r', encoding=encoding) as f:
+        for line in f:
+            if not (clean_line := line.strip()):
                 continue
 
-            section_lines.append(line)
-            if max_lines is not None and len(section_lines) >= max_lines:
+            line_lower = clean_line.lower()
+
+            if not is_reading:
+                if start_prefix and line_lower.startswith(start_prefix):
+                    is_reading = True
+                    yield clean_line
+                continue
+
+            if end_prefixes and any(line_lower.startswith(p) for p in end_prefixes):
                 break
 
-    return section_lines
+            yield clean_line
 
 # ==============================
 # PUBLIC HELPERS

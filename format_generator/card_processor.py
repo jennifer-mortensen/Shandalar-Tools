@@ -38,14 +38,14 @@ def build_card_pool(editions: Sequence[str]) -> set[str]:
     cards = set()
 
     for e in editions:
-        logger.info("Loading edition '%s'...", e)
         sanitized_edition_name = card_loader.sanitize_name(e)
         if sanitized_edition_name in editions_loaded:
             logger.warning("Duplicate edition '%s' detected; skipping.", e)
             continue
 
-        edition_cards = card_loader.get_edition_cards(e)
-        cards.update(edition_cards)
+        logger.info("Loading edition '%s'...", e)
+
+        cards.update(card_loader.get_edition_cards(e))
         editions_loaded.add(sanitized_edition_name)
 
     return cards
@@ -141,7 +141,7 @@ def merge_and_dedupe_sequences(seq_1: Sequence[str], seq_2: Sequence[str]) -> li
 # OUTPUT FORMATTING
 # ==============================
 
-def build_forge_format(cards: Sequence[str], user_banned_cards: Sequence[str], edition_codes: set[str], sort_cards: bool = True) -> str:
+def build_forge_format(unsupported_cards: Sequence[str], user_banned_cards: Sequence[str], edition_codes: set[str], sort_cards: bool = True) -> str:
     """
     Generate a valid MTG: Forge format string.
 
@@ -150,7 +150,7 @@ def build_forge_format(cards: Sequence[str], user_banned_cards: Sequence[str], e
     result according to the Forge specification.
 
     Args:
-        cards: A sequence of unsupported card names.
+        unsupported_cards: A sequence of unsupported card names.
         user_banned_cards: A sequence of user-specified banned cards.
         edition_codes: A set of Scryfall edition codes.
         sort_cards: Whether to sort unsupported cards for readability.
@@ -163,7 +163,7 @@ def build_forge_format(cards: Sequence[str], user_banned_cards: Sequence[str], e
             indicating an upstream logic error.
     """    
     # Base list (sorted for readability if enabled).
-    formatted_cards = sorted(cards) if sort_cards else list(cards)
+    formatted_cards = sorted(unsupported_cards) if sort_cards else list(unsupported_cards)
 
     # Log duplicates between lists.
     log_duplicates(find_duplicates([formatted_cards, user_banned_cards]))
