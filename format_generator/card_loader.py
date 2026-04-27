@@ -188,13 +188,15 @@ def read_text_section(
     file_path: Path,
     encoding: str,
     start_prefix: str | None = None,
-    end_prefix: str | list[str] | None = None,
+    end_prefixes: str | list[str] | None = None,
+    skip_prefixes: str | list[str] | None = "#",
+    skip_header: bool = True,
 ) -> Iterable[str]:
     """
     Yields lines from a file that fall between specific prefixes.
 
     Args:
-        filename: Path to the text file.
+        file_path: Path to the text file.
         start_prefix: Prefix indicating where to begin reading.
         end_prefixes: Prefixes indicating where to stop reading.
         skip_prefixes: Prefixes for lines to ignore.
@@ -203,16 +205,10 @@ def read_text_section(
     Yields:
         str: Each non-empty, stripped line found between the prefixes.
     """
-    start_prefix = start_prefix.lower() if start_prefix else None
-
-    if isinstance(end_prefix, str):
-        end_prefixes = [end_prefix.lower()]
-    elif end_prefix:
-        end_prefixes = [p.lower() for p in end_prefix]
-    else:
-        end_prefixes = []
-
     is_reading = start_prefix is None
+    start_prefix = start_prefix.lower() if start_prefix else None
+    end_prefixes = [p.lower() for p in to_list(end_prefixes)]
+    skip_prefixes = [p.lower() for p in to_list(skip_prefixes)]
 
     with file_path.open('r', encoding=encoding) as f:
         for line in f:
@@ -224,11 +220,16 @@ def read_text_section(
             if not is_reading:
                 if start_prefix and line_lower.startswith(start_prefix):
                     is_reading = True
-                    yield clean_line
-                continue
+                    if skip_header:
+                        continue
+                else:
+                    continue
 
-            if end_prefixes and any(line_lower.startswith(p) for p in end_prefixes):
+            elif end_prefixes and any(line_lower.startswith(p) for p in end_prefixes):
                 break
+
+            if any(line_lower.startswith(p) for p in skip_prefixes):
+                continue
 
             yield clean_line
 
@@ -236,7 +237,6 @@ def read_text_section(
 # PUBLIC HELPERS
 # ==============================
 
-# Returns the file path of an edition from a string.
 def get_edition_file_path(edition_name: str) -> Path:
     """
     Construct the file path for a Forge edition file.
@@ -292,6 +292,30 @@ def sanitize_card_set(cards: set[str]) -> set[str]:
         A sanitized set with lowercase, trimmed names.
     """    
     return {sanitize_name(c) for c in cards}
+
+def to_list(value: str | Iterable[str]) -> list[str]:
+    """
+    Normalize input into a list.
+
+    Behavior:
+    - None → []
+    - Iterable (excluding str/bytes) → list(value)
+    - Single value (including str/bytes) → [value]
+
+    This prevents strings/bytes from being split into elements while still
+    allowing lists, tuples, sets, and other iterables to pass through.
+
+    Args:
+        value: A single item, an iterable of items, or None.
+
+    Returns:
+        A list containing the normalized values.
+    """    
+    if value is None:
+        return []
+    if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
+        return list(value)
+    return [value]
 
 # ==============================
 # PRIVATE HELPERS

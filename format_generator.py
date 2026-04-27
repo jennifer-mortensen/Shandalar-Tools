@@ -130,6 +130,17 @@ def parse_cli_args() -> argparse.Namespace:
         default=card_loader.normalize_filename(const.FILE_NAME_USER_BANNED, const.FILE_TYPE_USER_BANNED),
         help="CSV file listing user-designated cards to ban.",
     )
+    parser.add_argument(
+        "-s", "--encoding-scan",
+        default="auto",
+        choices=["auto", "fast", "full"],
+        help=(
+            "Encoding detection mode: "
+            "auto (use built-in defaults), "
+            "fast (partial read, faster but may miss issues), "
+            "full (scan entire file, slower but reliable)."
+        )
+    )
 
     return parser.parse_args()  
 
