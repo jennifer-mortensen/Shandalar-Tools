@@ -47,9 +47,6 @@ def get_edition_code(edition_name: str) -> str:
     except StopIteration:
         raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
 
-    if not line.lower().startswith(const.SCRYFALL_CODE_PREFIX.lower()):
-        raise ValueError(f"Malformed Scryfall code for {edition_name} with line: {line}")
-
     return line[len(const.SCRYFALL_CODE_PREFIX):] 
 
 def get_edition_cards(edition_name: str) -> Iterable[str]:
@@ -134,6 +131,7 @@ def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
             continue
 
     # Safe fallback if no encoding detected
+    logger.warning("Failed to detect file encoding for %s. Using %s fallback.", file_path, const.FALLBACK_ENCODING)
     return const.FALLBACK_ENCODING
 
 def read_csv_column(
@@ -178,7 +176,7 @@ def read_csv_column(
             if column_number < len(row):
                 yield row[column_number]
             else:
-                raise ValueError(f"Missing column {column_number} at row {i} in {file_path}: {row}")
+                logger.warning("Row %d has no column %d in %s. Row may be malformed.", i, column_number, file_path)
             
 def read_text_section(
     file_path: Path,
@@ -346,4 +344,9 @@ def _parse_card_name_from_edition_row(row: str) -> str:
         The parsed card name.
     """    
     line = row.split(const.FORGE_EDITION_CARD_DELIMITER, 1)[0]
-    return " ".join(line.split()[const.EDITIONS_CARD_NAME_STARTING_COLUMN:])
+    card_name = " ".join(line.split()[const.EDITIONS_CARD_NAME_STARTING_COLUMN:])
+    
+    if not card_name:
+        logger.debug("Could not parse card name from row: %s", line)
+
+    return card_name 

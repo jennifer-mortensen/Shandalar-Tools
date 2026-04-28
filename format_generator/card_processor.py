@@ -65,6 +65,7 @@ def collect_edition_codes(editions: Sequence[str]) -> set[str]:
     edition_codes = set()
 
     for e in editions:
+        logger.info("Collecting edition code for '%s'...", e)
         code = card_loader.get_edition_code(e)
         edition_codes.add(code)
 
@@ -175,11 +176,7 @@ def build_forge_format(unsupported_cards: Sequence[str], user_banned_cards: Sequ
     forge_format = const.FORGE_FORMAT_BODY_STANDARD.format(
         banned_cards=banned_cards,
         set_codes=set_codes
-    )
-
-    # Defensive check: forge_format should never be empty. If it is, something broke upstream in the formatting logic.
-    if not forge_format:
-        raise ValueError("Expected a valid forge_format string from build_forge_format(). Check recent changes upstream.")       
+    )  
 
     return forge_format
 
