@@ -1,6 +1,6 @@
 # Shandalar Tools
 
-**Current Version:** 2.0.0-dev (Dev Branch)
+**Current Version:** 2.0.0.dev0 (Dev Branch)
 
 > ⚠️ **Dev Branch Notice:** This branch is unstable and may change at any time.  
 > For a stable release, use the 'main' branch or download from Releases.
