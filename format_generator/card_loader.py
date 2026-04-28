@@ -5,7 +5,7 @@ Responsible for:
 - Reading edition data and extracting card names and metadata
 - Loading CSV-based configuration (editions, banned cards, Shandalar data)
 - Handling text section extraction from Forge files
-- Detecting file encodings and normalizing filenames
+- Detecting file encodings and normalizing file names
 - Providing sanitized, structured data to higher-level modules
 
 Acts as the primary interface between raw file data and application logic.
@@ -75,17 +75,17 @@ def get_edition_cards(edition_name: str) -> Iterable[str]:
         if name:
             yield name
 
-def get_edition_list(csv_filename: str | Path) -> list[str]:
+def get_edition_list(csv_file_path: Path) -> list[str]:
     """
     Load a list of edition names from a CSV configuration file.
 
     Args:
-        csv_filename: Path to the CSV file.
+        csv_file_path: Path to the CSV file.
 
     Returns:
         A list of edition names.
     """    
-    return read_csv_column(csv_filename, 0, skip_prefixes=[const.COMMENT_PREFIX])
+    return read_csv_column(csv_file_path, 0, skip_prefixes=[const.COMMENT_PREFIX])
 
 def get_shandalar_cards() -> set[str]:
     """
@@ -94,72 +94,24 @@ def get_shandalar_cards() -> set[str]:
     Returns:
         A set of supported card names.
     """    
-    cards = read_csv_column(filename=const.FILE_SHANDALAR_CSV, column_number=const.SHANDALAR_CARD_NAME_STARTING_COLUMN, encoding_full_scan=True)
-    return set(cards) if cards else set()
+    cards = read_csv_column(file_path=const.FILE_SHANDALAR_CSV, column_number=const.SHANDALAR_CARD_NAME_STARTING_COLUMN, encoding_full_scan=True)
+    return set(cards)
 
-def get_user_banned_cards(filename: str | Path) -> list[str]:
+def get_user_banned_cards(file_path: Path) -> list[str]:
     """
     Load user-defined banned cards from a CSV file.
 
     Args:
-        filename: Path to the user-banned cards file.
+        file_path: Path to the user-banned cards file.
 
     Returns:
         A list of banned card names.
     """    
-    return read_csv_column(filename, 0, skip_prefixes=[const.COMMENT_PREFIX])
+    return list(read_csv_column(file_path=file_path, column_number=0, skip_prefixes=[const.COMMENT_PREFIX]))
 
 # ==============================
 # CSV / TEXT UTILITIES
 # ==============================
-
-def read_csv_column(
-    filename: str | Path,
-    column_number: int,
-    csv_delimiter: str = const.DEFAULT_CSV_DELIMITER, 
-    starting_index: int = 0,
-    starting_header: str = "",
-    skip_prefixes: list[str] | None = None,
-    encoding_full_scan: bool = False
-) -> list[str]:
-    """
-    Extract a column of data from a CSV file with optional filtering.
-
-    Args:
-        filename: Path to the CSV file.
-        column_number: The index of the column to extract.
-        csv_delimiter: The delimiter used in the CSV file.
-        starting_index: The row index at which to begin reading.
-        starting_header: A header value that marks the start of data.
-        skip_prefixes: Line prefixes that should be ignored.
-        ending_full_scan: If true, reads the whole file for encoding. If false, sniffs the first 10KB.
-
-    Returns:
-        A list of extracted values.
-
-    Raises:
-        ValueError: If the specified column does not exist.
-    """    
-    csv_column = []
-    read_data = not (starting_header or starting_index > 0)
-
-    encoding = detect_file_encoding(filename, encoding_full_scan)
-    with open(filename, newline="", encoding=encoding) as csvfile:
-        reader = csv.reader(csvfile, delimiter=csv_delimiter)
-        for i, row in enumerate(reader):      
-            header_condition_met = not starting_header or (row and row[0] == starting_header)
-            if read_data:
-                if not row or (skip_prefixes and any(row[0].startswith(p) for p in skip_prefixes)):
-                    # Ignore empty lines or those that start with a given prefix to be skipped.
-                    continue    
-                if column_number < len(row):
-                    csv_column.append(row[column_number])
-                else:
-                    raise ValueError(f"Could not find csv data at row {i}, column {column_number} in {filename}: {row}")
-            elif row and header_condition_met and i >= starting_index:
-                read_data = True
-
-    return csv_column
 
 def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     """
@@ -171,19 +123,63 @@ def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     """
     read_size = -1 if full_scan else const.FILE_ENCODING_READ_SIZE_DEFAULT
 
-    with file_path.open('rb') as f:
-        raw_data = f.read(read_size)
+    with file_path.open("rb") as file:
+        raw_data = file.read(read_size)
 
     for enc in const.FILE_ENCODINGS:
         try:
             raw_data.decode(enc)
             return enc
-        except (UnicodeDecodeError):
+        except UnicodeDecodeError:
             continue
 
     # Safe fallback if no encoding detected
     return const.FALLBACK_ENCODING
 
+def read_csv_column(
+    file_path: Path,
+    column_number: int,
+    csv_delimiter: str = const.DEFAULT_CSV_DELIMITER, 
+    skip_prefixes: str | list[str] | None = None,
+    encoding_full_scan: bool = False
+) -> Iterable[str]:
+    """
+    Extract a column of data from a CSV file with optional filtering.
+
+    Args:
+        file_path: Path to the CSV file.
+        column_number: The index of the column to extract.
+        csv_delimiter: The delimiter used in the CSV file.
+        skip_prefixes: Line prefixes that should be ignored.
+        encoding_full_scan: If true, reads the whole file for encoding. If false, sniffs the first 10KB.
+
+    Returns:
+        An iterable of extracted values.
+
+    Raises:
+        ValueError: If the specified column does not exist.
+    """    
+    skip_prefixes = [p.lower() for p in to_list(skip_prefixes)]
+
+    encoding = detect_file_encoding(file_path, encoding_full_scan)
+    with file_path.open("r", newline="", encoding=encoding) as file:
+        reader = csv.reader(file, delimiter=csv_delimiter)
+
+        for i, row in enumerate(reader):
+            # Skip blank lines
+            if not row:
+                continue
+            
+            # Skip rows that are designed to be skipped
+            cell_lower = row[0].strip().lower()
+            if skip_prefixes and _has_any_prefix(cell_lower, skip_prefixes):
+                continue
+
+            if column_number < len(row):
+                yield row[column_number]
+            else:
+                raise ValueError(f"Missing column {column_number} at row {i} in {file_path}: {row}")
+            
 def read_text_section(
     file_path: Path,
     encoding: str,
@@ -202,21 +198,22 @@ def read_text_section(
         skip_prefixes: Prefixes for lines to ignore.
         skip_header: Whether to skip the starting line.
 
-    Yields:
-        str: Each non-empty, stripped line found between the prefixes.
+    Returns:
+        An iterable of each non-empty, stripped line found between the prefixes.
     """
     is_reading = start_prefix is None
     start_prefix = start_prefix.lower() if start_prefix else None
     end_prefixes = [p.lower() for p in to_list(end_prefixes)]
     skip_prefixes = [p.lower() for p in to_list(skip_prefixes)]
 
-    with file_path.open('r', encoding=encoding) as f:
-        for line in f:
+    with file_path.open("r", encoding=encoding) as file:
+        for line in file:
             if not (clean_line := line.strip()):
                 continue
 
             line_lower = clean_line.lower()
 
+            # Check if reading should begin
             if not is_reading:
                 if start_prefix and line_lower.startswith(start_prefix):
                     is_reading = True
@@ -225,17 +222,32 @@ def read_text_section(
                 else:
                     continue
 
-            elif end_prefixes and any(line_lower.startswith(p) for p in end_prefixes):
+            # Check if reading should end
+            elif end_prefixes and _has_any_prefix(line_lower, end_prefixes):
                 break
 
-            if any(line_lower.startswith(p) for p in skip_prefixes):
+            # Skip lines that are designated to be skipped
+            if _has_any_prefix(line_lower, skip_prefixes):
                 continue
-
-            yield clean_line
+            yield clean_line            
 
 # ==============================
 # PUBLIC HELPERS
 # ==============================
+
+def ensure_extension(file_path: Path, extension: str) -> Path:
+    """
+    Ensure the path has the given extension if one is not 
+    already present.
+
+    Args:
+        file_path: The file path to normalize.
+        extension: The required file extension.
+
+    Returns:
+        A Path object with the correct extension.
+    """    
+    return file_path if file_path.suffix else file_path.with_suffix(f".{extension}")
 
 def get_edition_file_path(edition_name: str) -> Path:
     """
@@ -254,20 +266,6 @@ def get_edition_file_path(edition_name: str) -> Path:
         raise ValueError(f"Edition name cannot be empty.")
 
     return const.EDITIONS_DIR / f"{edition_name}{const.EDITION_FILE_SUFFIX}"
-
-def normalize_filename(filename: str, extension: str) -> Path:
-    """
-    Ensure a filename includes the specified extension.
-
-    Args:
-        filename: The filename to normalize.
-        extension: The required file extension.
-
-    Returns:
-        A Path object with the correct extension.
-    """    
-    path = Path(filename)
-    return path if path.suffix else path.with_suffix(f".{extension}")
 
 def sanitize_name(name: str) -> str:
     """
@@ -320,6 +318,22 @@ def to_list(value: str | Iterable[str]) -> list[str]:
 # ==============================
 # PRIVATE HELPERS
 # ==============================
+
+def _has_any_prefix(line: str, prefixes: list[str]):
+    """
+    Return True if the given string starts with any of the provided prefixes.
+
+    Comparison is case-sensitive. Callers are responsible for normalizing
+    inputs (e.g., lowercasing) if case-insensitive behavior is desired.
+
+    Args:
+        line: The string to evaluate.
+        prefixes: A list of prefixes to check against.
+
+    Returns:
+        True if the string starts with any prefix in the list, otherwise False.
+    """
+    return any(line.startswith(p) for p in prefixes)
 
 def _parse_card_name_from_edition_row(row: str) -> str:
     """

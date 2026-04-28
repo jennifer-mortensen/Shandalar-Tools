@@ -13,6 +13,7 @@ Serves as the central computation layer between data loading and CLI output.
 """
 from collections.abc import Iterable, Sequence
 from format_generator import card_loader, const
+from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ def build_forge_format(unsupported_cards: Sequence[str], user_banned_cards: Sequ
         A formatted MTG: Forge configuration string.
 
     Raises:
-        AssertionError: If the Forge format string cannot be generated,
+        ValueError: If the Forge format string cannot be generated,
             indicating an upstream logic error.
     """    
     # Base list (sorted for readability if enabled).
@@ -176,8 +177,9 @@ def build_forge_format(unsupported_cards: Sequence[str], user_banned_cards: Sequ
         set_codes=set_codes
     )
 
-    # Defensive assertion: forge_format should never be empty. If it is, something broke upstream in the formatting logic.
-    assert forge_format, "Expected a valid forge_format string from build_forge_format(). Check recent changes upstream."
+    # Defensive check: forge_format should never be empty. If it is, something broke upstream in the formatting logic.
+    if not forge_format:
+        raise ValueError("Expected a valid forge_format string from build_forge_format(). Check recent changes upstream.")       
 
     return forge_format
 
@@ -212,6 +214,6 @@ def log_duplicates(duplicates: list[str]) -> None:
             len(duplicates),
             preview,
             "..." if len(duplicates) > const.PREVIEW_LIMIT else "",
-            card_loader.normalize_filename(const.FILE_NAME_LOG, const.FILE_TYPE_LOG)
+            card_loader.ensure_extension(Path(const.FILE_NAME_LOG), const.FILE_TYPE_LOG)
         )
         logger.debug("Duplicate entries: %s", duplicates)

@@ -11,7 +11,7 @@ Orchestrates the full workflow:
 Also configures logging for both user-facing CLI output and detailed file logs.
 """
 from format_generator import card_loader, card_processor, const
-from pathlib import Path # Used for typing.
+from pathlib import Path
 import argparse
 import logging
 import sys
@@ -40,7 +40,7 @@ def main() -> None:
 
         # Build banned card pool            
         unsupported_cards = find_unsupported_cards(card_pool)
-        user_banned_cards = load_user_banned_cards(cli_args.user_banned)               
+        user_banned_cards = load_user_banned_cards(cli_args.user_banned)             
 
         # Format and write
         logger.info("Formatting output for MTG: Forge...")
@@ -56,7 +56,7 @@ def main() -> None:
         # Separate CLI-level output. Full exception is logged externally just above.
         print(
             f"ERROR: An unexpected error occurred. "
-            f"See the log file (default: {card_loader.normalize_filename(const.FILE_NAME_LOG, const.FILE_TYPE_LOG)}) for details."
+            f"See the log file (default: {card_loader.ensure_extension(Path(const.FILE_NAME_LOG), const.FILE_TYPE_LOG)}) for details."
         )
         sys.exit(1)
 
@@ -87,7 +87,7 @@ def configure_logging() -> None:
 
     # File-level logging. Full fidelity.
     file_handler = logging.FileHandler(
-        card_loader.normalize_filename(const.FILE_NAME_LOG, const.FILE_TYPE_LOG),
+        card_loader.ensure_extension(Path(const.FILE_NAME_LOG), const.FILE_TYPE_LOG),
         mode=const.LOGGER_FILE_MODE,
         encoding=const.DEFAULT_ENCODING
     )
@@ -114,20 +114,20 @@ def parse_cli_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "-o", "--output",
-        type=lambda filename: card_loader.normalize_filename(filename, const.FILE_TYPE_OUTPUT),
-        default=card_loader.normalize_filename(const.FILE_NAME_OUTPUT, const.FILE_TYPE_OUTPUT),
+        type=lambda file_name: card_loader.ensure_extension(Path(file_name), const.FILE_TYPE_OUTPUT),
+        default=card_loader.ensure_extension(Path(const.FILE_NAME_OUTPUT), const.FILE_TYPE_OUTPUT),
         help="File to write unsupported cards to.",
     )
     parser.add_argument(
         "-e", "--editions",
-        type=lambda filename: card_loader.normalize_filename(filename, const.FILE_TYPE_CONFIG),
-        default=card_loader.normalize_filename(const.FILE_NAME_CONFIG, const.FILE_TYPE_CONFIG),
+        type=lambda file_name: card_loader.ensure_extension(Path(file_name), const.FILE_TYPE_CONFIG),
+        default=card_loader.ensure_extension(Path(const.FILE_NAME_CONFIG), const.FILE_TYPE_CONFIG),
         help="CSV file listing editions to load.",
     )
     parser.add_argument(
         "-b", "--user-banned",
-        type=lambda filename: card_loader.normalize_filename(filename, const.FILE_TYPE_USER_BANNED),
-        default=card_loader.normalize_filename(const.FILE_NAME_USER_BANNED, const.FILE_TYPE_USER_BANNED),
+        type=lambda file_name: card_loader.ensure_extension(Path(file_name), const.FILE_TYPE_USER_BANNED),
+        default=card_loader.ensure_extension(Path(const.FILE_NAME_USER_BANNED), const.FILE_TYPE_USER_BANNED),
         help="CSV file listing user-designated cards to ban.",
     )
     parser.add_argument(
@@ -144,12 +144,12 @@ def parse_cli_args() -> argparse.Namespace:
 
     return parser.parse_args()  
 
-def load_edition_list(editions_filename: str | Path) -> list[str]:
+def load_edition_list(editions_file_path: Path) -> list[str]:
     """
     Load the list of editions from a configuration file.
 
     Args:
-        editions_filename: Path to the editions CSV file.
+        editions_file_path: Path to the editions CSV file.
 
     Returns:
         A list of edition names.
@@ -160,11 +160,11 @@ def load_edition_list(editions_filename: str | Path) -> list[str]:
     logger.info("Loading edition list...")
 
     try:
-        editions = card_loader.get_edition_list(editions_filename)
+        editions = card_loader.get_edition_list(editions_file_path)
     except FileNotFoundError:
-        raise ValueError(f"Could not find editions file: {editions_filename}")
+        raise ValueError(f"Could not find editions file: {editions_file_path}")
     if not editions:
-        raise ValueError(f"Editions file is empty: {editions_filename}")
+        raise ValueError(f"Editions file is empty: {editions_file_path}")
 
     return editions
 
@@ -205,12 +205,12 @@ def find_unsupported_cards(card_pool: set[str]) -> list[str]:
 
     return unsupported_cards
 
-def load_user_banned_cards(user_banned_filename: str | Path) -> list[str]:
+def load_user_banned_cards(user_banned_file_path: Path) -> list[str]:
     """
     Load user-defined banned cards from a file.
 
     Args:
-        user_banned_filename: Path to the CSV file.
+        user_banned_file_path: Path to the CSV file.
 
     Returns:
         A list of user-banned card names. Returns an empty list if the
@@ -219,9 +219,9 @@ def load_user_banned_cards(user_banned_filename: str | Path) -> list[str]:
     logger.info("Loading user-banned card list...")
 
     try:
-        user_banned_cards = card_loader.get_user_banned_cards(user_banned_filename)
+        user_banned_cards = card_loader.get_user_banned_cards(user_banned_file_path)
     except FileNotFoundError:
-        logger.warning("Could not find user-banned file: %s", user_banned_filename)
+        logger.warning("Could not find user-banned file: %s", user_banned_file_path)
         return []
 
     if not user_banned_cards:
@@ -229,23 +229,23 @@ def load_user_banned_cards(user_banned_filename: str | Path) -> list[str]:
 
     return user_banned_cards
 
-def write_forge_output(forge_format: str, output_filename: str | Path) -> None:
+def write_forge_output(forge_format: str, output_file_path: Path) -> None:
     """
     Write the Forge format string to an output file.
 
     Args:
         forge_format: The generated Forge format string.
-        output_filename: Path to the output file.
+        output_file_path: Path to the output file.
 
     Raises:
         OSError: If the file cannot be written.
     """    
-    logger.info("Writing Forge output to %s...", output_filename)
+    logger.info("Writing Forge output to %s...", output_file_path)
     try:
-        with open(output_filename, "w", encoding=const.DEFAULT_ENCODING) as file:
+        with output_file_path.open("w", encoding=const.DEFAULT_ENCODING) as file:
             file.write(forge_format)
     except OSError as e:
-        raise OSError(f"Could not write to output file '{output_filename}': {e}") from e
+        raise OSError(f"Could not write to output file '{output_file_path}': {e}") from e
 
 if __name__ == "__main__":
     main()
