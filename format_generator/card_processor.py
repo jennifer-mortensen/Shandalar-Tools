@@ -13,7 +13,7 @@ Serves as the central computation layer between data loading and CLI output.
 """
 from collections.abc import Iterable, Sequence
 from common import common_const
-from format_generator import card_loader, format_const
+from format_generator import card_loader, format_const, format_generator_config
 from pathlib import Path
 import logging
 
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 # DATA CONSTRUCTION
 # ==============================
 
-def build_card_pool(editions: Sequence[str]) -> set[str]:
+def build_card_pool(editions: Sequence[str], config: format_generator_config.FormatGeneratorConfig) -> set[str]:
     """
     Build and return a set of all cards from the specified editions.
 
@@ -47,12 +47,12 @@ def build_card_pool(editions: Sequence[str]) -> set[str]:
 
         logger.info("Loading edition '%s'...", e)
 
-        cards.update(card_loader.get_edition_cards(e))
+        cards.update(card_loader.get_edition_cards(e, config=config))
         editions_loaded.add(sanitized_edition_name)
 
     return cards
 
-def collect_edition_codes(editions: Sequence[str]) -> set[str]:
+def collect_edition_codes(editions: Sequence[str], config: format_generator_config.FormatGeneratorConfig) -> set[str]:
     """
     Generate Scryfall edition codes for the provided editions.
 
@@ -67,7 +67,7 @@ def collect_edition_codes(editions: Sequence[str]) -> set[str]:
 
     for e in editions:
         logger.info("Collecting edition code for '%s'...", e)
-        code = card_loader.get_edition_code(e)
+        code = card_loader.get_edition_code(e, config=config)
         edition_codes.add(code)
 
     return edition_codes
@@ -185,14 +185,14 @@ def build_forge_format(unsupported_cards: Sequence[str], user_banned_cards: Sequ
 # HELPERS
 # ==============================
 
-def build_shandalar_card_lookup() -> set[str]:
+def build_shandalar_card_lookup(config: format_generator_config.FormatGeneratorConfig) -> set[str]:
     """
     Build a sanitized lookup set of Shandalar-supported card names.
 
     Returns:
         A lowercase, trimmed set of supported card names.
     """    
-    return card_loader.sanitize_card_set(card_loader.get_shandalar_cards())      
+    return card_loader.sanitize_card_set(card_loader.get_shandalar_cards(config=config))      
 
 def log_duplicates(duplicates: list[str]) -> None:
     """
@@ -212,6 +212,6 @@ def log_duplicates(duplicates: list[str]) -> None:
             len(duplicates),
             preview,
             "..." if len(duplicates) > common_const.PREVIEW_LIMIT else "",
-            card_loader.ensure_extension(Path(common_const.FILE_NAME_LOG), common_const.FILE_TYPE_LOG)
+            common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}"
         )
         logger.debug("Duplicate entries: %s", duplicates)

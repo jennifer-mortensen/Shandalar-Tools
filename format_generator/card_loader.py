@@ -11,6 +11,7 @@ Responsible for:
 Acts as the primary interface between raw file data and application logic.
 """
 from common import common_const, file_utils
+from format_generator import format_generator_config
 from pathlib import Path
 from typing import Iterable
 import logging
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 # HIGH LEVEL LOADERS
 # ==============================
 
-def get_edition_code(edition_name: str) -> str:
+def get_edition_code(edition_name: str, config: format_generator_config.FormatGeneratorConfig) -> str:
     """
     Retrieve the Scryfall code for a given edition.
 
@@ -39,16 +40,19 @@ def get_edition_code(edition_name: str) -> str:
         raise ValueError("Edition name cannot be empty.")
 
     file_path = get_edition_file_path(edition_name)
-    encoding = file_utils.detect_file_encoding(file_path)
 
     try:
-        line = next(file_utils.read_text_section(file_path=file_path, encoding=encoding, start_prefix=common_const.SCRYFALL_CODE_PREFIX))
+        line = next(file_utils.read_text_section(
+            file_path=file_path,
+            start_prefix=common_const.SCRYFALL_CODE_PREFIX,
+            encoding_full_scan=config.encoding_scan.resolve()
+        ))
     except StopIteration:
         raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
 
     return line[len(common_const.SCRYFALL_CODE_PREFIX):] 
 
-def get_edition_cards(edition_name: str) -> Iterable[str]:
+def get_edition_cards(edition_name: str, config: format_generator_config.FormatGeneratorConfig) -> Iterable[str]:
     """
     Load all card names from a Forge edition file.
 
@@ -62,13 +66,13 @@ def get_edition_cards(edition_name: str) -> Iterable[str]:
         raise ValueError("Edition name cannot be empty.") 
     
     file_path = get_edition_file_path(edition_name)
-    encoding = file_utils.detect_file_encoding(file_path)
 
     edition_data = file_utils.read_text_section(
-        file_path=file_path, encoding=encoding, 
+        file_path=file_path, 
         start_prefix=common_const.FORGE_CARDS_HEADER,
         end_prefixes=["["],
-        skip_first_line=True
+        skip_first_line=True,
+        encoding_full_scan=config.encoding_scan.resolve()
     )
 
     for row in edition_data:
@@ -76,7 +80,7 @@ def get_edition_cards(edition_name: str) -> Iterable[str]:
         if name:
             yield name
 
-def get_edition_list(csv_file_path: Path) -> list[str]:
+def get_edition_list(csv_file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
     """
     Load a list of edition names from a CSV configuration file.
 
@@ -86,19 +90,27 @@ def get_edition_list(csv_file_path: Path) -> list[str]:
     Returns:
         A list of edition names.
     """    
-    return list(file_utils.read_csv_column(csv_file_path, 0, skip_prefixes=[common_const.COMMENT_PREFIX]))
+    return list(file_utils.read_csv_column(
+        file_path=csv_file_path,
+        column_number=0,
+        skip_prefixes=[common_const.COMMENT_PREFIX],
+        encoding_full_scan=config.encoding_scan.resolve()
+    ))
 
-def get_shandalar_cards() -> set[str]:
+def get_shandalar_cards(config: format_generator_config.FormatGeneratorConfig) -> set[str]:
     """
     Load the set of cards supported by Shandalar.
 
     Returns:
         A set of supported card names.
     """    
-    cards = file_utils.read_csv_column(file_path=common_const.FILE_SHANDALAR_CSV, column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN, encoding_full_scan=True)
+    cards = file_utils.read_csv_column(
+        file_path=common_const.FILE_SHANDALAR_CSV,
+        column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN,
+        encoding_full_scan=config.encoding_scan.resolve(default_full_scan=True))
     return set(cards)
 
-def get_user_banned_cards(file_path: Path) -> list[str]:
+def get_user_banned_cards(file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
     """
     Load user-defined banned cards from a CSV file.
 
@@ -108,7 +120,12 @@ def get_user_banned_cards(file_path: Path) -> list[str]:
     Returns:
         A list of banned card names.
     """    
-    return list(file_utils.read_csv_column(file_path=file_path, column_number=0, skip_prefixes=[common_const.COMMENT_PREFIX]))
+    return list(file_utils.read_csv_column(
+        file_path=file_path,
+        column_number=0,
+        skip_prefixes=[common_const.COMMENT_PREFIX],
+        encoding_full_scan=config.encoding_scan.resolve())
+    )
 
 # ==============================
 # PUBLIC HELPERS

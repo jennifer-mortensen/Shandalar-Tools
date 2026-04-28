@@ -11,7 +11,7 @@ Orchestrates the full workflow:
 Also configures logging for both user-facing CLI output and detailed file logs.
 """
 from common import common_const
-from format_generator import card_loader, card_processor
+from format_generator import card_loader, card_processor, format_generator_config
 from pathlib import Path
 import argparse
 import logging
@@ -34,18 +34,19 @@ def main() -> None:
     
     try:
         cli_args = parse_cli_args()
+        config = format_generator_config.FormatGeneratorConfig(encoding_scan=common_const.EncodingScanMode(cli_args.encoding_scan))
         
         # Load data
-        edition_list = load_edition_list(cli_args.editions)
-        card_pool = build_card_pool(edition_list)
+        edition_list = load_edition_list(cli_args.editions, config=config)
+        card_pool = build_card_pool(edition_list, config=config)
 
         # Build banned card pool            
-        unsupported_cards = find_unsupported_cards(card_pool)
-        user_banned_cards = load_user_banned_cards(cli_args.user_banned)             
+        unsupported_cards = find_unsupported_cards(card_pool, config=config)
+        user_banned_cards = load_user_banned_cards(cli_args.user_banned, config=config)             
 
         # Format and write
         logger.info("Formatting output for MTG: Forge...")
-        forge_output = card_processor.build_forge_format(unsupported_cards, user_banned_cards, card_processor.collect_edition_codes(edition_list))        
+        forge_output = card_processor.build_forge_format(unsupported_cards, user_banned_cards, card_processor.collect_edition_codes(edition_list, config=config))        
         write_forge_output(forge_output, cli_args.output)
 
         logger.info("Compilation completed successfully!")
@@ -55,10 +56,8 @@ def main() -> None:
     except Exception:
         logger.exception("Unexpected error")
         # Separate CLI-level output. Full exception is logged externally just above.
-        print(
-            f"ERROR: An unexpected error occurred. "
-            f"See the log file (default: {card_loader.ensure_extension(Path(common_const.FILE_NAME_LOG), common_const.FILE_TYPE_LOG)}) for details."
-        )
+        log_path = common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}"        
+        print(f"ERROR: An unexpected error occurred. See the log file (default: {log_path}) for details.")
         sys.exit(1)
 
 # ==============================
@@ -88,7 +87,7 @@ def configure_logging() -> None:
 
     # File-level logging. Full fidelity.
     file_handler = logging.FileHandler(
-        card_loader.ensure_extension(Path(common_const.FILE_NAME_LOG), common_const.FILE_TYPE_LOG),
+        common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}",
         mode=common_const.LOGGER_FILE_MODE,
         encoding=common_const.DEFAULT_ENCODING
     )
@@ -116,19 +115,19 @@ def parse_cli_args() -> argparse.Namespace:
     parser.add_argument(
         "-o", "--output",
         type=lambda file_name: card_loader.ensure_extension(Path(file_name), common_const.FILE_TYPE_OUTPUT),
-        default=card_loader.ensure_extension(Path(common_const.FILE_NAME_OUTPUT), common_const.FILE_TYPE_OUTPUT),
+        default=card_loader.ensure_extension(common_const.USER_OUTPUT_DIR / common_const.FILE_NAME_OUTPUT, common_const.FILE_TYPE_OUTPUT),
         help="File to write unsupported cards to.",
     )
     parser.add_argument(
         "-e", "--editions",
         type=lambda file_name: card_loader.ensure_extension(Path(file_name), common_const.FILE_TYPE_CONFIG),
-        default=card_loader.ensure_extension(Path(common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG),
+        default=card_loader.ensure_extension(common_const.USER_CONFIG_DIR / common_const.FILE_NAME_CONFIG, common_const.FILE_TYPE_CONFIG),
         help="CSV file listing editions to load.",
     )
     parser.add_argument(
         "-b", "--user-banned",
         type=lambda file_name: card_loader.ensure_extension(Path(file_name), common_const.FILE_TYPE_USER_BANNED),
-        default=card_loader.ensure_extension(Path(common_const.FILE_NAME_USER_BANNED), common_const.FILE_TYPE_USER_BANNED),
+        default=card_loader.ensure_extension(common_const.USER_CONFIG_DIR / common_const.FILE_NAME_USER_BANNED, common_const.FILE_TYPE_USER_BANNED),
         help="CSV file listing user-designated cards to ban.",
     )
     parser.add_argument(
@@ -145,7 +144,7 @@ def parse_cli_args() -> argparse.Namespace:
 
     return parser.parse_args()  
 
-def load_edition_list(editions_file_path: Path) -> list[str]:
+def load_edition_list(editions_file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
     """
     Load the list of editions from a configuration file.
 
@@ -161,7 +160,7 @@ def load_edition_list(editions_file_path: Path) -> list[str]:
     logger.info("Loading edition list...")
 
     try:
-        editions = card_loader.get_edition_list(editions_file_path)
+        editions = card_loader.get_edition_list(editions_file_path, config=config)
     except FileNotFoundError:
         raise ValueError(f"Could not find editions file: {editions_file_path}")
     if not editions:
@@ -169,7 +168,7 @@ def load_edition_list(editions_file_path: Path) -> list[str]:
 
     return editions
 
-def build_card_pool(editions: list[str]) -> set[str]:
+def build_card_pool(editions: list[str], config: format_generator_config.FormatGeneratorConfig) -> set[str]:
     """
     Build the card pool from the specified editions.
 
@@ -180,14 +179,14 @@ def build_card_pool(editions: list[str]) -> set[str]:
         A set of unique card names.
     """    
     logger.info("Building card pool from editions...")
-    card_pool = card_processor.build_card_pool(editions)
+    card_pool = card_processor.build_card_pool(editions, config=config)
 
     if not card_pool:
         logger.warning("No cards were loaded from the specified editions. Edition files may be empty, missing, or invalid.")
 
     return card_pool
 
-def find_unsupported_cards(card_pool: set[str]) -> list[str]:
+def find_unsupported_cards(card_pool: set[str], config: format_generator_config.FormatGeneratorConfig) -> list[str]:
     """
     Identify cards that are unsupported by Shandalar.
 
@@ -198,7 +197,7 @@ def find_unsupported_cards(card_pool: set[str]) -> list[str]:
         A list of unsupported card names.
     """    
     logger.info("Identifying unsupported cards...")
-    shandalar_lookup = card_processor.build_shandalar_card_lookup()        
+    shandalar_lookup = card_processor.build_shandalar_card_lookup(config=config)        
     
     unsupported_cards = card_processor.find_unsupported_cards(card_pool, shandalar_lookup)        
     if not unsupported_cards:
@@ -206,7 +205,7 @@ def find_unsupported_cards(card_pool: set[str]) -> list[str]:
 
     return unsupported_cards
 
-def load_user_banned_cards(user_banned_file_path: Path) -> list[str]:
+def load_user_banned_cards(user_banned_file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
     """
     Load user-defined banned cards from a file.
 
@@ -220,7 +219,7 @@ def load_user_banned_cards(user_banned_file_path: Path) -> list[str]:
     logger.info("Loading user-banned card list...")
 
     try:
-        user_banned_cards = card_loader.get_user_banned_cards(user_banned_file_path)
+        user_banned_cards = card_loader.get_user_banned_cards(user_banned_file_path, config=config)
     except FileNotFoundError:
         logger.warning("Could not find user-banned file: %s", user_banned_file_path)
         return []
