@@ -127,6 +127,7 @@ def read_text_section(
             # Skip lines that are designated to be skipped
             if _has_any_prefix(line_lower, skip_prefixes):
                 continue
+            
             yield clean_line
 
 def to_list(value: str | Iterable[str]) -> list[str]:

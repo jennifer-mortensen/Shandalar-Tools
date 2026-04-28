@@ -55,8 +55,8 @@ def get_edition_cards(edition_name: str) -> Iterable[str]:
     Args:
         edition_name: The name of the edition.
 
-    Yields:
-        Card names from a Forge edition file.
+    Returns:
+        Card names generator from a Forge edition file.
     """    
     if not edition_name:
         raise ValueError("Edition name cannot be empty.") 
