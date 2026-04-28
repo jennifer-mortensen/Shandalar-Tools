@@ -4,7 +4,7 @@
 
 > ⚠️ **Dev Branch Notice:** This branch is unstable and may change at any time.  
 > For a stable release, use the 'main' branch or download from Releases.
-> This version is labeled 2.0.0-dev to indicate development direction, not progress—it is based on 1.0.3.
+> This version is labeled 2.0.0.dev0 to indicate development direction, not progress—it is based on 1.0.3.
 
 A Python command-line utility for generating MTG: Forge format restrictions compatible with Shandalar mods.
 
