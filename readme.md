@@ -82,14 +82,16 @@ This will:
 shandalar-tools.exe -o unsupported.txt
 shandalar-tools.exe -e custom_sets.csv
 shandalar-tools.exe -b custom_bans.csv
+shandalar-tools.exe -s full
 ```
 
 When running from source:
 
 ```bash
-python main.py -o unsupported.txt
-python main.py -e custom_sets.csv
-python main.py -b custom_bans.csv
+python run_format_generator.py -o unsupported.txt
+python run_format_generator.py -e custom_sets.csv
+python run_format_generator.py -b custom_bans.csv
+python run_format_generator.py -s full
 ```
 
 ---
