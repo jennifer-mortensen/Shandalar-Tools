@@ -67,9 +67,14 @@ This will:
 
 | Option                | Description                                               |
 | --------------------- | --------------------------------------------------------- |
-| `-o`, `--output`      | Specify the output file                                   |
-| `-e`, `--editions`    | Specify the CSV file listing editions to load             |
-| `-b`, `--user-banned` | Specify the CSV file listing user-designated cards to ban |
+| `-o`, `--output`      | Specify the output file (default: `user_output/Standard.txt`) |
+| `-e`, `--editions`    | Specify the editions CSV file (default: `user_config/config.csv`) |
+| `-b`, `--user-banned` | Specify the user-banned cards CSV file (default: `user_config/user_banned.csv`) |
+| `-s`, `--encoding-scan` | Encoding detection mode: `auto` (default), `fast`, or `full` |
+
+> **Note:** `--encoding-scan full` is provided for compatibility with future data releases that may
+> require complete file scanning. `--encoding-scan fast` is included for completeness but is not
+> recommended—it will not work reliably with current data.
 
 ### Examples
 
@@ -174,16 +179,27 @@ INFO: Compilation completed successfully!
 ## Project Structure
 
 ```
-core/
-├── card_loader.py       # File parsing and data extraction utilities
-├── card_processor.py    # Core processing and transformation logic
-└── const.py             # Constants and format templates
-
-main.py                  # Application entry point and CLI interface
-
-data/
-├── Shandalar Card List.csv
-└── editions/            # MTG: Forge edition files
+Shandalar-Tools/
+├── cli/
+│   ├── run_format_generator.py  # Format generator entry point
+│   └── run_deck_translator.py   # Deck translator entry point (WIP)
+├── common/
+│   ├── common_const.py          # Shared constants and configuration
+│   └── file_utils.py            # Shared file I/O utilities
+├── format_generator/
+│   ├── card_loader.py           # File parsing and data extraction
+│   ├── card_processor.py        # Core processing and transformation logic
+│   ├── format_const.py          # Format generator constants and templates
+│   └── format_generator_config.py  # Runtime configuration
+├── deck_translator/             # (WIP)
+├── data/
+│   ├── Shandalar Card List.csv
+│   └── editions/                # MTG: Forge edition files
+├── user_config/
+│   ├── config.csv               # Edition list
+│   └── user_banned.csv          # User-defined banned cards
+├── user_output/                 # Generated format files
+└── logs/                        # Runtime logs
 ```
 
 ---
