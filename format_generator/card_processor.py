@@ -12,7 +12,8 @@ Handles:
 Serves as the central computation layer between data loading and CLI output.
 """
 from collections.abc import Iterable, Sequence
-from format_generator import card_loader, const
+from common import common_const
+from format_generator import card_loader, format_const
 from pathlib import Path
 import logging
 
@@ -173,7 +174,7 @@ def build_forge_format(unsupported_cards: Sequence[str], user_banned_cards: Sequ
     banned_cards = "; ".join(merge_and_dedupe_sequences(formatted_cards, user_banned_cards))
     set_codes = ", ".join(sorted(edition_codes))
 
-    forge_format = const.FORGE_FORMAT_BODY_STANDARD.format(
+    forge_format = format_const.FORGE_FORMAT_BODY_STANDARD.format(
         banned_cards=banned_cards,
         set_codes=set_codes
     )  
@@ -204,13 +205,13 @@ def log_duplicates(duplicates: list[str]) -> None:
         duplicates: A sorted list of duplicate card names.
     """    
     if duplicates:
-        preview = ", ".join(duplicates[:const.PREVIEW_LIMIT])
+        preview = ", ".join(duplicates[:common_const.PREVIEW_LIMIT])
         logger.warning(
             "%d duplicate card entries detected across the unsupported and user-banned lists "
             "(preserved as-is). Examples: %s%s\nFull details written to the log file (default: %s)",
             len(duplicates),
             preview,
-            "..." if len(duplicates) > const.PREVIEW_LIMIT else "",
-            card_loader.ensure_extension(Path(const.FILE_NAME_LOG), const.FILE_TYPE_LOG)
+            "..." if len(duplicates) > common_const.PREVIEW_LIMIT else "",
+            card_loader.ensure_extension(Path(common_const.FILE_NAME_LOG), common_const.FILE_TYPE_LOG)
         )
         logger.debug("Duplicate entries: %s", duplicates)

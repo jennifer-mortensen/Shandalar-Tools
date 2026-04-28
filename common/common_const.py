@@ -1,11 +1,12 @@
 """
 Centralized constants for shandalar-tools.
 
-This module defines file paths, logging formats, encoding settings,
-and MTG: Forge format templates used throughout the application.
+This module defines file paths, logging formats, and encoding settings.
 """
 from pathlib import Path
 import sys
+
+# TODO: Migrate constants to their correct directories: format_generator or deck_translator.
 
 # ==============================
 # FILE PATHS
@@ -74,18 +75,6 @@ EDITIONS_CARD_NAME_STARTING_COLUMN = 2
 FORGE_CARDS_HEADER = "[cards]"
 FORGE_EDITION_CARD_DELIMITER = " @"
 SCRYFALL_CODE_PREFIX = "ScryfallCode="
-
-# ==============================
-# FORGE FORMAT CONSTRUCTORS
-# ==============================
-
-FORGE_FORMAT_BODY_STANDARD = """[format]
-Name:Standard
-Order:101
-Subtype:Standard
-Type:Sanctioned
-Banned: {banned_cards}
-Sets: {set_codes}"""
 
 # ==============================
 # OUTPUT / DISPLAY

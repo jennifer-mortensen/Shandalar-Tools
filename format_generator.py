@@ -10,7 +10,8 @@ Orchestrates the full workflow:
 
 Also configures logging for both user-facing CLI output and detailed file logs.
 """
-from format_generator import card_loader, card_processor, const
+from common import common_const
+from format_generator import card_loader, card_processor
 from pathlib import Path
 import argparse
 import logging
@@ -56,7 +57,7 @@ def main() -> None:
         # Separate CLI-level output. Full exception is logged externally just above.
         print(
             f"ERROR: An unexpected error occurred. "
-            f"See the log file (default: {card_loader.ensure_extension(Path(const.FILE_NAME_LOG), const.FILE_TYPE_LOG)}) for details."
+            f"See the log file (default: {card_loader.ensure_extension(Path(common_const.FILE_NAME_LOG), common_const.FILE_TYPE_LOG)}) for details."
         )
         sys.exit(1)
 
@@ -71,12 +72,12 @@ def configure_logging() -> None:
     CLI logging displays human-readable messages, while file logging
     includes debug information and full exception tracebacks.
     """    
-    formatter = logging.Formatter(const.LOGGER_FORMAT_FILE)
+    formatter = logging.Formatter(common_const.LOGGER_FORMAT_FILE)
 
     # CLI-level logging. Prioritize readability.
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
-    console.setFormatter(logging.Formatter(const.LOGGER_FORMAT_CLI))
+    console.setFormatter(logging.Formatter(common_const.LOGGER_FORMAT_CLI))
 
     # Filter out exception tracebacks from CLI
     class NoExceptionTracebackFilter(logging.Filter):
@@ -87,9 +88,9 @@ def configure_logging() -> None:
 
     # File-level logging. Full fidelity.
     file_handler = logging.FileHandler(
-        card_loader.ensure_extension(Path(const.FILE_NAME_LOG), const.FILE_TYPE_LOG),
-        mode=const.LOGGER_FILE_MODE,
-        encoding=const.DEFAULT_ENCODING
+        card_loader.ensure_extension(Path(common_const.FILE_NAME_LOG), common_const.FILE_TYPE_LOG),
+        mode=common_const.LOGGER_FILE_MODE,
+        encoding=common_const.DEFAULT_ENCODING
     )
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(formatter)
@@ -114,20 +115,20 @@ def parse_cli_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "-o", "--output",
-        type=lambda file_name: card_loader.ensure_extension(Path(file_name), const.FILE_TYPE_OUTPUT),
-        default=card_loader.ensure_extension(Path(const.FILE_NAME_OUTPUT), const.FILE_TYPE_OUTPUT),
+        type=lambda file_name: card_loader.ensure_extension(Path(file_name), common_const.FILE_TYPE_OUTPUT),
+        default=card_loader.ensure_extension(Path(common_const.FILE_NAME_OUTPUT), common_const.FILE_TYPE_OUTPUT),
         help="File to write unsupported cards to.",
     )
     parser.add_argument(
         "-e", "--editions",
-        type=lambda file_name: card_loader.ensure_extension(Path(file_name), const.FILE_TYPE_CONFIG),
-        default=card_loader.ensure_extension(Path(const.FILE_NAME_CONFIG), const.FILE_TYPE_CONFIG),
+        type=lambda file_name: card_loader.ensure_extension(Path(file_name), common_const.FILE_TYPE_CONFIG),
+        default=card_loader.ensure_extension(Path(common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG),
         help="CSV file listing editions to load.",
     )
     parser.add_argument(
         "-b", "--user-banned",
-        type=lambda file_name: card_loader.ensure_extension(Path(file_name), const.FILE_TYPE_USER_BANNED),
-        default=card_loader.ensure_extension(Path(const.FILE_NAME_USER_BANNED), const.FILE_TYPE_USER_BANNED),
+        type=lambda file_name: card_loader.ensure_extension(Path(file_name), common_const.FILE_TYPE_USER_BANNED),
+        default=card_loader.ensure_extension(Path(common_const.FILE_NAME_USER_BANNED), common_const.FILE_TYPE_USER_BANNED),
         help="CSV file listing user-designated cards to ban.",
     )
     parser.add_argument(
@@ -242,7 +243,7 @@ def write_forge_output(forge_format: str, output_file_path: Path) -> None:
     """    
     logger.info("Writing Forge output to %s...", output_file_path)
     try:
-        with output_file_path.open("w", encoding=const.DEFAULT_ENCODING) as file:
+        with output_file_path.open("w", encoding=common_const.DEFAULT_ENCODING) as file:
             file.write(forge_format)
     except OSError as e:
         raise OSError(f"Could not write to output file '{output_file_path}': {e}") from e
