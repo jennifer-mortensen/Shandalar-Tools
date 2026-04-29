@@ -21,21 +21,20 @@ logger = logging.getLogger(__name__)
 # ==============================
 # HIGH LEVEL LOADERS
 # ==============================
-
 def get_edition_code(edition_name: str, config: format_generator_config.FormatGeneratorConfig) -> str:
     """
     Retrieve the Scryfall code for a given edition.
 
     Args:
         edition_name: The name of the edition.
+        config: FormatGeneratorConfig controlling encoding behavior.
 
     Returns:
         The Scryfall code associated with the edition.
 
     Raises:
-        ValueError: If the edition name is empty, malformed,
-            or missing a Scryfall code.
-    """     
+        ValueError: If the edition name is empty or no code is found.
+    """
     if not edition_name:
         raise ValueError("Edition name cannot be empty.")
 
@@ -54,14 +53,18 @@ def get_edition_code(edition_name: str, config: format_generator_config.FormatGe
 
 def get_edition_cards(edition_name: str, config: format_generator_config.FormatGeneratorConfig) -> Iterable[str]:
     """
-    Load all card names from a Forge edition file.
+    Yield card names from a Forge edition file.
 
     Args:
         edition_name: The name of the edition.
+        config: FormatGeneratorConfig controlling encoding behavior.
 
-    Returns:
-        Card names generator from a Forge edition file.
-    """    
+    Yields:
+        Card names parsed from the edition file.
+
+    Raises:
+        ValueError: If the edition name is empty.
+    """
     if not edition_name:
         raise ValueError("Edition name cannot be empty.") 
     
@@ -82,14 +85,18 @@ def get_edition_cards(edition_name: str, config: format_generator_config.FormatG
 
 def get_edition_list(csv_file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
     """
-    Load a list of edition names from a CSV configuration file.
+    Load edition names from a CSV configuration file.
 
     Args:
         csv_file_path: Path to the CSV file.
+        config: FormatGeneratorConfig controlling encoding behavior.
 
     Returns:
         A list of edition names.
-    """    
+
+    Raises:
+        OSError: If the file cannot be opened.        
+    """  
     return list(file_utils.read_csv_column(
         file_path=csv_file_path,
         column_number=0,
@@ -101,13 +108,20 @@ def get_shandalar_cards(config: format_generator_config.FormatGeneratorConfig) -
     """
     Load the set of cards supported by Shandalar.
 
+    Args:
+        config: FormatGeneratorConfig controlling encoding behavior.
+
     Returns:
         A set of supported card names.
-    """    
+
+    Raises:
+        OSError: If the file cannot be opened.        
+    """ 
     cards = file_utils.read_csv_column(
         file_path=common_const.FILE_SHANDALAR_CSV,
         column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN,
-        encoding_full_scan=config.encoding_scan.resolve(default_full_scan=True))
+        encoding_full_scan=config.encoding_scan.resolve(default_full_scan=True)
+    )
     return set(cards)
 
 def get_user_banned_cards(file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
@@ -116,10 +130,14 @@ def get_user_banned_cards(file_path: Path, config: format_generator_config.Forma
 
     Args:
         file_path: Path to the user-banned cards file.
+        config: FormatGeneratorConfig controlling encoding behavior.
 
     Returns:
         A list of banned card names.
-    """    
+
+    Raises:
+        OSError: If the file cannot be opened.        
+    """ 
     return list(file_utils.read_csv_column(
         file_path=file_path,
         column_number=0,

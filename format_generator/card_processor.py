@@ -22,7 +22,6 @@ logger = logging.getLogger(__name__)
 # ==============================
 # DATA CONSTRUCTION
 # ==============================
-
 def build_card_pool(editions: Sequence[str], config: format_generator_config.FormatGeneratorConfig) -> set[str]:
     """
     Build and return a set of all cards from the specified editions.
@@ -47,7 +46,7 @@ def build_card_pool(editions: Sequence[str], config: format_generator_config.For
 
         logger.info("Loading edition '%s'...", e)
 
-        cards.update(card_loader.get_edition_cards(e, config=config))
+        cards.update(card_loader.get_edition_cards(edition_name=e, config=config))
         editions_loaded.add(sanitized_edition_name)
 
     return cards
@@ -58,16 +57,20 @@ def collect_edition_codes(editions: Sequence[str], config: format_generator_conf
 
     Args:
         editions: A sequence of edition names.
+        config: FormatGeneratorConfig controlling encoding behavior.
 
     Returns:
         A set of Scryfall edition codes.
-    """    
+
+    Raises:
+        ValueError: If an edition is invalid or missing a Scryfall code.        
+    """
     logger.info("Generating Scryfall edition codes...")
     edition_codes = set()
 
     for e in editions:
         logger.info("Collecting edition code for '%s'...", e)
-        code = card_loader.get_edition_code(e, config=config)
+        code = card_loader.get_edition_code(edition_name=e, config=config)
         edition_codes.add(code)
 
     return edition_codes
@@ -75,7 +78,6 @@ def collect_edition_codes(editions: Sequence[str], config: format_generator_conf
 # ==============================
 # DATA TRANSFORMATION
 # ==============================
-
 def find_duplicates(card_lists: Iterable[Iterable[str]]) -> list[str]:
     """
     Identify duplicate entries within or across multiple iterables.
@@ -102,13 +104,15 @@ def find_unsupported_cards(cards: set[str], shandalar_lookup: set[str]) -> list[
     """
     Determine which cards are unsupported by Shandalar.
 
+    Card names are normalized before comparison.
+
     Args:
         cards: A set of card names to evaluate.
-        shandalar_lookup: A sanitized set of supported Shandalar card names.
+        shandalar_lookup: A sanitized set of supported card names.
 
     Returns:
-        A list of card names not supported by Shandalar.
-    """    
+        A list of unsupported card names.
+    """   
     unsupported_cards = [c for c in cards if card_loader.sanitize_name(c) not in shandalar_lookup]
     logger.info("Identified %d unsupported cards.", len(unsupported_cards))
     
@@ -143,28 +147,30 @@ def merge_and_dedupe_sequences(seq_1: Sequence[str], seq_2: Sequence[str]) -> li
 # ==============================
 # OUTPUT FORMATTING
 # ==============================
-
-def build_forge_format(unsupported_cards: Sequence[str], user_banned_cards: Sequence[str], edition_codes: set[str], sort_cards: bool = True) -> str:
+def build_forge_format(
+        unsupported_cards: Sequence[str],
+        user_banned_cards: Sequence[str],
+        edition_codes: set[str],
+        sort_cards: bool = True
+) -> str:
     """
     Generate a valid MTG: Forge format string.
 
-    The function combines unsupported cards with user-defined banned
-    cards, logs duplicate entries across both lists, and formats the
-    result according to the Forge specification.
+    Combines unsupported cards with user-defined banned cards, logs
+    duplicates, and formats the result according to the Forge specification.
 
     Args:
         unsupported_cards: A sequence of unsupported card names.
         user_banned_cards: A sequence of user-specified banned cards.
         edition_codes: A set of Scryfall edition codes.
-        sort_cards: Whether to sort unsupported cards for readability.
+        sort_cards: Whether to sort unsupported cards.
 
     Returns:
         A formatted MTG: Forge configuration string.
 
     Raises:
-        ValueError: If the Forge format string cannot be generated,
-            indicating an upstream logic error.
-    """    
+        ValueError: If formatting fails due to invalid input.
+    """   
     # Base list (sorted for readability if enabled).
     formatted_cards = sorted(unsupported_cards) if sort_cards else list(unsupported_cards)
 
@@ -184,14 +190,16 @@ def build_forge_format(unsupported_cards: Sequence[str], user_banned_cards: Sequ
 # ==============================
 # HELPERS
 # ==============================
-
 def build_shandalar_card_lookup(config: format_generator_config.FormatGeneratorConfig) -> set[str]:
     """
-    Build a sanitized lookup set of Shandalar-supported card names.
+    Build a normalized lookup set of Shandalar-supported card names.
+
+    Args:
+        config: FormatGeneratorConfig controlling encoding behavior.
 
     Returns:
-        A lowercase, trimmed set of supported card names.
-    """    
+        A sanitized set of supported card names.
+    """ 
     return card_loader.sanitize_card_set(card_loader.get_shandalar_cards(config=config))      
 
 def log_duplicates(duplicates: list[str]) -> None:

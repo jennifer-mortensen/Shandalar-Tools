@@ -1,3 +1,19 @@
+"""
+Utility functions for file reading, encoding detection, and structured parsing.
+
+This module provides helpers for:
+- Detecting file encodings with safe fallbacks
+- Opening files with consistent error handling
+- Reading structured data from CSV and text files
+- Extracting filtered sections or columns from files
+- Normalizing flexible inputs into predictable formats
+
+Functions in this module favor streaming (generators) where possible
+to support large files efficiently and avoid unnecessary memory usage.
+
+Errors related to file access are surfaced as OSError, while encoding
+detection failures fall back to a default encoding with a logged warning.
+"""
 from pathlib import Path
 from typing import Iterable
 from common import common_const
@@ -10,14 +26,20 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC UTILITIES
 # ==============================
-
 def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     """
-    Detects the encoding of a file.
-    
+    Detect the encoding of a file by attempting known decodings.
+
+    Reads either the full file or a partial sample and returns the first
+    encoding that successfully decodes the data. Falls back to a default
+    encoding if none succeed, logging a warning.
+
     Args:
         file_path: Path to the file.
-        full_scan: If True, reads the whole file. If False, sniffs the first 10KB.
+        full_scan: If True, reads the entire file; otherwise reads a sample.
+
+    Returns:
+        The detected or fallback encoding string.
     """
     read_size = -1 if full_scan else common_const.FILE_ENCODING_READ_SIZE_DEFAULT
 
@@ -68,22 +90,24 @@ def read_csv_column(
     encoding_full_scan: bool = False
 ) -> Iterable[str]:
     """
-    Extract a column of data from a CSV file with optional filtering.
+    Yield values from a specific column in a CSV file.
+
+    Skips empty rows and rows matching any provided prefixes. Logs a warning
+    if a row does not contain the requested column.
 
     Args:
         file_path: Path to the CSV file.
-        column_number: The index of the column to extract.
-        csv_delimiter: The delimiter used in the CSV file.
-        skip_prefixes: Line prefixes that should be ignored.
-        encoding_full_scan: If True, reads the whole file for encoding detection.
-            If False, sniffs the first 10KB.
+        column_number: Index of the column to extract.
+        csv_delimiter: Delimiter used in the CSV file.
+        skip_prefixes: Line prefixes to ignore.
+        encoding_full_scan: Whether to fully scan for encoding detection.
 
     Yields:
-        Values from the specified column, one per row.
+        Values from the specified column.
 
     Raises:
         OSError: If the file cannot be opened.
-    """  
+    """
     skip_prefixes = [p.lower() for p in to_list(skip_prefixes)]
 
     with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, newline="") as file:
@@ -113,21 +137,21 @@ def read_text_section(
     encoding_full_scan: bool = False
 ) -> Iterable[str]:
     """
-    Yield lines from a file that fall between specific prefixes.
+    Yield lines from a file between optional start and end markers.
+
+    Supports skipping lines by prefix and optionally skipping the first
+    matched start line.
 
     Args:
         file_path: Path to the text file.
-        start_prefix: Prefix indicating where to begin reading. If None,
-            reading begins from the start of the file.
+        start_prefix: Prefix indicating where to begin reading.
         end_prefixes: Prefixes indicating where to stop reading.
-        skip_prefixes: Prefixes for lines to ignore. Defaults to "#".
-        skip_first_line: If True, skips the line that matches start_prefix
-            and begins yielding from the following line.
-        encoding_full_scan: If True, reads the whole file for encoding detection.
-            If False, sniffs the first 10KB.
+        skip_prefixes: Prefixes for lines to ignore.
+        skip_first_line: Whether to skip the start line itself.
+        encoding_full_scan: Whether to fully scan for encoding detection.
 
     Yields:
-        Non-empty, stripped lines found between the specified prefixes.
+        Non-empty, stripped lines within the specified section.
 
     Raises:
         OSError: If the file cannot be opened.
@@ -190,7 +214,6 @@ def to_list(value: str | Iterable[str]) -> list[str]:
 # ==============================
 # PRIVATE HELPERS
 # ==============================
-
 def _has_any_prefix(line: str, prefixes: list[str]):
     """
     Return True if the given string starts with any of the provided prefixes.
