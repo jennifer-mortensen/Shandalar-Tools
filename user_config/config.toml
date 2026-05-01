@@ -1,0 +1,15 @@
+[data]
+shandalar_card_pool = "shandalar_2016"
+
+[io]
+encoding_scan = "auto"
+
+[logging]
+preview_limit = 5
+overwrite = true
+
+[format_generator]
+format_file = "sample_format"
+output_format = "standard"
+
+[deck_translator]

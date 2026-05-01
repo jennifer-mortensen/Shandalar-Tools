@@ -33,7 +33,7 @@ LOG_DIR.mkdir(exist_ok=True)
 USER_OUTPUT_DIR.mkdir(exist_ok=True)
 
 # Data / Config Files
-FILE_SHANDALAR_CSV = DATA_DIR / "Shandalar Card List.csv"
+FILE_SHANDALAR_CSV = DATA_DIR / "shandalar_2016.csv"
 FILE_NAME_CONFIG = "config"
 FILE_TYPE_CONFIG = "csv"
 FILE_NAME_OUTPUT = "Standard"
