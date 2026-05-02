@@ -13,9 +13,11 @@ Serves as the central computation layer between data loading and CLI output.
 """
 from collections.abc import Iterable, Sequence
 from common import common_const
-from format_generator import card_loader, format_const, format_generator_config
+from config import format_generator_config
 from pathlib import Path
 import logging
+
+from src.format_generator import card_loader, format_const
 
 logger = logging.getLogger(__name__)
 

@@ -19,7 +19,7 @@ def get_base_dir() -> Path:
         return Path(sys.executable).resolve().parent
     
     # When running from source
-    return Path(__file__).resolve().parent.parent
+    return Path(__file__).resolve().parent.parent.parent
 
 # Data folders
 BASE_DIR = get_base_dir()

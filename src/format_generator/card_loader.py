@@ -10,11 +10,13 @@ Responsible for:
 
 Acts as the primary interface between raw file data and application logic.
 """
-from common import common_const, file_utils
-from format_generator import format_generator_config
+from common import file_utils
+from config import format_generator_config
 from pathlib import Path
 from typing import Iterable
 import logging
+
+from common import common_const
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,7 @@ def get_edition_code(edition_name: str, config: format_generator_config.FormatGe
         line = next(file_utils.read_text_section(
             file_path=file_path,
             start_prefix=common_const.SCRYFALL_CODE_PREFIX,
-            encoding_full_scan=config.encoding_scan.resolve()
+            encoding_full_scan=config.common.io_encoding_scan.resolve()
         ))
     except StopIteration:
         raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
@@ -75,7 +77,7 @@ def get_edition_cards(edition_name: str, config: format_generator_config.FormatG
         start_prefix=common_const.FORGE_CARDS_HEADER,
         end_prefixes=["["],
         skip_first_line=True,
-        encoding_full_scan=config.encoding_scan.resolve()
+        encoding_full_scan=config.common.io_encoding_scan.resolve()
     )
 
     for row in edition_data:
@@ -101,7 +103,7 @@ def get_edition_list(csv_file_path: Path, config: format_generator_config.Format
         file_path=csv_file_path,
         column_number=0,
         skip_prefixes=[common_const.COMMENT_PREFIX],
-        encoding_full_scan=config.encoding_scan.resolve()
+        encoding_full_scan=config.common.io_encoding_scan.resolve()
     ))
 
 def get_shandalar_cards(config: format_generator_config.FormatGeneratorConfig) -> set[str]:
@@ -120,7 +122,7 @@ def get_shandalar_cards(config: format_generator_config.FormatGeneratorConfig) -
     cards = file_utils.read_csv_column(
         file_path=common_const.FILE_SHANDALAR_CSV,
         column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN,
-        encoding_full_scan=config.encoding_scan.resolve(default_full_scan=True)
+        encoding_full_scan=config.common.io_encoding_scan.resolve(default_full_scan=True)
     )
     return set(cards)
 
@@ -142,7 +144,7 @@ def get_user_banned_cards(file_path: Path, config: format_generator_config.Forma
         file_path=file_path,
         column_number=0,
         skip_prefixes=[common_const.COMMENT_PREFIX],
-        encoding_full_scan=config.encoding_scan.resolve())
+        encoding_full_scan=config.common.io_encoding_scan.resolve())
     )
 
 # ==============================

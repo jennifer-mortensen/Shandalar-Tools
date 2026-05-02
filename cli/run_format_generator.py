@@ -10,12 +10,18 @@ Orchestrates the full workflow:
 
 Also configures logging for both user-facing CLI output and detailed file logs.
 """
-from common import common_const
-from format_generator import card_loader, card_processor, format_generator_config
+
+import sys
 from pathlib import Path
+print(Path(__file__).parent.parent / "src")
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+
+from common import common_const
+from config.format_generator_config import FormatGeneratorConfig
+from config.common_config import CommonConfig
 import argparse
 import logging
-import sys
+from format_generator import card_loader, card_processor
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +39,8 @@ def main() -> None:
     
     try:
         cli_args = parse_cli_args()
-        config = format_generator_config.FormatGeneratorConfig(encoding_scan=common_const.EncodingScanMode(cli_args.encoding_scan))
+        common = CommonConfig(io_encoding_scan=common_const.EncodingScanMode(cli_args.encoding_scan))
+        config = FormatGeneratorConfig(common=common)
         
         # Load data
         edition_list = load_edition_list(editions_file_path=cli_args.editions, config=config)

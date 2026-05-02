@@ -8,7 +8,7 @@ handling and encoding strategies.
 The primary configuration currently manages encoding detection behavior,
 allowing callers to choose between automatic, fast, or full file scans.
 """
-from common import common_const
+from config.common_config import CommonConfig
 from dataclasses import dataclass
 
 # ==============================
@@ -16,4 +16,6 @@ from dataclasses import dataclass
 # ==============================
 @dataclass
 class FormatGeneratorConfig:
-    encoding_scan: common_const.EncodingScanMode = common_const.EncodingScanMode.AUTO
+    common: CommonConfig
+    format_file: str = "sample_format"
+    output_format: str = "standard"
