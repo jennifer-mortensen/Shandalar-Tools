@@ -2,6 +2,10 @@
 
 **Current Version:** 1.0.3
 
+> ⚠️ The `dev` branch contains the upcoming v2 architecture rewrite, including TOML-driven configuration, modular pipeline processing, and expanded format support.
+> It is substantially more advanced than the current stable release, but remains under active development and may change without notice.
+> v2 will be merged into `main` once the Deck Translator is completed and stabilized.
+
 A Python command-line utility for generating MTG: Forge format restrictions compatible with Shandalar mods.
 
 MTG: Forge supports cards from many expansions, but Shandalar only implements a subset of them. This tool scans Forge edition files and creates a format definition that bans cards not supported by Shandalar. This allows decks to be built in Forge while ensuring they remain compatible with Shandalar mods.
