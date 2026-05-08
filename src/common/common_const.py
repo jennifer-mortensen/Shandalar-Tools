@@ -1,19 +1,24 @@
 """
-Centralized constants for shandalar-tools.
+Shared constants for Shandalar Tools.
 
-This module defines file paths, logging formats, and encoding settings.
+Defines file paths, directory structure, logging configuration, encoding
+settings, and parsing constants used across all modules. Directory creation
+for user-facing and log directories is handled at import time.
 """
 from enum import Enum
 from pathlib import Path
 import sys
 
-# TODO: Migrate constants to their correct directories: format_generator or deck_translator.
-
 # ==============================
 # FILE PATHS
 # ==============================
-
 def get_base_dir() -> Path:
+    """
+    Resolve the base directory for Shandalar Tools.
+
+    Returns the directory containing the executable when running as a
+    PyInstaller bundle, or the project root when running from source.
+    """    
     # When running as a Pyinstaller executable
     if getattr(sys, "frozen", False):
         return Path(sys.executable).resolve().parent
@@ -21,27 +26,33 @@ def get_base_dir() -> Path:
     # When running from source
     return Path(__file__).resolve().parent.parent.parent
 
-# Data folders
+# root
 BASE_DIR = get_base_dir()
+# data
 DATA_DIR = BASE_DIR / "data"
 EDITIONS_DIR = DATA_DIR / "editions"
+# logs
 LOG_DIR = BASE_DIR / "logs"
-USER_CONFIG_DIR = BASE_DIR / "user_config"
-USER_OUTPUT_DIR = BASE_DIR / "user_output"
+# user
+USER_DIR = BASE_DIR / "user"
+CONFIG_DIR = USER_DIR / "config"
+FORMATS_DIR =  USER_DIR / "formats"
+OUTPUT_DECK_TRANSLATOR_DIR = USER_DIR / "output_deck_translator"
+OUTPUT_FORMAT_GENERATOR_DIR = USER_DIR / "output_format_generator"
 
-LOG_DIR.mkdir(exist_ok=True)
-USER_OUTPUT_DIR.mkdir(exist_ok=True)
+for d in [LOG_DIR, CONFIG_DIR, FORMATS_DIR, OUTPUT_DECK_TRANSLATOR_DIR, OUTPUT_FORMAT_GENERATOR_DIR]:
+    d.mkdir(parents=True, exist_ok=True)
 
-# Data / Config Files
-FILE_SHANDALAR_CSV = DATA_DIR / "shandalar_2016.csv"
+# ==============================
+# FILE NAMES & TYPES
+# ==============================
 FILE_NAME_CONFIG = "config"
-FILE_TYPE_CONFIG = "csv"
-FILE_NAME_OUTPUT = "Standard"
-FILE_TYPE_OUTPUT = "txt"
-FILE_NAME_USER_BANNED = "user_banned"
-FILE_TYPE_USER_BANNED = "csv"
 FILE_NAME_LOG = "shandalar_tools"
+
+FILE_TYPE_CONFIG = "toml"
+FILE_TYPE_FORGE_EDITION = "txt"
 FILE_TYPE_LOG = "log"
+FILE_TYPE_SHANDALAR_DATA = "csv"
 
 # ==============================
 # LOGGER CONSTANTS
@@ -50,6 +61,7 @@ FILE_TYPE_LOG = "log"
 LOGGER_FORMAT_CLI = "%(levelname)s: %(message)s"
 LOGGER_FORMAT_FILE = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 LOGGER_FILE_MODE = "w" # "w" = overwrite each run
+LOG_PREVIEW_DEFAULT_DELIMITER = ";"
 
 # ==============================
 # FILE ENCODING
@@ -65,16 +77,23 @@ class EncodingScanMode(Enum):
     FULL = "full"
 
     def resolve(self, default_full_scan: bool = False) -> bool:
+        """
+        Resolve the encoding scan mode to a boolean full_scan value.
+
+        Returns True for FULL, False for FAST, and the value of
+        default_full_scan for AUTO.
+
+        Args:
+            default_full_scan: Fallback value used when mode is AUTO.
+                Defaults to False.
+        """        
         if self == EncodingScanMode.FULL:
             return True
         if self == EncodingScanMode.FAST:
             return False
         return default_full_scan
-
-# ==============================
-# FILE NAMING
-# ==============================
-EDITION_FILE_SUFFIX = ".txt"
+    
+ENCODING_SCAN_VALID_VALUES = [m.name.lower() for m in EncodingScanMode]
 
 # ==============================
 # CSV / TEXT PARSING
@@ -90,6 +109,7 @@ SHANDALAR_CARD_NAME_STARTING_COLUMN = 0
 # ==============================
 # FORGE DATA
 # ==============================
+EDITION_FILE_SUFFIX = ".txt"
 EDITIONS_CARD_NAME_STARTING_COLUMN = 2
 FORGE_CARDS_HEADER = "[cards]"
 FORGE_EDITION_CARD_DELIMITER = " @"

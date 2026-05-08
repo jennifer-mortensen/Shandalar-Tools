@@ -1,54 +1,43 @@
 """
-Utility functions for file reading, encoding detection, and structured parsing.
+File reading and encoding utilities for Shandalar Tools.
 
-This module provides helpers for:
-- Detecting file encodings with safe fallbacks
-- Opening files with consistent error handling
-- Reading structured data from CSV and text files
-- Extracting filtered sections or columns from files
-- Normalizing flexible inputs into predictable formats
-
-Functions in this module favor streaming (generators) where possible
-to support large files efficiently and avoid unnecessary memory usage.
-
-Errors related to file access are surfaced as OSError, while encoding
-detection failures fall back to a default encoding with a logged warning.
+Provides helpers for detecting file encoding, reading CSV columns,
+reading sections of text files, and safely opening files with
+automatic encoding detection.
 """
+from common import common_const, common_utils
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Iterable
-from common import common_const
-from contextlib import contextmanager
 import csv
 import logging
 
 logger = logging.getLogger(__name__)
 
 # ==============================
-# PUBLIC UTILITIES
+# PUBLIC FUNCTIONS
 # ==============================
 def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     """
-    Detect the encoding of a file by attempting known decodings.
+    Detect the encoding of a file by attempting to decode its contents.
 
-    Reads either the full file or a partial sample and returns the first
-    encoding that successfully decodes the data. Falls back to a default
-    encoding if none succeed, logging a warning.
+    Tries each encoding defined in common_const.FILE_ENCODINGS in order,
+    returning the first one that succeeds. Falls back to FALLBACK_ENCODING
+    if none match.
 
     Args:
-        file_path: Path to the file.
-        full_scan: If True, reads the entire file; otherwise reads a sample.
+        file_path: Path to the file to inspect.
+        full_scan: If True, reads the entire file. If False, reads only
+            the first 10 KB.
+    """    
+    read_size: int = -1 if full_scan else common_const.FILE_ENCODING_READ_SIZE_DEFAULT
 
-    Returns:
-        The detected or fallback encoding string.
-    """
-    read_size = -1 if full_scan else common_const.FILE_ENCODING_READ_SIZE_DEFAULT
-
-    with file_path.open("rb") as file:
+    with file_path.open(mode="rb") as file:
         raw_data = file.read(read_size)
 
     for enc in common_const.FILE_ENCODINGS:
         try:
-            raw_data.decode(enc)
+            raw_data.decode(encoding=enc)
             return enc
         except UnicodeDecodeError:
             continue
@@ -57,27 +46,36 @@ def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     logger.warning("Failed to detect file encoding for %s. Using %s fallback.", file_path, common_const.FALLBACK_ENCODING)
     return common_const.FALLBACK_ENCODING
 
+def ensure_extension(file_path: Path, extension: str) -> Path:
+    """
+    Append an extension to a file path if one is not already present.
+
+    Args:
+        file_path: The path to check.
+        extension: The extension to append, without a leading dot.
+    """    
+    return file_path if file_path.suffix else file_path.with_suffix(f".{extension}")
+
 @contextmanager
 def open_file(file_path: Path, encoding_full_scan: bool = False, newline: str | None = None):
     """
-    Open a text file with automatic encoding detection and error handling.
+    Context manager for opening a file with automatic encoding detection.
+
+    Detects the file encoding before opening, either from a partial or full
+    read depending on encoding_full_scan.
 
     Args:
         file_path: Path to the file to open.
-        encoding_full_scan: If True, reads the whole file for encoding detection.
-            If False, sniffs the first 10KB.
-        newline: Newline handling mode. Pass an empty string for CSV files to
-            preserve line endings for the csv module. Defaults to None.
-
-    Yields:
-        An open file object.
+        encoding_full_scan: If True, reads the entire file to detect encoding.
+            If False, reads only the first 10,240 bytes.
+        newline: Newline handling mode passed to the file open call.
 
     Raises:
         OSError: If the file cannot be opened.
     """    
-    encoding = detect_file_encoding(file_path=file_path, full_scan=encoding_full_scan)
+    encoding: str = detect_file_encoding(file_path=file_path, full_scan=encoding_full_scan)
     try:
-        with file_path.open("r", encoding=encoding, newline=newline) as file:
+        with file_path.open(mode="r", encoding=encoding, newline=newline) as file:
             yield file
     except OSError as e:
         raise OSError(f"Could not open '{file_path}': {e}") from e
@@ -90,25 +88,22 @@ def read_csv_column(
     encoding_full_scan: bool = False
 ) -> Iterable[str]:
     """
-    Yield values from a specific column in a CSV file.
+    Read a single column from a CSV file, yielding one value per row.
 
-    Skips empty rows and rows matching any provided prefixes. Logs a warning
-    if a row does not contain the requested column.
+    Skips blank lines and any rows whose first cell starts with a
+    specified prefix. Logs a warning for rows that do not contain
+    the requested column.
 
     Args:
         file_path: Path to the CSV file.
-        column_number: Index of the column to extract.
-        csv_delimiter: Delimiter used in the CSV file.
-        skip_prefixes: Line prefixes to ignore.
-        encoding_full_scan: Whether to fully scan for encoding detection.
-
-    Yields:
-        Values from the specified column.
-
-    Raises:
-        OSError: If the file cannot be opened.
-    """
-    skip_prefixes = [p.lower() for p in to_list(skip_prefixes)]
+        column_number: Zero-based index of the column to read.
+        csv_delimiter: Delimiter character used in the CSV file.
+        skip_prefixes: One or more prefixes that indicate rows to skip.
+            Comparison is case-insensitive.
+        encoding_full_scan: If True, reads the entire file to detect encoding.
+            If False, reads only the first 10,240 bytes.
+    """    
+    skip_prefixes = [p.lower() for p in common_utils.to_list(skip_prefixes)]
 
     with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, newline="") as file:
         reader = csv.reader(file, delimiter=csv_delimiter)
@@ -119,8 +114,8 @@ def read_csv_column(
                 continue
             
             # Check skip prefixes
-            cell_lower = row[0].strip().lower()
-            if skip_prefixes and _has_any_prefix(cell_lower, skip_prefixes):
+            cell_lower: str = row[0].strip().lower()
+            if skip_prefixes and _has_any_prefix(line=cell_lower, prefixes=skip_prefixes):
                 continue
 
             if column_number < len(row):
@@ -137,29 +132,30 @@ def read_text_section(
     encoding_full_scan: bool = False
 ) -> Iterable[str]:
     """
-    Yield lines from a file between optional start and end markers.
+    Read a section of a text file, yielding one line at a time.
 
-    Supports skipping lines by prefix and optionally skipping the first
-    matched start line.
+    Optionally begins reading at a line matching start_prefix, stops
+    at a line matching any end_prefix, and skips lines matching any
+    skip_prefix. Blank lines are always skipped.
 
     Args:
         file_path: Path to the text file.
-        start_prefix: Prefix indicating where to begin reading.
-        end_prefixes: Prefixes indicating where to stop reading.
-        skip_prefixes: Prefixes for lines to ignore.
-        skip_first_line: Whether to skip the start line itself.
-        encoding_full_scan: Whether to fully scan for encoding detection.
-
-    Yields:
-        Non-empty, stripped lines within the specified section.
-
-    Raises:
-        OSError: If the file cannot be opened.
-    """
-    is_reading = start_prefix is None
+        start_prefix: If provided, reading begins at the first line that
+            starts with this prefix. If None, reading begins at the start
+            of the file.
+        end_prefixes: One or more prefixes that indicate the end of the
+            section. Reading stops when a matching line is encountered.
+        skip_prefixes: One or more prefixes that indicate lines to skip.
+            Defaults to "#" to skip comment lines.
+        skip_first_line: If True, skips the line that matches start_prefix
+            before yielding. Useful when the header line itself is not needed.
+        encoding_full_scan: If True, reads the entire file to detect encoding.
+            If False, reads only the first 10,240 bytes.
+    """    
+    is_reading: bool = start_prefix is None
     start_prefix = start_prefix.lower() if start_prefix else None
-    end_prefixes = [p.lower() for p in to_list(end_prefixes)]
-    skip_prefixes = [p.lower() for p in to_list(skip_prefixes)]
+    end_prefixes = [p.lower() for p in common_utils.to_list(end_prefixes)]
+    skip_prefixes = [p.lower() for p in common_utils.to_list(skip_prefixes)]
 
     with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan) as file:
         for line in file:
@@ -178,54 +174,24 @@ def read_text_section(
                     continue
 
             # Check end prefixes
-            elif end_prefixes and _has_any_prefix(line_lower, end_prefixes):
+            elif end_prefixes and _has_any_prefix(line=line_lower, prefixes=end_prefixes):
                 break
 
             # Check skip prefixes
-            if _has_any_prefix(line_lower, skip_prefixes):
+            if _has_any_prefix(line=line_lower, prefixes=skip_prefixes):
                 continue
             
             yield clean_line
 
-def to_list(value: str | Iterable[str]) -> list[str]:
+# ==============================
+# PRIVATE FUNCTIONS
+# ==============================
+def _has_any_prefix(line: str, prefixes: list[str]) -> bool:
     """
-    Normalize input into a list.
-
-    Behavior:
-    - None → []
-    - Iterable (excluding str/bytes) → list(value)
-    - Single value (including str/bytes) → [value]
-
-    This prevents strings/bytes from being split into elements while still
-    allowing lists, tuples, sets, and other iterables to pass through.
+    Check if a string starts with any of the given prefixes.
 
     Args:
-        value: A single item, an iterable of items, or None.
-
-    Returns:
-        A list containing the normalized values.
+        line: The string to check.
+        prefixes: A list of prefixes to test against.
     """    
-    if value is None:
-        return []
-    if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
-        return list(value)
-    return [value]
-
-# ==============================
-# PRIVATE HELPERS
-# ==============================
-def _has_any_prefix(line: str, prefixes: list[str]):
-    """
-    Return True if the given string starts with any of the provided prefixes.
-
-    Comparison is case-sensitive. Callers are responsible for normalizing
-    inputs (e.g., lowercasing) if case-insensitive behavior is desired.
-
-    Args:
-        line: The string to evaluate.
-        prefixes: A list of prefixes to check against.
-
-    Returns:
-        True if the string starts with any prefix in the list, otherwise False.
-    """
     return any(line.startswith(p) for p in prefixes)

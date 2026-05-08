@@ -1,27 +1,15 @@
-"""
-CLI entry point for the Shandalar → MTG: Forge compatibility tool.
-
-Orchestrates the full workflow:
-- Parses command-line arguments
-- Loads edition and card data
-- Identifies unsupported cards
-- Incorporates user-defined bans
-- Generates and writes Forge-compatible output
-
-Also configures logging for both user-facing CLI output and detailed file logs.
-"""
-
 import sys
 from pathlib import Path
-print(Path(__file__).parent.parent / "src")
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from common import common_const
+from common import common_const, file_utils, log_utils
+from config import config_io
+from config.config_io import ConfigFormat
 from config.format_generator_config import FormatGeneratorConfig
-from config.common_config import CommonConfig
+from format_generator import format_const, format_pipeline
+from format_generator.format_const import ForgeFormatInput, ForgeFormatOutput
 import argparse
 import logging
-from format_generator import card_loader, card_processor
 
 logger = logging.getLogger(__name__)
 
@@ -29,35 +17,18 @@ logger = logging.getLogger(__name__)
 # MAIN ENTRY POINT
 # ==============================
 def main() -> None:
-    """
-    Execute the CLI workflow for generating an MTG: Forge format file.
-
-    This function parses command-line arguments, loads and processes
-    card data, generates the Forge format, and writes the output file.
-    """    
-    configure_logging()
+    log_utils.configure_logging()
     
     try:
         cli_args = parse_cli_args()
-        common = CommonConfig(io_encoding_scan=common_const.EncodingScanMode(cli_args.encoding_scan))
-        config = FormatGeneratorConfig(common=common)
-        
-        # Load data
-        edition_list = load_edition_list(editions_file_path=cli_args.editions, config=config)
-        card_pool = build_card_pool(editions=edition_list, config=config)
+        if not validate_cli_args(cli_args):
+            sys.exit(1)
+        config = config_io.build_config(ConfigFormat.FORMAT_GENERATOR)
+        config = apply_cli_args(args=cli_args, config=config)
 
-        # Build banned card pool            
-        unsupported_cards = resolve_unsupported_cards(card_pool=card_pool, config=config)
-        user_banned_cards = load_user_banned_cards(user_banned_file_path=cli_args.user_banned, config=config)             
-
-        # Format and write
-        logger.info("Formatting output for MTG: Forge...")
-        forge_output = card_processor.build_forge_format(
-            unsupported_cards=unsupported_cards,
-            user_banned_cards=user_banned_cards,
-            edition_codes=card_processor.collect_edition_codes(edition_list, config=config)
-        )        
-        write_forge_output(forge_format=forge_output, output_file_path=cli_args.output)
+        input_format: ForgeFormatInput = format_pipeline.build_input_format(format_pipeline.get_input_format_path(config.input_format_file))
+        output_format: ForgeFormatOutput = format_pipeline.build_output_format(input_format=input_format, config=config)
+        format_pipeline.write_output_format(output_format)
 
         logger.info("Compilation completed successfully!")
     except ValueError as e:
@@ -73,40 +44,6 @@ def main() -> None:
 # ==============================
 # HIGH LEVEL FUNCTIONS
 # ==============================
-def configure_logging() -> None:
-    """
-    Configure logging for both CLI and file output.
-
-    CLI logging displays human-readable messages, while file logging
-    includes debug information and full exception tracebacks.
-    """    
-    formatter = logging.Formatter(common_const.LOGGER_FORMAT_FILE)
-
-    # CLI-level logging. Prioritize readability.
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    console.setFormatter(logging.Formatter(common_const.LOGGER_FORMAT_CLI))
-
-    # Filter out exception tracebacks from CLI
-    class NoExceptionTracebackFilter(logging.Filter):
-        def filter(self, record: logging.LogRecord) -> bool:
-            return record.exc_info is None
-
-    console.addFilter(NoExceptionTracebackFilter())
-
-    # File-level logging. Full fidelity.
-    file_handler = logging.FileHandler(
-        common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}",
-        mode=common_const.LOGGER_FILE_MODE,
-        encoding=common_const.DEFAULT_ENCODING
-    )
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    root.handlers = [console, file_handler]
-
 def parse_cli_args() -> argparse.Namespace:
     """
     Parse command-line arguments for the CLI.
@@ -122,45 +59,33 @@ def parse_cli_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
-        "-o", "--output",
-        type=lambda file_name: card_loader.ensure_extension(
-            file_path=Path(file_name),
-            extension=common_const.FILE_TYPE_OUTPUT
-        ),
-        default=card_loader.ensure_extension(
-            file_path=common_const.USER_OUTPUT_DIR / common_const.FILE_NAME_OUTPUT,
-            extension=common_const.FILE_TYPE_OUTPUT
-        ),
-        help="File to write unsupported cards to.",
+        "-o", "--output-format",
+        choices=format_const.FORGE_FORMAT_VALID_VALUES,
+        help="Forge format type to be generated.",
     )
     parser.add_argument(
         "-e", "--editions",
-        type=lambda file_name: card_loader.ensure_extension(
-            file_path=Path(file_name),
-            extension=common_const.FILE_TYPE_CONFIG
-        ),
-        default=card_loader.ensure_extension(
-            file_path=common_const.USER_CONFIG_DIR / common_const.FILE_NAME_CONFIG,
-            extension=common_const.FILE_TYPE_CONFIG
-        ),
-        help="CSV file listing editions to load.",
+        action="store_true",
+        default=False,
+        help="Deprecated. --editions and --user-banned are no longer supported. Format specification has moved to a single .toml file. See the readme for migration details."
     )
     parser.add_argument(
         "-b", "--user-banned",
-        type=lambda file_name: card_loader.ensure_extension(
-            file_path=Path(file_name),
-            extension=common_const.FILE_TYPE_USER_BANNED
+        action="store_true",
+        default=False,
+        help="Deprecated. --editions and --user-banned are no longer supported. Format specification has moved to a single .toml file. See the readme for migration details."
+    )    
+    parser.add_argument(
+        "-i", "--input-file",
+        type=lambda file_name: file_utils.ensure_extension(
+            file_path=common_const.FORMATS_DIR / Path(file_name),
+            extension=format_const.FILE_TYPE_INPUT_FORMAT
         ),
-        default=card_loader.ensure_extension(
-            file_path=common_const.USER_CONFIG_DIR / common_const.FILE_NAME_USER_BANNED,
-            extension=common_const.FILE_TYPE_USER_BANNED
-        ),
-        help="CSV file listing user-designated cards to ban.",
+        help="TOML file describing the format to be generated.",
     )
     parser.add_argument(
         "-s", "--encoding-scan",
-        default="auto",
-        choices=["auto", "fast", "full"],
+        choices=common_const.ENCODING_SCAN_VALID_VALUES,
         help=(
             "Encoding detection mode: "
             "auto (use built-in defaults), "
@@ -169,118 +94,41 @@ def parse_cli_args() -> argparse.Namespace:
         )
     )
 
-    return parser.parse_args()  
+    return parser.parse_args()
 
-def load_edition_list(editions_file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
+def validate_cli_args(args: argparse.Namespace) -> bool:
     """
-    Load edition names from a configuration file.
+    Validate command-line arguments for deprecated flags.
+
+    Logs an error and returns False if any deprecated arguments are detected.
 
     Args:
-        editions_file_path: Path to the editions CSV file.
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        A list of edition names.
-
-    Raises:
-        ValueError: If the file is missing or empty.
-    """  
-    logger.info("Loading edition list...")
-
-    try:
-        editions = card_loader.get_edition_list(csv_file_path=editions_file_path, config=config)
-    except FileNotFoundError:
-        raise ValueError(f"Could not find editions file: {editions_file_path}")
-    if not editions:
-        raise ValueError(f"Editions file is empty: {editions_file_path}")
-
-    return editions
-
-def build_card_pool(editions: list[str], config: format_generator_config.FormatGeneratorConfig) -> set[str]:
-    """
-    Build the card pool from the specified editions.
-
-    Args:
-        editions: A list of edition names.
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        A set of unique card names.
-    """
-    logger.info("Building card pool from editions...")
-    card_pool = card_processor.build_card_pool(editions=editions, config=config)
-
-    if not card_pool:
-        logger.warning("No cards were loaded from the specified editions. Edition files may be empty, missing, or invalid.")
-
-    return card_pool
-
-def resolve_unsupported_cards(card_pool: set[str], config: format_generator_config.FormatGeneratorConfig) -> list[str]:
-    """
-    Resolve cards that are unsupported by Shandalar.
-
-    Builds the Shandalar lookup and delegates comparison to the processor.
-
-    Args:
-        card_pool: A set of card names.
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        A list of unsupported card names.
-    """
-    logger.info("Identifying unsupported cards...")
-    shandalar_lookup = card_processor.build_shandalar_card_lookup(config=config)        
-    
-    unsupported_cards = card_processor.find_unsupported_cards(cards=card_pool, shandalar_lookup=shandalar_lookup)        
-    if not unsupported_cards:
-        logger.warning(
-            "No unsupported cards found among %d cards. This is unexpected and may indicate an issue with the "
-             "input data or configuration.", len(card_pool)
-        )
-
-    return unsupported_cards
-
-def load_user_banned_cards(user_banned_file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
-    """
-    Load user-defined banned cards from a file.
-
-    Args:
-        user_banned_file_path: Path to the CSV file.
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        A list of user-banned card names, or an empty list if the file is missing.
-    """   
-    logger.info("Loading user-banned card list...")
-
-    try:
-        user_banned_cards = card_loader.get_user_banned_cards(file_path=user_banned_file_path, config=config)
-    except FileNotFoundError:
-        logger.warning("Could not find user-banned file: %s", user_banned_file_path)
-        return []
-
-    if not user_banned_cards:
-        logger.info("User-banned file is empty.")
-
-    return user_banned_cards
-
-def write_forge_output(forge_format: str, output_file_path: Path) -> None:
-    """
-    Write the Forge format string to an output file.
-
-    Args:
-        forge_format: The generated Forge format string.
-        output_file_path: Path to the output file.
-
-    Raises:
-        OSError: If the file cannot be written.
+        args: The parsed command-line arguments.
     """    
-    logger.info("Writing Forge output to %s...", output_file_path)
-    try:
-        with output_file_path.open("w", encoding=common_const.DEFAULT_ENCODING) as file:
-            file.write(forge_format)
-    except OSError as e:
-        raise OSError(f"Could not write to output file '{output_file_path}': {e}") from e
+    if args.editions or args.user_banned:
+        logger.error("--editions and --user-banned are no longer supported. Format specification has moved to a single .toml file. See the readme for migration details.")
+        return False
+    return True
+
+def apply_cli_args(args: argparse.Namespace, config: FormatGeneratorConfig) -> FormatGeneratorConfig:
+    """
+    Apply command-line arguments on top of the loaded configuration.
+
+    CLI arguments take precedence over config.toml values. Only applies
+    arguments that were explicitly provided by the user.
+
+    Args:
+        args: The parsed command-line arguments.
+        config: The configuration object to update.
+    """    
+    if args.encoding_scan is not None:
+        config.common.io_encoding_scan = args.encoding_scan
+    if args.input_file is not None:
+        config.input_format_file = args.input_file
+    if args.output_format is not None:
+        config.output_format_type = format_const.parse_forge_format(args.output_format)
+
+    return config
 
 if __name__ == "__main__":
     main()

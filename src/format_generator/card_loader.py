@@ -1,76 +1,39 @@
 """
-Data loading and file parsing utilities.
+Card and edition data loaders for Shandalar Tools.
 
-Responsible for:
-- Reading edition data and extracting card names and metadata
-- Loading CSV-based configuration (editions, banned cards, Shandalar data)
-- Handling text section extraction from Forge files
-- Detecting file encodings and normalizing file names
-- Providing sanitized, structured data to higher-level modules
-
-Acts as the primary interface between raw file data and application logic.
+Provides functions for reading Forge edition files and Shandalar card
+data from disk, including card names, edition codes, and the Shandalar
+supported card list.
 """
-from common import file_utils
-from config import format_generator_config
+from common import common_const, file_utils
+from config.format_generator_config import FormatGeneratorConfig
 from pathlib import Path
 from typing import Iterable
 import logging
 
-from common import common_const
-
 logger = logging.getLogger(__name__)
 
 # ==============================
-# HIGH LEVEL LOADERS
+# PUBLIC FUNCTIONS
 # ==============================
-def get_edition_code(edition_name: str, config: format_generator_config.FormatGeneratorConfig) -> str:
-    """
-    Retrieve the Scryfall code for a given edition.
-
-    Args:
-        edition_name: The name of the edition.
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        The Scryfall code associated with the edition.
-
-    Raises:
-        ValueError: If the edition name is empty or no code is found.
-    """
-    if not edition_name:
-        raise ValueError("Edition name cannot be empty.")
-
-    file_path = get_edition_file_path(edition_name)
-
-    try:
-        line = next(file_utils.read_text_section(
-            file_path=file_path,
-            start_prefix=common_const.SCRYFALL_CODE_PREFIX,
-            encoding_full_scan=config.common.io_encoding_scan.resolve()
-        ))
-    except StopIteration:
-        raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
-
-    return line[len(common_const.SCRYFALL_CODE_PREFIX):] 
-
-def get_edition_cards(edition_name: str, config: format_generator_config.FormatGeneratorConfig) -> Iterable[str]:
+def get_edition_card_names(edition_name: str, config: FormatGeneratorConfig) -> Iterable[str]:
     """
     Yield card names from a Forge edition file.
 
-    Args:
-        edition_name: The name of the edition.
-        config: FormatGeneratorConfig controlling encoding behavior.
+    Reads the [cards] section of the edition file and parses each row
+    into a card name, skipping any rows that cannot be parsed.
 
-    Yields:
-        Card names parsed from the edition file.
+    Args:
+        edition_name: The name of the edition to load.
+        config: Configuration controlling encoding scan behavior.
 
     Raises:
         ValueError: If the edition name is empty.
-    """
+    """    
     if not edition_name:
         raise ValueError("Edition name cannot be empty.") 
     
-    file_path = get_edition_file_path(edition_name)
+    file_path: Path = _get_edition_file_path(edition_name)
 
     edition_data = file_utils.read_text_section(
         file_path=file_path, 
@@ -85,144 +48,86 @@ def get_edition_cards(edition_name: str, config: format_generator_config.FormatG
         if name:
             yield name
 
-def get_edition_list(csv_file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
+def get_scryfall_code(edition_name: str, config: FormatGeneratorConfig) -> str:
     """
-    Load edition names from a CSV configuration file.
+    Read the Scryfall code from a Forge edition file.
 
     Args:
-        csv_file_path: Path to the CSV file.
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        A list of edition names.
+        edition_name: The name of the edition to look up.
+        config: Configuration controlling encoding scan behavior.
 
     Raises:
-        OSError: If the file cannot be opened.        
-    """  
-    return list(file_utils.read_csv_column(
-        file_path=csv_file_path,
-        column_number=0,
-        skip_prefixes=[common_const.COMMENT_PREFIX],
-        encoding_full_scan=config.common.io_encoding_scan.resolve()
-    ))
-
-def get_shandalar_cards(config: format_generator_config.FormatGeneratorConfig) -> set[str]:
-    """
-    Load the set of cards supported by Shandalar.
-
-    Args:
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        A set of supported card names.
-
-    Raises:
-        OSError: If the file cannot be opened.        
-    """ 
-    cards = file_utils.read_csv_column(
-        file_path=common_const.FILE_SHANDALAR_CSV,
-        column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN,
-        encoding_full_scan=config.common.io_encoding_scan.resolve(default_full_scan=True)
-    )
-    return set(cards)
-
-def get_user_banned_cards(file_path: Path, config: format_generator_config.FormatGeneratorConfig) -> list[str]:
-    """
-    Load user-defined banned cards from a CSV file.
-
-    Args:
-        file_path: Path to the user-banned cards file.
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        A list of banned card names.
-
-    Raises:
-        OSError: If the file cannot be opened.        
-    """ 
-    return list(file_utils.read_csv_column(
-        file_path=file_path,
-        column_number=0,
-        skip_prefixes=[common_const.COMMENT_PREFIX],
-        encoding_full_scan=config.common.io_encoding_scan.resolve())
-    )
-
-# ==============================
-# PUBLIC HELPERS
-# ==============================
-
-def ensure_extension(file_path: Path, extension: str) -> Path:
-    """
-    Ensure the path has the given extension if one is not 
-    already present.
-
-    Args:
-        file_path: The file path to normalize.
-        extension: The required file extension.
-
-    Returns:
-        A Path object with the correct extension.
+        ValueError: If the edition name is empty or no Scryfall code is defined.
     """    
-    return file_path if file_path.suffix else file_path.with_suffix(f".{extension}")
+    if not edition_name:
+        raise ValueError("Edition name cannot be empty.")
 
-def get_edition_file_path(edition_name: str) -> Path:
+    file_path: Path = _get_edition_file_path(edition_name)
+
+    try:
+        line = next(file_utils.read_text_section(
+            file_path=file_path,
+            start_prefix=common_const.SCRYFALL_CODE_PREFIX,
+            encoding_full_scan=config.common.io_encoding_scan.resolve()
+        ))
+    except StopIteration:
+        raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
+
+    return line[len(common_const.SCRYFALL_CODE_PREFIX):]             
+
+def get_shandalar_card_names(config: FormatGeneratorConfig) -> set[str]:
     """
-    Construct the file path for a Forge edition file.
+    Read all card names from the Shandalar card data file.
+
+    Resolves the file path from the configured card pool name and data
+    directory. Uses a full encoding scan by default due to the size of
+    the file.
+
+    Args:
+        config: Configuration controlling card pool selection and encoding
+            scan behavior.
+    """    
+    file_path: Path = file_utils.ensure_extension(
+        common_const.DATA_DIR / config.common.data_shandalar_card_pool,
+        common_const.FILE_TYPE_SHANDALAR_DATA
+    )
+    return set(file_utils.read_csv_column(
+        file_path=file_path,
+        column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN,
+        encoding_full_scan=config.common.io_encoding_scan.resolve(default_full_scan=True))
+    )
+
+# ==============================
+# PRIVATE FUNCTIONS
+# ==============================
+def _get_edition_file_path(edition_name: str) -> Path:
+    """
+    Build the file path for a Forge edition file.
 
     Args:
         edition_name: The name of the edition.
-
-    Returns:
-        The full path to the edition file.
 
     Raises:
         ValueError: If the edition name is empty.
     """    
     if not edition_name:
-        raise ValueError(f"Edition name cannot be empty.")
+        raise ValueError("Edition name cannot be empty.")
 
     return common_const.EDITIONS_DIR / f"{edition_name}{common_const.EDITION_FILE_SUFFIX}"
 
-def sanitize_name(name: str) -> str:
-    """
-    Normalize a name by trimming whitespace and converting to lowercase.
-
-    Args:
-        name: The string to sanitize.
-
-    Returns:
-        A sanitized string.
-    """    
-    return name.strip().lower()
-
-def sanitize_card_set(cards: set[str]) -> set[str]:
-    """
-    Sanitize a set of card names.
-
-    Args:
-        cards: A set of card names.
-
-    Returns:
-        A sanitized set with lowercase, trimmed names.
-    """    
-    return {sanitize_name(c) for c in cards}
-
-# ==============================
-# PRIVATE HELPERS
-# ==============================
-
 def _parse_card_name_from_edition_row(row: str) -> str:
     """
-    Extract a card name from a Forge edition data row.
+    Parse a card name from a single row of a Forge edition file.
+
+    Splits on the card delimiter and extracts the name starting from
+    the expected column index. Returns an empty string if no name
+    can be parsed, and logs a debug message in that case.
 
     Args:
-        row: A line from a Forge edition file.
-
-    Returns:
-        The parsed card name.
+        row: A single row string from the edition file.
     """    
-    line = row.split(common_const.FORGE_EDITION_CARD_DELIMITER, 1)[0]
-    card_name = " ".join(line.split()[common_const.EDITIONS_CARD_NAME_STARTING_COLUMN:])
+    line: str = row.split(common_const.FORGE_EDITION_CARD_DELIMITER, 1)[0]
+    card_name: str = " ".join(line.split()[common_const.EDITIONS_CARD_NAME_STARTING_COLUMN:])
     
     if not card_name:
         logger.debug("Could not parse card name from row: %s", line)

@@ -1,227 +1,94 @@
 """
-Core data processing and transformation logic.
+Card data processing for Shandalar Tools format generator.
 
-Handles:
-- Building card pools from multiple editions
-- Generating Scryfall edition codes
-- Identifying unsupported cards via Shandalar comparison
-- Detecting duplicates across datasets
-- Merging and deduplicating card lists
-- Formatting final MTG: Forge output
-
-Serves as the central computation layer between data loading and CLI output.
+Provides functions for building card pools from Forge edition files,
+constructing the Shandalar card lookup, collecting Scryfall edition
+codes, and identifying unsupported cards.
 """
-from collections.abc import Iterable, Sequence
-from common import common_const
-from config import format_generator_config
-from pathlib import Path
-import logging
+from common import common_utils
+from config.format_generator_config import FormatGeneratorConfig
+from format_generator import card_loader
 
-from src.format_generator import card_loader, format_const
+import logging
 
 logger = logging.getLogger(__name__)
 
 # ==============================
-# DATA CONSTRUCTION
+# PUBLIC_FUNCTIONS
 # ==============================
-def build_card_pool(editions: Sequence[str], config: format_generator_config.FormatGeneratorConfig) -> set[str]:
+def build_format_card_pool(edition_names: list[str], config: FormatGeneratorConfig) -> set[str]:
     """
-    Build and return a set of all cards from the specified editions.
+    Build a set of card names from the specified Forge editions.
 
-    Duplicate edition names are ignored. A warning is logged when
-    duplicates are encountered.
+    Loads each edition in order, skipping duplicates. Logs a warning
+    for any duplicate edition names detected.
 
     Args:
-        editions: A sequence of edition names to load.
-
-    Returns:
-        A set containing all unique card names from the given editions.
+        edition_names: Names of the editions to load.
+        config: Configuration controlling encoding scan behavior.
     """    
-    editions_loaded = set()
-    cards = set()
+    logger.info("Building card pool from editions...")    
+    editions_loaded: set[str] = set()
+    cards: set[str] = set()
 
-    for e in editions:
-        sanitized_edition_name = card_loader.sanitize_name(e)
+    for e in edition_names:
+        sanitized_edition_name: str = common_utils.sanitize_name(e)
         if sanitized_edition_name in editions_loaded:
             logger.warning("Duplicate edition '%s' detected; skipping.", e)
             continue
 
-        logger.info("Loading edition '%s'...", e)
+        logger.debug("Loading edition '%s'...", e)
 
-        cards.update(card_loader.get_edition_cards(edition_name=e, config=config))
+        cards.update(card_loader.get_edition_card_names(edition_name=e, config=config))
         editions_loaded.add(sanitized_edition_name)
 
     return cards
 
-def collect_edition_codes(editions: Sequence[str], config: format_generator_config.FormatGeneratorConfig) -> set[str]:
+def build_shandalar_card_lookup(config: FormatGeneratorConfig) -> set[str]:
     """
-    Generate Scryfall edition codes for the provided editions.
+    Build a sanitized set of Shandalar card names for lookup.
+
+    Reads the Shandalar card data file and returns a set of sanitized
+    card names suitable for case-insensitive comparison.
 
     Args:
-        editions: A sequence of edition names.
-        config: FormatGeneratorConfig controlling encoding behavior.
+        config: Configuration controlling encoding scan behavior.
+    """    
+    logger.info("Loading Shandalar card pool...")
+    return common_utils.sanitize_set(items=card_loader.get_shandalar_card_names(config))
 
-    Returns:
-        A set of Scryfall edition codes.
-
-    Raises:
-        ValueError: If an edition is invalid or missing a Scryfall code.        
+def collect_scryfall_codes(edition_names: list[str], config: FormatGeneratorConfig) -> set[str]:
     """
+    Collect Scryfall edition codes for a list of edition names.
+
+    Args:
+        edition_names: Names of the editions to collect codes for.
+        config: Configuration controlling encoding scan behavior.
+    """    
     logger.info("Generating Scryfall edition codes...")
-    edition_codes = set()
-
-    for e in editions:
-        logger.info("Collecting edition code for '%s'...", e)
-        code = card_loader.get_edition_code(edition_name=e, config=config)
-        edition_codes.add(code)
-
-    return edition_codes
-
-# ==============================
-# DATA TRANSFORMATION
-# ==============================
-def find_duplicates(card_lists: Iterable[Iterable[str]]) -> list[str]:
-    """
-    Identify duplicate entries within or across multiple iterables.
-
-    Args:
-        card_lists: An iterable containing iterables of card names.
-
-    Returns:
-        A sorted list of unique duplicate card names.
-    """    
-    seen = set()
-    duplicates = set()
-
-    for card_list in card_lists:
-        for card in card_list:
-            if card in seen:
-                duplicates.add(card)
-            else:
-                seen.add(card)
-
-    return sorted(duplicates)   
-
-def find_unsupported_cards(cards: set[str], shandalar_lookup: set[str]) -> list[str]:
-    """
-    Determine which cards are unsupported by Shandalar.
-
-    Card names are normalized before comparison.
-
-    Args:
-        cards: A set of card names to evaluate.
-        shandalar_lookup: A sanitized set of supported card names.
-
-    Returns:
-        A list of unsupported card names.
-    """   
-    unsupported_cards = [c for c in cards if card_loader.sanitize_name(c) not in shandalar_lookup]
-    logger.info("Identified %d unsupported cards.", len(unsupported_cards))
     
-    return unsupported_cards
+    scryfall_codes: set[str] = set()
 
-def merge_and_dedupe_sequences(seq_1: Sequence[str], seq_2: Sequence[str]) -> list[str]:
+    for e in edition_names:
+        logger.debug("Collecting scryfall code for '%s'...", e)
+        code = card_loader.get_scryfall_code(edition_name=e, config=config)
+        scryfall_codes.add(code)
+
+    return scryfall_codes
+
+def find_unsupported_in_shandalar(card_names: set[str], shandalar_lookup: set[str]) -> list[str]:
     """
-    Merge two sequences while preserving order and preventing duplicates.
+    Identify cards that are not supported by Shandalar.
 
-    A new list is returned containing all elements from ``seq_1`` followed
-    by elements from ``seq_2`` that are not already present. The original
-    input sequences are not modified.
+    Compares card names against the Shandalar lookup using sanitized
+    comparison. Returns a list of unsupported card names in their
+    original unsanitized form.
 
     Args:
-        seq_1: The base sequence whose elements appear first in the result.
-        seq_2: The sequence whose unique elements will be appended.
-
-    Returns:
-        A new list containing unique elements from both sequences, with
-        the original ordering preserved.
-    """
-    merged = list(seq_1)
-    seen = set(merged)
-
-    for item in seq_2:
-        if item not in seen:
-            merged.append(item)
-            seen.add(item)
-
-    return merged
-
-# ==============================
-# OUTPUT FORMATTING
-# ==============================
-def build_forge_format(
-        unsupported_cards: Sequence[str],
-        user_banned_cards: Sequence[str],
-        edition_codes: set[str],
-        sort_cards: bool = True
-) -> str:
-    """
-    Generate a valid MTG: Forge format string.
-
-    Combines unsupported cards with user-defined banned cards, logs
-    duplicates, and formats the result according to the Forge specification.
-
-    Args:
-        unsupported_cards: A sequence of unsupported card names.
-        user_banned_cards: A sequence of user-specified banned cards.
-        edition_codes: A set of Scryfall edition codes.
-        sort_cards: Whether to sort unsupported cards.
-
-    Returns:
-        A formatted MTG: Forge configuration string.
-
-    Raises:
-        ValueError: If formatting fails due to invalid input.
-    """   
-    # Base list (sorted for readability if enabled).
-    formatted_cards = sorted(unsupported_cards) if sort_cards else list(unsupported_cards)
-
-    # Log duplicates between lists.
-    log_duplicates(find_duplicates([formatted_cards, user_banned_cards]))
-
-    banned_cards = "; ".join(merge_and_dedupe_sequences(formatted_cards, user_banned_cards))
-    set_codes = ", ".join(sorted(edition_codes))
-
-    forge_format = format_const.FORGE_FORMAT_BODY_STANDARD.format(
-        banned_cards=banned_cards,
-        set_codes=set_codes
-    )  
-
-    return forge_format
-
-# ==============================
-# HELPERS
-# ==============================
-def build_shandalar_card_lookup(config: format_generator_config.FormatGeneratorConfig) -> set[str]:
-    """
-    Build a normalized lookup set of Shandalar-supported card names.
-
-    Args:
-        config: FormatGeneratorConfig controlling encoding behavior.
-
-    Returns:
-        A sanitized set of supported card names.
-    """ 
-    return card_loader.sanitize_card_set(card_loader.get_shandalar_cards(config=config))      
-
-def log_duplicates(duplicates: list[str]) -> None:
-    """
-    Log duplicate card entries detected across input lists.
-
-    A preview is shown in the CLI, while the full list is written
-    to the debug log.
-
-    Args:
-        duplicates: A sorted list of duplicate card names.
+        card_names: The set of card names to check.
+        shandalar_lookup: A sanitized set of Shandalar supported card names.
     """    
-    if duplicates:
-        preview = ", ".join(duplicates[:common_const.PREVIEW_LIMIT])
-        logger.warning(
-            "%d duplicate card entries detected across the unsupported and user-banned lists "
-            "(preserved as-is). Examples: %s%s\nFull details written to the log file (default: %s)",
-            len(duplicates),
-            preview,
-            "..." if len(duplicates) > common_const.PREVIEW_LIMIT else "",
-            common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}"
-        )
-        logger.debug("Duplicate entries: %s", duplicates)
+    unsupported_card_names: list[str] = [c for c in card_names if common_utils.sanitize_name(c) not in shandalar_lookup]
+    logger.info("Identified %d unsupported cards.", len(unsupported_card_names))
+    
+    return unsupported_card_names

@@ -1,5 +1,4 @@
-editions = 
-[
+editions = [
     "Ninth Edition",
     "Revised Edition",
     "Fourth Edition",
@@ -9,11 +8,11 @@ editions =
     "Time Spiral",
     "Coldsnap",
     "Fallen Empires",
-    "The Dark"
+    "The Dark",
+    "Ninth Edition"
 ]
 
-custom_bans =
-[
+additional_bans = [
     # bugged
     "Primal Clay",
     "Cave People",
@@ -124,4 +123,16 @@ custom_bans =
     #test
     "typo sliver",
     "oops this card doesn't exist"
+]
+
+additional_cards = [
+    "Ancestral Recall",
+    "Black Lotus",
+    "Mox Emerald",
+    "Mox Jet",
+    "Mox Pearl",
+    "Mox Ruby",
+    "Mox Sapphire",
+    "Timetwister",
+    "Time Walk"    
 ]
