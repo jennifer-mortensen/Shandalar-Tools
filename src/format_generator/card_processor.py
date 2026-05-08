@@ -55,7 +55,7 @@ def build_shandalar_card_lookup(config: FormatGeneratorConfig) -> set[str]:
         config: Configuration controlling encoding scan behavior.
     """    
     logger.info("Loading Shandalar card pool...")
-    return common_utils.sanitize_set(items=card_loader.get_shandalar_card_names(config))
+    return common_utils.sanitize_set(card_loader.get_shandalar_card_names(config))
 
 def collect_scryfall_codes(edition_names: list[str], config: FormatGeneratorConfig) -> set[str]:
     """
