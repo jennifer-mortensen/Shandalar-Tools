@@ -2,7 +2,7 @@
 
 **Current Version:** 1.0.3
 
-> ⚠️ The `dev` branch contains the upcoming v2 architecture rewrite, including TOML-driven configuration, modular pipeline processing, and expanded format support.
+> ℹ️ The `dev` branch contains the upcoming v2 architecture rewrite, including TOML-driven configuration, modular pipeline processing, and expanded format support.
 > It is substantially more advanced than the current stable release, but remains under active development and may change without notice.
 > v2 will be merged into `main` once the Deck Translator is completed and stabilized.
 
