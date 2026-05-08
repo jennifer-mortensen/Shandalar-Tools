@@ -2,8 +2,8 @@
 
 **Current Version:** 1.0.3
 
-> ℹ️ The `dev` branch contains the upcoming v2 architecture rewrite, including TOML-driven configuration, modular pipeline processing, and expanded format support.
-> It is substantially more advanced than the current stable release, but remains under active development and may change without notice.
+> ℹ️ The `dev` branch contains the upcoming v2 architecture rewrite, including TOML-driven configuration, modular pipeline processing, expanded format support, and additional customization features.
+> While the end-user workflow remains broadly similar, the internal architecture and configuration system are substantially more advanced than the current stable release.
 > v2 will be merged into `main` once the Deck Translator is completed and stabilized.
 
 A Python command-line utility for generating MTG: Forge format restrictions compatible with Shandalar mods.
