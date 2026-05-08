@@ -63,6 +63,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         key=format_const.INPUT_FORMAT_KEY_ADDITIONAL_CARDS,
         expected_type=list
     )
+    # TODO: Remove commented lines (i.e. "#" prefix) from lookups to prevent user comments from being flagged or filtered from output.
     input_format.additional_bans_lookup = common_utils.sanitize_set(set(input_format.additional_bans))
     input_format.additional_cards_lookup = common_utils.sanitize_set(set(input_format.additional_cards))
 
@@ -188,6 +189,7 @@ def create_ban_list(input_format: ForgeFormatInput, unsupported_in_format: list[
         input_format: The parsed input format containing the additional bans list.
         unsupported_in_format: Cards from the selected editions not supported by Shandalar.
     """ 
+    # TODO: Check to see if the bans are in the Shandalar card pool at all, and if not, flag them for the user.
     logger.info("Checking for redundant bans...")    
     duplicate_bans: list[str] = common_utils.find_duplicates(
         sets=[common_utils.sanitize_set(set(unsupported_in_format)), input_format.additional_bans_lookup]
