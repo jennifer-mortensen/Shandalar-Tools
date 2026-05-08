@@ -342,7 +342,7 @@ This separation of concerns promotes maintainability, testability, clarity, and 
 
 * Reworked the application around a TOML-driven configuration and format pipeline architecture.
 * Replaced CSV-based edition and ban configuration with structured TOML format definitions.
-* Added support for configurable Forge output formats (Standard, Modern, Commander, Extended, etc.).
+* Replaced the hardcoded Standard-only output pipeline with generalized Forge format generation supporting configurable output formats (Standard, Modern, Commander, Extended, etc.).
 * Introduced explicit pipeline stages for parsing, validation, resolution, output construction, and rendering.
 * Added support for additional card inclusions alongside custom bans.
 * Added validation for conflicting, redundant, and unsupported user-defined entries.
@@ -352,7 +352,6 @@ This separation of concerns promotes maintainability, testability, clarity, and 
 * Added configurable encoding scan modes (`auto`, `fast`, `full`).
 * Reorganized the repository structure into modular `src/`, `user/`, and CLI layers.
 * Improved separation of concerns between CLI orchestration, data loading, validation, processing, and output generation.
-* Expanded Forge format generation from a hardcoded Standard template into generalized format metadata and rendering models.
 * Improved diagnostics, validation logging, and runtime error reporting throughout the pipeline.
 * Added initial Deck Translator project structure and configuration scaffolding.
 
