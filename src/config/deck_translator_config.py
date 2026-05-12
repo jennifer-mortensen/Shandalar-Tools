@@ -6,7 +6,7 @@ holds a CommonConfig — tool-specific fields will be added as the
 deck translator is implemented.
 """
 from config.common_config import CommonConfig
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 # ==============================
 # DEFAULTS
@@ -23,4 +23,4 @@ class DeckTranslatorConfig:
     Wraps CommonConfig with deck translator specific settings.
     Currently a stub pending full implementation.
     """    
-    common: CommonConfig
+    common: CommonConfig = field(default_factory=CommonConfig)

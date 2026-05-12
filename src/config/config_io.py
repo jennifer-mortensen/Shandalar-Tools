@@ -48,7 +48,7 @@ def build_format_generator_config() -> FormatGeneratorConfig:
         OSError: If config.toml cannot be opened.
         ValueError: If mandatory configuration values are missing or invalid.
     """
-    config: FormatGeneratorConfig = FormatGeneratorConfig(CommonConfig())
+    config: FormatGeneratorConfig = FormatGeneratorConfig()
     data: dict   
     path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
 
@@ -97,7 +97,7 @@ def build_deck_translator_config() -> DeckTranslatorConfig:
         OSError: If config.toml cannot be opened.
         ValueError: If mandatory configuration values are missing or invalid.
     """
-    config: DeckTranslatorConfig = DeckTranslatorConfig(CommonConfig())
+    config: DeckTranslatorConfig = DeckTranslatorConfig()
     data: dict   
     path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
 
@@ -234,8 +234,8 @@ def _write_default_config(file_path: Path) -> None:
     """    
     logger.info("Writing default config to %s...", file_path)
 
-    format_generator_config: FormatGeneratorConfig = FormatGeneratorConfig(CommonConfig())
-    # deck_translator_config: DeckTranslatorConfig = DeckTranslatorConfig(CommonConfig()) # Does nothing yet.
+    format_generator_config: FormatGeneratorConfig = FormatGeneratorConfig()
+    # deck_translator_config: DeckTranslatorConfig = DeckTranslatorConfig() # Does nothing yet.
 
     config_data: str = config_const.DEFAULT_CONFIG_CONSTRUCTOR.format(
         section_data=config_const.CONFIG_SECTION_DATA,
