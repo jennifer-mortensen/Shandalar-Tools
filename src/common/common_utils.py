@@ -90,6 +90,17 @@ def merge_and_dedupe_sequences(seq_1: Sequence[Any], seq_2: Sequence[Any]) -> li
 
     return merged
 
+"""
+Return the singular or plural form of a word based on quantity.
+
+Args:
+    quantity: The quantity used to determine plurality.
+    singular: The singular form to return when quantity is 1.
+    plural: The plural form to return for all other quantities.
+"""
+def pluralize(quantity: int, singular: str, plural: str) -> str:
+    return singular if quantity == 1 else plural
+
 def sanitize_name(name: str) -> str:
     """
     Sanitize a string for consistent comparison.

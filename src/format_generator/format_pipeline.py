@@ -140,7 +140,9 @@ def validate_additional_cards(input_format: ForgeFormatInput) -> bool:
         duplicates=unresolved_duplicates,
         list_name_1="additional bans",
         list_name_2="additional cards",
-        entry_type="card entries")
+        entry_type_singular="card entry",
+        entry_type_plural="card entries"
+    )
 
 def filter_unsupported_additions(
         additional_cards: list[str],
