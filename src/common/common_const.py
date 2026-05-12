@@ -114,8 +114,3 @@ EDITIONS_CARD_NAME_STARTING_COLUMN = 2
 FORGE_CARDS_HEADER = "[cards]"
 FORGE_EDITION_CARD_DELIMITER = " @"
 SCRYFALL_CODE_PREFIX = "ScryfallCode="
-
-# ==============================
-# OUTPUT / DISPLAY
-# ==============================
-PREVIEW_LIMIT = 5

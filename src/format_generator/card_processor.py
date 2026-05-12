@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC_FUNCTIONS
 # ==============================
-def build_format_card_pool(edition_names: list[str], config: FormatGeneratorConfig) -> set[str]:
+def build_format_card_pool(edition_names: list[str]) -> set[str]:
     """
     Build a set of card names from the specified Forge editions.
 
@@ -25,7 +25,6 @@ def build_format_card_pool(edition_names: list[str], config: FormatGeneratorConf
 
     Args:
         edition_names: Names of the editions to load.
-        config: Configuration controlling encoding scan behavior.
     """    
     logger.info("Building card pool from editions...")    
     editions_loaded: set[str] = set()
@@ -39,31 +38,27 @@ def build_format_card_pool(edition_names: list[str], config: FormatGeneratorConf
 
         logger.debug("Loading edition '%s'...", e)
 
-        cards.update(card_loader.get_edition_card_names(edition_name=e, config=config))
+        cards.update(card_loader.get_edition_card_names(e))
         editions_loaded.add(sanitized_edition_name)
 
     return cards
 
-def build_shandalar_card_lookup(config: FormatGeneratorConfig) -> set[str]:
+def build_shandalar_card_lookup() -> set[str]:
     """
     Build a sanitized set of Shandalar card names for lookup.
 
     Reads the Shandalar card data file and returns a set of sanitized
     card names suitable for case-insensitive comparison.
-
-    Args:
-        config: Configuration controlling encoding scan behavior.
     """    
     logger.info("Loading Shandalar card pool...")
-    return common_utils.sanitize_set(card_loader.get_shandalar_card_names(config))
+    return common_utils.sanitize_set(card_loader.get_shandalar_card_names())
 
-def collect_scryfall_codes(edition_names: list[str], config: FormatGeneratorConfig) -> set[str]:
+def collect_scryfall_codes(edition_names: list[str]) -> set[str]:
     """
     Collect Scryfall edition codes for a list of edition names.
 
     Args:
         edition_names: Names of the editions to collect codes for.
-        config: Configuration controlling encoding scan behavior.
     """    
     logger.info("Generating Scryfall edition codes...")
     
@@ -71,7 +66,7 @@ def collect_scryfall_codes(edition_names: list[str], config: FormatGeneratorConf
 
     for e in edition_names:
         logger.debug("Collecting scryfall code for '%s'...", e)
-        code = card_loader.get_scryfall_code(edition_name=e, config=config)
+        code = card_loader.get_scryfall_code(e)
         scryfall_codes.add(code)
 
     return scryfall_codes

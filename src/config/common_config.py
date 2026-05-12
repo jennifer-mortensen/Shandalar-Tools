@@ -2,8 +2,8 @@
 Shared configuration dataclass for Shandalar Tools.
 
 Defines settings common to all tools, including card pool selection,
-encoding scan behavior, and logging preferences. Embedded in each
-tool-specific config class as the common field.
+encoding scan behavior, and logging preferences. Instantiated and
+accessed globally from config_runtime.
 """
 from common.common_const import EncodingScanMode
 from dataclasses import dataclass
@@ -24,9 +24,9 @@ class CommonConfig:
     """
     Configuration settings shared across all Shandalar Tools.
 
-    Embedded in tool-specific config classes to provide a consistent
-    set of common options.
-    """    
+    Stores runtime-wide settings including card pool selection,
+    encoding scan behavior, and logging preferences.
+    """
     data_shandalar_card_pool: str = DATA_CARD_POOL_DEFAULT
     io_encoding_scan: EncodingScanMode = IO_ENCODING_SCAN_DEFAULT
     log_preview_limit: int = LOG_PREVIEW_LIMIT_DEFAULT

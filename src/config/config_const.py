@@ -59,3 +59,4 @@ CONFIG_PARSE_ERROR_SUFFIX = (
 class ConfigFormat(Enum):
     FORMAT_GENERATOR = auto()
     DECK_TRANSLATOR = auto()
+    COMMON = auto()

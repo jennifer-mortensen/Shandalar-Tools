@@ -6,7 +6,7 @@ data from disk, including card names, edition codes, and the Shandalar
 supported card list.
 """
 from common import common_const, file_utils
-from config.format_generator_config import FormatGeneratorConfig
+from config import config_runtime
 from pathlib import Path
 from typing import Iterable
 import logging
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def get_edition_card_names(edition_name: str, config: FormatGeneratorConfig) -> Iterable[str]:
+def get_edition_card_names(edition_name: str) -> Iterable[str]:
     """
     Yield card names from a Forge edition file.
 
@@ -25,7 +25,6 @@ def get_edition_card_names(edition_name: str, config: FormatGeneratorConfig) -> 
 
     Args:
         edition_name: The name of the edition to load.
-        config: Configuration controlling encoding scan behavior.
 
     Raises:
         ValueError: If the edition name is empty.
@@ -40,7 +39,7 @@ def get_edition_card_names(edition_name: str, config: FormatGeneratorConfig) -> 
         start_prefix=common_const.FORGE_CARDS_HEADER,
         end_prefixes=["["],
         skip_first_line=True,
-        encoding_full_scan=config.common.io_encoding_scan.resolve()
+        encoding_full_scan=config_runtime.get_common_config().io_encoding_scan.resolve()
     )
 
     for row in edition_data:
@@ -48,13 +47,12 @@ def get_edition_card_names(edition_name: str, config: FormatGeneratorConfig) -> 
         if name:
             yield name
 
-def get_scryfall_code(edition_name: str, config: FormatGeneratorConfig) -> str:
+def get_scryfall_code(edition_name: str) -> str:
     """
     Read the Scryfall code from a Forge edition file.
 
     Args:
         edition_name: The name of the edition to look up.
-        config: Configuration controlling encoding scan behavior.
 
     Raises:
         ValueError: If the edition name is empty or no Scryfall code is defined.
@@ -68,33 +66,29 @@ def get_scryfall_code(edition_name: str, config: FormatGeneratorConfig) -> str:
         line = next(file_utils.read_text_section(
             file_path=file_path,
             start_prefix=common_const.SCRYFALL_CODE_PREFIX,
-            encoding_full_scan=config.common.io_encoding_scan.resolve()
+            encoding_full_scan=config_runtime.get_common_config().io_encoding_scan.resolve()
         ))
     except StopIteration:
         raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
 
     return line[len(common_const.SCRYFALL_CODE_PREFIX):]             
 
-def get_shandalar_card_names(config: FormatGeneratorConfig) -> set[str]:
+def get_shandalar_card_names() -> set[str]:
     """
     Read all card names from the Shandalar card data file.
 
     Resolves the file path from the configured card pool name and data
     directory. Uses a full encoding scan by default due to the size of
     the file.
-
-    Args:
-        config: Configuration controlling card pool selection and encoding
-            scan behavior.
     """    
     file_path: Path = file_utils.ensure_extension(
-        common_const.DATA_DIR / config.common.data_shandalar_card_pool,
+        common_const.DATA_DIR / config_runtime.get_common_config().data_shandalar_card_pool,
         common_const.FILE_TYPE_SHANDALAR_DATA
     )
     return set(file_utils.read_csv_column(
         file_path=file_path,
         column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN,
-        encoding_full_scan=config.common.io_encoding_scan.resolve(default_full_scan=True))
+        encoding_full_scan=config_runtime.get_common_config().io_encoding_scan.resolve(default_full_scan=True))
     )
 
 # ==============================

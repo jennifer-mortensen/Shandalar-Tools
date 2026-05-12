@@ -74,7 +74,7 @@ def build_output_format(input_format: ForgeFormatInput, config: FormatGeneratorC
 
     Args:
         input_format: The parsed input format containing editions, bans, and additions.
-        config: Configuration controlling card pool selection, encoding, and output format.
+        config: Configuration determining output format.
 
     Raises:
         ValueError: If additional bans and additional cards conflict.
@@ -84,10 +84,10 @@ def build_output_format(input_format: ForgeFormatInput, config: FormatGeneratorC
     if not validate_additional_cards(input_format):
         raise ValueError("Unable to resolve output format.")
 
-    shandalar_lookup: set[str] = card_processor.build_shandalar_card_lookup(config)
+    shandalar_lookup: set[str] = card_processor.build_shandalar_card_lookup()
 
     # Find cards within the custom format that are not supported by Shandalar.
-    format_card_pool: set[str] = card_processor.build_format_card_pool(edition_names=input_format.editions, config=config)
+    format_card_pool: set[str] = card_processor.build_format_card_pool(input_format.editions)
     unsupported_in_format: list[str] = sorted(resolve_unsupported_cards(
         format_card_pool=format_card_pool,
         shandalar_lookup=shandalar_lookup))
@@ -114,7 +114,7 @@ def build_output_format(input_format: ForgeFormatInput, config: FormatGeneratorC
         format_data=config.output_format_type.value,
         banned_cards=banned_cards,
         additional_cards=input_format.additional_cards,
-        set_codes=card_processor.collect_scryfall_codes(edition_names=input_format.editions, config=config))
+        set_codes=card_processor.collect_scryfall_codes(input_format.editions))
 
 # ==============================
 # HIGH LEVEL FUNCTIONS
@@ -144,10 +144,7 @@ def validate_additional_cards(input_format: ForgeFormatInput) -> bool:
         entry_type_plural="card entries"
     )
 
-def filter_unsupported_additions(
-        additional_cards: list[str],
-        shandalar_lookup: set[str]
-) -> list[str]:
+def filter_unsupported_additions(additional_cards: list[str], shandalar_lookup: set[str]) -> list[str]:
     """
     Remove additional cards that are not supported in the Shandalar data set.
 

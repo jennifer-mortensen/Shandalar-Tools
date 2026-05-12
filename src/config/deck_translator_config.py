@@ -1,11 +1,9 @@
 """
 Configuration dataclass for the Shandalar Tools deck translator.
 
-Defines settings specific to the deck translator tool. Currently only
-holds a CommonConfig — tool-specific fields will be added as the
-deck translator is implemented.
+Defines settings specific to the deck translator tool. Tool-specific
+fields will be added as the deck translator is implemented.
 """
-from config.common_config import CommonConfig
 from dataclasses import dataclass, field
 
 # ==============================
@@ -20,7 +18,6 @@ class DeckTranslatorConfig:
     """
     Configuration for the deck translator tool.
 
-    Wraps CommonConfig with deck translator specific settings.
     Currently a stub pending full implementation.
-    """    
-    common: CommonConfig = field(default_factory=CommonConfig)
+    """  
+    pass  

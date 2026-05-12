@@ -5,10 +5,11 @@ Provides helpers for detecting file encoding, reading CSV columns,
 reading sections of text files, and safely opening files with
 automatic encoding detection.
 """
+from collections.abc import Iterator
 from common import common_const, common_utils
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable
+from typing import Iterable, TextIO
 import csv
 import logging
 
@@ -57,7 +58,7 @@ def ensure_extension(file_path: Path, extension: str) -> Path:
     return file_path if file_path.suffix else file_path.with_suffix(f".{extension}")
 
 @contextmanager
-def open_file(file_path: Path, encoding_full_scan: bool = False, newline: str | None = None):
+def open_file(file_path: Path, encoding_full_scan: bool = False, newline: str | None = None) -> Iterator[TextIO]:
     """
     Context manager for opening a file with automatic encoding detection.
 

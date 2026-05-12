@@ -20,108 +20,26 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def build_config(config_format: ConfigFormat) -> FormatGeneratorConfig | DeckTranslatorConfig:
+def build_config(config_format: ConfigFormat) -> CommonConfig | FormatGeneratorConfig | DeckTranslatorConfig:
     """
-    Build and return a typed configuration object for the specified tool.
+    Build and return a common config or a typed configuration object for
+    the specified tool.
 
     Args:
-        config_format: The tool to build a configuration for.
+        config_format: The type of configuration to build.
 
     Raises:
         ValueError: If config.toml cannot be read or contains invalid values.
-    """    
+    """
+    if config_format is ConfigFormat.COMMON:
+        return build_common_config()    
     if config_format is ConfigFormat.FORMAT_GENERATOR:
         return build_format_generator_config()
     if config_format is ConfigFormat.DECK_TRANSLATOR:
         return build_deck_translator_config()
     assert False, f"Unhandled ConfigFormat: {config_format}"
 
-def build_format_generator_config() -> FormatGeneratorConfig:
-    """
-    Build and return a FormatGeneratorConfig from config.toml.
-
-    Reads the format generator section and common config. Required values
-    raise errors when missing or invalid, while optional values fall back
-    to dataclass defaults.
-
-    Raises:
-        OSError: If config.toml cannot be opened.
-        ValueError: If mandatory configuration values are missing or invalid.
-    """
-    config: FormatGeneratorConfig = FormatGeneratorConfig()
-    data: dict   
-    path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
-
-    if (data := _open_config(path)) is None:
-        _write_default_config(path)
-        return config
-
-    config.common = _build_common_config(data)
-
-    # [format_generator]
-    section = toml_utils.verify_section(
-        data=data,
-        section_name=config_const.CONFIG_SECTION_FORMAT_GENERATOR,
-        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-    )
-    if section is not None:
-        toml_utils.verify_and_set(
-            target=config,
-            field="input_format_file",
-            section=section,
-            key=config_const.CONFIG_KEY_INPUT_FORMAT_FILE,
-            expected_type=str,
-            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-        )
-        toml_utils.verify_and_set(
-            target=config,
-            field="output_format_type",
-            section=section,
-            key=config_const.CONFIG_KEY_OUTPUT_FORMAT_TYPE,
-            expected_type=str,
-            transform=format_const.parse_forge_format,
-            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-        )             
-
-    return config
-
-def build_deck_translator_config() -> DeckTranslatorConfig:
-    """
-    Build and return a DeckTranslatorConfig from config.toml.
-
-    Reads the common config and deck translator section. Required values
-    raise errors when missing or invalid, while optional values fall back
-    to dataclass defaults.
-
-    Raises:
-        OSError: If config.toml cannot be opened.
-        ValueError: If mandatory configuration values are missing or invalid.
-    """
-    config: DeckTranslatorConfig = DeckTranslatorConfig()
-    data: dict   
-    path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
-
-    if (data := _open_config(path)) is None:
-        _write_default_config(path)
-        return config
-
-    config.common = _build_common_config(data)            
-
-    # [deck_translator]
-    section = toml_utils.verify_section(
-        data=data,
-        section_name=config_const.CONFIG_SECTION_DECK_TRANSLATOR,
-        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-    )
-    if section is not None:   
-        logger.debug("Config preset detected for Deck Translator, but the config is not implemented yet.")
-
-    return config
-
-# ==============================
-# PRIVATE FUNCTIONS
-# ==============================
-def _build_common_config(data: dict) -> CommonConfig:
+def build_common_config() -> CommonConfig:
     """
     Build and return a CommonConfig from parsed TOML data.
 
@@ -129,11 +47,14 @@ def _build_common_config(data: dict) -> CommonConfig:
     preview limit, and log overwrite behavior. Required values raise
     errors when missing or invalid, while optional values fall back
     to dataclass defaults.
-
-    Args:
-        data: The top-level parsed TOML dict.
     """
-    config: CommonConfig = CommonConfig()  
+    config: CommonConfig = CommonConfig()
+    data: dict   
+    path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
+
+    if (data := _open_config(path)) is None:
+        _write_default_config(path)
+        return config      
 
     # [data]
     section = toml_utils.verify_section(
@@ -194,6 +115,87 @@ def _build_common_config(data: dict) -> CommonConfig:
 
     return config
 
+def build_format_generator_config() -> FormatGeneratorConfig:
+    """
+    Build and return a FormatGeneratorConfig from config.toml.
+
+    Reads the format generator section and common config. Required values
+    raise errors when missing or invalid, while optional values fall back
+    to dataclass defaults.
+
+    Raises:
+        OSError: If config.toml cannot be opened.
+        ValueError: If mandatory configuration values are missing or invalid.
+    """
+    config: FormatGeneratorConfig = FormatGeneratorConfig()
+    data: dict   
+    path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
+
+    if (data := _open_config(path)) is None:
+        _write_default_config(path)
+        return config
+
+    # [format_generator]
+    section = toml_utils.verify_section(
+        data=data,
+        section_name=config_const.CONFIG_SECTION_FORMAT_GENERATOR,
+        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+    )
+    if section is not None:
+        toml_utils.verify_and_set(
+            target=config,
+            field="input_format_file",
+            section=section,
+            key=config_const.CONFIG_KEY_INPUT_FORMAT_FILE,
+            expected_type=str,
+            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+        )
+        toml_utils.verify_and_set(
+            target=config,
+            field="output_format_type",
+            section=section,
+            key=config_const.CONFIG_KEY_OUTPUT_FORMAT_TYPE,
+            expected_type=str,
+            transform=format_const.parse_forge_format,
+            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+        )             
+
+    return config
+
+def build_deck_translator_config() -> DeckTranslatorConfig:
+    """
+    Build and return a DeckTranslatorConfig from config.toml.
+
+    Reads the common config and deck translator section. Required values
+    raise errors when missing or invalid, while optional values fall back
+    to dataclass defaults.
+
+    Raises:
+        OSError: If config.toml cannot be opened.
+        ValueError: If mandatory configuration values are missing or invalid.
+    """
+    config: DeckTranslatorConfig = DeckTranslatorConfig()
+    data: dict   
+    path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
+
+    if (data := _open_config(path)) is None:
+        _write_default_config(path)
+        return config       
+
+    # [deck_translator]
+    section = toml_utils.verify_section(
+        data=data,
+        section_name=config_const.CONFIG_SECTION_DECK_TRANSLATOR,
+        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+    )
+    if section is not None:   
+        logger.debug("Config preset detected for Deck Translator, but the config is not implemented yet.")
+
+    return config
+
+# ==============================
+# PRIVATE FUNCTIONS
+# ==============================
 def _open_config(file_path: Path) -> dict | None:
     """
     Attempt to read and parse a TOML configuration file.
@@ -234,23 +236,24 @@ def _write_default_config(file_path: Path) -> None:
     """    
     logger.info("Writing default config to %s...", file_path)
 
+    common_config = CommonConfig()
     format_generator_config: FormatGeneratorConfig = FormatGeneratorConfig()
     # deck_translator_config: DeckTranslatorConfig = DeckTranslatorConfig() # Does nothing yet.
 
     config_data: str = config_const.DEFAULT_CONFIG_CONSTRUCTOR.format(
         section_data=config_const.CONFIG_SECTION_DATA,
         key_card_pool=config_const.CONFIG_KEY_CARD_POOL,
-        shandalar_card_pool=format_generator_config.common.data_shandalar_card_pool,
+        shandalar_card_pool=common_config.data_shandalar_card_pool,
 
         section_io=config_const.CONFIG_SECTION_IO,
         key_encoding_scan=config_const.CONFIG_KEY_ENCODING_SCAN,
-        encoding_scan=format_generator_config.common.io_encoding_scan.value,
+        encoding_scan=common_config.io_encoding_scan.value,
 
         section_logging=config_const.CONFIG_SECTION_LOGGING,
         key_preview_limit=config_const.CONFIG_KEY_PREVIEW_LIMIT,
-        preview_limit=format_generator_config.common.log_preview_limit,
+        preview_limit=common_config.log_preview_limit,
         key_overwrite=config_const.CONFIG_KEY_OVERWRITE,
-        overwrite=str(format_generator_config.common.log_overwrite).lower(),
+        overwrite=str(common_config.log_overwrite).lower(),
 
         section_format_generator=config_const.CONFIG_SECTION_FORMAT_GENERATOR,
         key_input_format_file=config_const.CONFIG_KEY_INPUT_FORMAT_FILE,

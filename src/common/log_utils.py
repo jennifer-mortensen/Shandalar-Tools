@@ -5,6 +5,7 @@ Provides helpers for configuring logging across all CLI entry points,
 and for logging previews and duplicate entries with consistent formatting.
 """
 from common import common_const, common_utils
+from config import config_runtime
 from typing import Callable, Iterable
 import logging
 
@@ -44,33 +45,53 @@ def configure_logging() -> None:
     root.setLevel(logging.DEBUG)
     root.handlers = [console, file_handler]
 
-def log_preview_if_any(items: Iterable[str], message: str, log_function: Callable = logger.warning, delimiter: str = common_const.LOG_PREVIEW_DEFAULT_DELIMITER) -> bool:
+def log_preview_if_any(
+        items: Iterable[str],
+        message: str,
+        log_function: Callable = logger.warning,
+        delimiter: str = common_const.LOG_PREVIEW_DEFAULT_DELIMITER
+) -> bool:
     """
     Log a preview of a collection if it is non-empty.
 
-    Displays up to PREVIEW_LIMIT items as a preview, with the full list
-    written to the log file at debug level. Returns True if anything was
-    logged, False otherwise.
+    Displays up to preview_limit items as a preview. If additional items
+    exist beyond the preview, notes that the full list was written to the
+    log file at debug level.
+
+    Returns True if anything was logged, False otherwise.
 
     Args:
         items: The collection to preview.
         message: The message to prepend to the preview.
-        log_function: Logging function to use. Defaults to logger.warning.    
-    """    
+        log_function: Logging function to use. Defaults to logger.warning.
+        delimiter: Delimiter used between preview items.
+    """
     sorted_items: list[str] = sorted(items)
-    if sorted_items:
-        preview = (delimiter + " ").join(sorted_items[:common_const.PREVIEW_LIMIT])
-        log_function(
-            "%s %s: %s%s\nFull details written to the log file (default: %s)",
-            message,
-            common_utils.pluralize(quantity=len(sorted_items), singular="Example", plural="Examples"),
-            preview,
-            "..." if len(sorted_items) > common_const.PREVIEW_LIMIT else "",
-            common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}"
-        )
-        logger.debug("Full list: %s", sorted_items)
-        return True
-    return False
+
+    if not sorted_items:
+        return False
+
+    preview_limit = config_runtime.get_common_config().log_preview_limit
+    is_truncated: bool = len(sorted_items) > preview_limit
+
+    preview: str = (delimiter + " ").join(sorted_items[:preview_limit])
+
+    suffix: str = ""
+    extra_args: tuple = () # pass nothing by default
+
+    if is_truncated:
+        suffix = "...\nFull details written to the log file (default: %s)"
+        extra_args = (common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}",)
+
+    log_function(f"%s %s: %s{suffix}",
+        message,
+        common_utils.pluralize(quantity=len(sorted_items), singular="Example",  plural="Examples"),
+        preview,
+        *extra_args
+    )
+
+    logger.debug("Full list: %s", sorted_items)
+    return True
 
 def log_duplicates(
         duplicates: Iterable[str],
@@ -84,19 +105,22 @@ def log_duplicates(
     """
     Log a preview of duplicate entries detected across two named lists.
 
-    Builds a message describing the conflict and delegates to log_preview_if_any.
-    Returns True if duplicates were logged, False otherwise.
+    Builds a pluralized conflict message and delegates preview logging
+    to log_preview_if_any. Returns True if duplicates were logged,
+    False otherwise.
 
     Args:
         duplicates: The duplicate entries to log.
         list_name_1: Name of the first list, used in the log message.
         list_name_2: Name of the second list, used in the log message.
-        entry_type_singular: Type of entry being compared, used in the log message if singular. Defaults to "entry".
-        entry_type_plural: Type of entry being compared, used in the log message if plural. Defaults to "entries".        
+        entry_type_singular: Singular form of the entry type used in the
+            log message. Defaults to "entry".
+        entry_type_plural: Plural form of the entry type used in the
+            log message. Defaults to "entries".
         preamble: Optional string prepended to the log message.
         log_function: Logging function to use. Defaults to logger.warning.
-    """ 
+    """
     sorted_duplicates: list[str] = sorted(duplicates)
-    entry_type = common_utils.pluralize(quantity=len(duplicates), singular=entry_type_singular, plural=entry_type_plural)
+    entry_type = common_utils.pluralize(quantity=len(sorted_duplicates), singular=entry_type_singular, plural=entry_type_plural)
     message: str = f"{preamble}{len(sorted_duplicates)} duplicate {entry_type} detected across the {list_name_1} and {list_name_2} lists."
     return log_preview_if_any(items=sorted_duplicates, message=message, log_function=log_function)
