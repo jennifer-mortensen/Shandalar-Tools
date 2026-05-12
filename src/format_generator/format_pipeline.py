@@ -22,8 +22,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
     Parse a TOML input format file into a ForgeFormatInput dataclass.
 
     Reads the specified file, validates and extracts the editions, additional
-    bans, and additional cards fields, then builds sanitized lookup sets for
-    each list field.
+    bans, and additional cards fields.
 
     Args:
         source: Path to the TOML input format file.
