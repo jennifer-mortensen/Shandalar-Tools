@@ -37,15 +37,10 @@ class ForgeFormatData:
 class ForgeFormatInput:
     """
     User-supplied format specification parsed from a TOML input file.
-    
-    The lookup fields are sanitized sets derived from their corresponding
-    list fields, used for efficient and case-insensitive comparisons.
     """    
     editions: list[str] = field(default_factory=list)
     additional_bans: list[str] = field(default_factory=list)
-    additional_bans_lookup: set[str] = field(default_factory=set)
     additional_cards: list[str] = field(default_factory=list)
-    additional_cards_lookup: set[str] = field(default_factory=set)
 
 @dataclass
 class ForgeFormatOutput:

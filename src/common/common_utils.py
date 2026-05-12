@@ -6,6 +6,7 @@ deduplication, merging, and duplicate detection. Additional utilities
 will be added here as needed.
 """
 from collections.abc import Iterable, Sequence
+from common import common_const
 from typing import Any
 import logging
 
@@ -35,6 +36,37 @@ def find_duplicates(sets: Iterable[set[Any]]) -> list[Any]:
                 seen.add(item)
 
     return sorted(duplicates)
+
+def filter_prefixes_from_set(items: set[str], prefixes: list[str]) -> set[str]:
+    """
+    Return a copy of a set with prefixed entries removed.
+
+    Filters out any strings that begin with one of the specified
+    prefixes. Prefix matching is case-sensitive and assumes any
+    required normalization has already been applied.
+
+    Args:
+        items: The set of strings to filter.
+        prefixes: Prefixes used to identify entries to remove.
+    """    
+    return {i for i in items if not has_any_prefix(i, prefixes)}
+
+def has_any_prefix(line: str, prefixes: list[str]) -> bool:
+    """
+    Check if a string starts with any of the given prefixes.
+
+    Args:
+        line: The string to check.
+        prefixes: A list of prefixes to test against.        
+    """    
+    return any(line.startswith(p) for p in prefixes)
+
+def is_comment(line: str, prefixes: list[str] | None = None) -> bool:
+    """
+    Check whether a string should be treated as a comment line.
+    """
+    prefixes = prefixes or [common_const.COMMENT_PREFIX]
+    return has_any_prefix(line.strip(), prefixes)
 
 def merge_and_dedupe_sequences(seq_1: Sequence[Any], seq_2: Sequence[Any]) -> list[Any]:
     """

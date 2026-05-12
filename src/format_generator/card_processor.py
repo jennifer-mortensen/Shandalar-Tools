@@ -5,7 +5,7 @@ Provides functions for building card pools from Forge edition files,
 constructing the Shandalar card lookup, collecting Scryfall edition
 codes, and identifying unsupported cards.
 """
-from common import common_utils
+from common import common_const, common_utils
 from config.format_generator_config import FormatGeneratorConfig
 from format_generator import card_loader
 
@@ -92,3 +92,19 @@ def find_unsupported_in_shandalar(card_names: set[str], shandalar_lookup: set[st
     logger.info("Identified %d unsupported cards.", len(unsupported_card_names))
     
     return unsupported_card_names
+
+def list_to_lookup(items: list[str]) -> set[str]:
+    """
+    Convert a list of user-provided strings into a sanitized lookup set.
+
+    Sanitizes entries for consistent case-insensitive comparison and
+    removes any entries that begin with the configured comment prefix
+    after sanitization. Intended for normalizing user-authored TOML
+    list fields into lookup sets.
+
+    Args:
+        items: The raw list of strings to normalize.
+    """    
+    lookup: set[str] = common_utils.sanitize_set(set(items))
+    lookup = common_utils.filter_prefixes_from_set(lookup, [common_const.COMMENT_PREFIX])
+    return lookup

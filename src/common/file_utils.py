@@ -32,7 +32,7 @@ def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     """    
     read_size: int = -1 if full_scan else common_const.FILE_ENCODING_READ_SIZE_DEFAULT
 
-    with file_path.open(mode="rb") as file:
+    with file_path.open("rb") as file:
         raw_data = file.read(read_size)
 
     for enc in common_const.FILE_ENCODINGS:
@@ -115,7 +115,7 @@ def read_csv_column(
             
             # Check skip prefixes
             cell_lower: str = row[0].strip().lower()
-            if skip_prefixes and _has_any_prefix(line=cell_lower, prefixes=skip_prefixes):
+            if skip_prefixes and common_utils.has_any_prefix(line=cell_lower, prefixes=skip_prefixes):
                 continue
 
             if column_number < len(row):
@@ -174,11 +174,11 @@ def read_text_section(
                     continue
 
             # Check end prefixes
-            elif end_prefixes and _has_any_prefix(line=line_lower, prefixes=end_prefixes):
+            elif end_prefixes and common_utils.has_any_prefix(line=line_lower, prefixes=end_prefixes):
                 break
 
             # Check skip prefixes
-            if _has_any_prefix(line=line_lower, prefixes=skip_prefixes):
+            if common_utils.has_any_prefix(line=line_lower, prefixes=skip_prefixes):
                 continue
             
             yield clean_line
@@ -186,12 +186,3 @@ def read_text_section(
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
-def _has_any_prefix(line: str, prefixes: list[str]) -> bool:
-    """
-    Check if a string starts with any of the given prefixes.
-
-    Args:
-        line: The string to check.
-        prefixes: A list of prefixes to test against.
-    """    
-    return any(line.startswith(p) for p in prefixes)
