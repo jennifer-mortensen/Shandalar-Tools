@@ -5,8 +5,6 @@ Defines TOML section names, config keys, default config generation
 templates, shared configuration error strings, and configuration-related
 enums used throughout the config subsystem.
 """
-from enum import Enum, auto
-
 # ==============================
 # TOML CONSTANTS
 # ==============================
@@ -53,10 +51,3 @@ CONFIG_PARSE_ERROR_SUFFIX = (
     "; unable to parse configuration file. Please either fix the configuration "
     "or remove it to allow regeneration of default config."
 )
-# ==============================
-# ENUMS
-# ==============================
-class ConfigFormat(Enum):
-    FORMAT_GENERATOR = auto()
-    DECK_TRANSLATOR = auto()
-    COMMON = auto()

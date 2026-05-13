@@ -15,6 +15,8 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
+#TODO: Add validate_string_list for TOML content validation.
+
 def find_duplicates(sets: Iterable[set[Any]]) -> list[Any]:
     """
     Identify duplicate entries across multiple sets. Set data must be hashable.
@@ -90,15 +92,15 @@ def merge_and_dedupe_sequences(seq_1: Sequence[Any], seq_2: Sequence[Any]) -> li
 
     return merged
 
-"""
-Return the singular or plural form of a word based on quantity.
-
-Args:
-    quantity: The quantity used to determine plurality.
-    singular: The singular form to return when quantity is 1.
-    plural: The plural form to return for all other quantities.
-"""
 def pluralize(quantity: int, singular: str, plural: str) -> str:
+    """
+    Return the singular or plural form of a word based on quantity.
+
+    Args:
+        quantity: The quantity used to determine plurality.
+        singular: The singular form to return when quantity is 1.
+        plural: The plural form to return for all other quantities.
+    """    
     return singular if quantity == 1 else plural
 
 def sanitize_name(name: str) -> str:
@@ -123,7 +125,7 @@ def sanitize_set(items: set[str]) -> set[str]:
     """    
     return {sanitize_name(i) for i in items}
 
-def to_list(value: str | Iterable[str]) -> list[str]:  
+def to_list(value: str | Iterable[str] | None) -> list[str]:
     """
     Convert a string, iterable, or None into a list of strings.
 
@@ -138,3 +140,26 @@ def to_list(value: str | Iterable[str]) -> list[str]:
     if isinstance(value, Iterable) and not isinstance(value, (str, bytes)):
         return list(value)
     return [value]
+
+def validate_minimum(value: int, minimum: int, field_name: str) -> int:
+    """
+    Validate that a numeric value meets a minimum threshold.
+
+    Raises a ValueError if the value is less than the specified minimum.
+    Returns the original value unchanged to support validation within
+    transform-style pipelines.
+
+    Args:
+        value: The numeric value to validate.
+        minimum: The minimum allowed value.
+        field_name: Human-readable field name used in the error message.
+
+    Returns:
+        The original validated value.
+
+    Raises:
+        ValueError: If value is less than minimum.
+    """   
+    if value < minimum:
+        raise ValueError(f"{field_name} must be at least {minimum}.")
+    return value

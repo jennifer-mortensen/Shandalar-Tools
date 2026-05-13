@@ -40,23 +40,23 @@ def verify_and_set(
             validation fails.
         error_suffix: Optional message appended to raised ValueErrors.
     """
-    # Read and validate
+    # Read and validate type
     value = section.get(key)    
     if value is None or not isinstance(value, expected_type):
         if allow_fallback:
             logger.warning("Key %s missing or invalid; using default", key)
             return
-        raise ValueError(f"Mandatory key [{key}] is missing{error_suffix}")
+        raise ValueError(f"Mandatory key [{key}] is missing or invalid{error_suffix}")
 
-    # Transform and validate
+    # Transform and validate value
     try:
         final_value = transform(value) if transform else value
-    except Exception as e:
+    except ValueError as e:
         if allow_fallback:
             logger.warning("Key %s failed validation (%s); using default", key, e)
             return
 
-        raise ValueError(f"Mandatory key [{key}] is invalid{error_suffix}") from e
+        raise ValueError(f"Mandatory key [{key}] is missing or invalid{error_suffix}") from e
 
     # Assign value
     setattr(target, field, final_value)
@@ -66,16 +66,16 @@ def verify_section(data: dict, section_name: str, allow_fallback: bool = False, 
     Retrieve a section from parsed TOML data by name.
 
     Logs a warning and returns None if fallback is allowed and the
-    section is missing. Otherwise raises ValueError.
+    section is missing or invalid. Otherwise raises ValueError.
 
     Args:
         data: The top-level parsed TOML dict.
         section_name: The name of the section to retrieve.
     """    
     section = data.get(section_name)
-    if section is None:
+    if section is None or not isinstance(section, dict):
         if allow_fallback:
-            logger.warning("Section [%s] is missing; using default values", section_name)
+            logger.warning("Section [%s] is missing or invalid; using default values", section_name)
             return
-        raise ValueError(f"Mandatory section [{section_name}] is missing{error_suffix}")
+        raise ValueError(f"Mandatory section [{section_name}] is missing or invalid{error_suffix}")
     return section

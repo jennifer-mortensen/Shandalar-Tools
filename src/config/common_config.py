@@ -2,8 +2,8 @@
 Shared configuration dataclass for Shandalar Tools.
 
 Defines settings common to all tools, including card pool selection,
-encoding scan behavior, and logging preferences. Instantiated and
-accessed globally from config_runtime.
+encoding scan behavior, and logging preferences. Instantiated during
+runtime initialization and accessed globally through runtime.py.
 """
 from common.common_const import EncodingScanMode
 from dataclasses import dataclass

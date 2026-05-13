@@ -6,7 +6,7 @@ data from disk, including card names, edition codes, and the Shandalar
 supported card list.
 """
 from common import common_const, file_utils
-from config import config_runtime
+from config import runtime
 from pathlib import Path
 from typing import Iterable
 import logging
@@ -39,7 +39,7 @@ def get_edition_card_names(edition_name: str) -> Iterable[str]:
         start_prefix=common_const.FORGE_CARDS_HEADER,
         end_prefixes=["["],
         skip_first_line=True,
-        encoding_full_scan=config_runtime.get_common_config().io_encoding_scan.resolve()
+        encoding_full_scan=runtime.get_encoding_scan_mode()
     )
 
     for row in edition_data:
@@ -66,7 +66,7 @@ def get_scryfall_code(edition_name: str) -> str:
         line = next(file_utils.read_text_section(
             file_path=file_path,
             start_prefix=common_const.SCRYFALL_CODE_PREFIX,
-            encoding_full_scan=config_runtime.get_common_config().io_encoding_scan.resolve()
+            encoding_full_scan=runtime.get_encoding_scan_mode()
         ))
     except StopIteration:
         raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
@@ -82,13 +82,13 @@ def get_shandalar_card_names() -> set[str]:
     the file.
     """    
     file_path: Path = file_utils.ensure_extension(
-        common_const.DATA_DIR / config_runtime.get_common_config().data_shandalar_card_pool,
+        common_const.DATA_DIR / runtime.get_shandalar_card_pool(),
         common_const.FILE_TYPE_SHANDALAR_DATA
     )
     return set(file_utils.read_csv_column(
         file_path=file_path,
         column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN,
-        encoding_full_scan=config_runtime.get_common_config().io_encoding_scan.resolve(default_full_scan=True))
+        encoding_full_scan=runtime.get_encoding_scan_mode(True))
     )
 
 # ==============================

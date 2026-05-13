@@ -60,8 +60,9 @@ FILE_TYPE_SHANDALAR_DATA = "csv"
 
 LOGGER_FORMAT_CLI = "%(levelname)s: %(message)s"
 LOGGER_FORMAT_FILE = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-LOGGER_FILE_MODE = "w" # "w" = overwrite each run
 LOG_PREVIEW_DEFAULT_DELIMITER = ";"
+LOG_PREVIEW_LIMIT_MINIMUM = 1
+LOG_PREVIEW_LIMIT_FIELD_NAME = "Log preview limit"
 
 # ==============================
 # FILE ENCODING
@@ -87,9 +88,9 @@ class EncodingScanMode(Enum):
             default_full_scan: Fallback value used when mode is AUTO.
                 Defaults to False.
         """        
-        if self == EncodingScanMode.FULL:
+        if self is EncodingScanMode.FULL:
             return True
-        if self == EncodingScanMode.FAST:
+        if self is EncodingScanMode.FAST:
             return False
         return default_full_scan
     

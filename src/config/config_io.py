@@ -5,9 +5,8 @@ Reads config.toml and constructs typed configuration objects for each tool.
 Required configuration values raise errors when missing or invalid, while
 optional values fall back to dataclass defaults with logged warnings.
 """
-from common import common_const, file_utils, toml_utils
+from common import common_const, common_utils, file_utils, toml_utils
 from config import config_const
-from config.config_const import ConfigFormat
 from config.common_config import CommonConfig
 from config.deck_translator_config import DeckTranslatorConfig
 from config.format_generator_config import FormatGeneratorConfig
@@ -20,24 +19,6 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def build_config(config_format: ConfigFormat) -> CommonConfig | FormatGeneratorConfig | DeckTranslatorConfig:
-    """
-    Build and return a common config or a typed configuration object for
-    the specified tool.
-
-    Args:
-        config_format: The type of configuration to build.
-
-    Raises:
-        ValueError: If config.toml cannot be read or contains invalid values.
-    """
-    if config_format is ConfigFormat.COMMON:
-        return build_common_config()    
-    if config_format is ConfigFormat.FORMAT_GENERATOR:
-        return build_format_generator_config()
-    if config_format is ConfigFormat.DECK_TRANSLATOR:
-        return build_deck_translator_config()
-    assert False, f"Unhandled ConfigFormat: {config_format}"
 
 def build_common_config() -> CommonConfig:
     """
@@ -62,15 +43,14 @@ def build_common_config() -> CommonConfig:
         section_name=config_const.CONFIG_SECTION_DATA,
         error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
     )
-    if section is not None:
-        toml_utils.verify_and_set(
-            target=config,
-            field="data_shandalar_card_pool",
-            section=section,
-            key=config_const.CONFIG_KEY_CARD_POOL,
-            expected_type=str,
-            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-        )
+    toml_utils.verify_and_set(
+        target=config,
+        field="data_shandalar_card_pool",
+        section=section,
+        key=config_const.CONFIG_KEY_CARD_POOL,
+        expected_type=str,
+        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+    )
     
     # [io]
     section = toml_utils.verify_section(
@@ -102,7 +82,12 @@ def build_common_config() -> CommonConfig:
             section=section,
             key=config_const.CONFIG_KEY_PREVIEW_LIMIT,
             expected_type=int,
-            allow_fallback=True
+            allow_fallback=True,
+            transform=lambda value: common_utils.validate_minimum(
+                value,
+                common_const.LOG_PREVIEW_LIMIT_MINIMUM,
+                common_const.LOG_PREVIEW_LIMIT_FIELD_NAME
+            )
         )
         toml_utils.verify_and_set(
             target=config,
@@ -119,9 +104,9 @@ def build_format_generator_config() -> FormatGeneratorConfig:
     """
     Build and return a FormatGeneratorConfig from config.toml.
 
-    Reads the format generator section and common config. Required values
-    raise errors when missing or invalid, while optional values fall back
-    to dataclass defaults.
+    Reads the format generator configuration section and applies any
+    valid tool-specific settings. Missing or invalid required values
+    raise errors, while optional values fall back to dataclass defaults.
 
     Raises:
         OSError: If config.toml cannot be opened.
@@ -141,24 +126,23 @@ def build_format_generator_config() -> FormatGeneratorConfig:
         section_name=config_const.CONFIG_SECTION_FORMAT_GENERATOR,
         error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
     )
-    if section is not None:
-        toml_utils.verify_and_set(
-            target=config,
-            field="input_format_file",
-            section=section,
-            key=config_const.CONFIG_KEY_INPUT_FORMAT_FILE,
-            expected_type=str,
-            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-        )
-        toml_utils.verify_and_set(
-            target=config,
-            field="output_format_type",
-            section=section,
-            key=config_const.CONFIG_KEY_OUTPUT_FORMAT_TYPE,
-            expected_type=str,
-            transform=format_const.parse_forge_format,
-            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-        )             
+    toml_utils.verify_and_set(
+        target=config,
+        field="input_format_file",
+        section=section,
+        key=config_const.CONFIG_KEY_INPUT_FORMAT_FILE,
+        expected_type=str,
+        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+    )
+    toml_utils.verify_and_set(
+        target=config,
+        field="output_format_type",
+        section=section,
+        key=config_const.CONFIG_KEY_OUTPUT_FORMAT_TYPE,
+        expected_type=str,
+        transform=format_const.parse_forge_format,
+        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+    )             
 
     return config
 
@@ -166,9 +150,9 @@ def build_deck_translator_config() -> DeckTranslatorConfig:
     """
     Build and return a DeckTranslatorConfig from config.toml.
 
-    Reads the common config and deck translator section. Required values
-    raise errors when missing or invalid, while optional values fall back
-    to dataclass defaults.
+    Reads the deck translator configuration section and applies any
+    valid tool-specific settings. Currently acts as a placeholder until
+    deck translator configuration fields are implemented.
 
     Raises:
         OSError: If config.toml cannot be opened.
@@ -188,8 +172,7 @@ def build_deck_translator_config() -> DeckTranslatorConfig:
         section_name=config_const.CONFIG_SECTION_DECK_TRANSLATOR,
         error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
     )
-    if section is not None:   
-        logger.debug("Config preset detected for Deck Translator, but the config is not implemented yet.")
+    logger.debug("Config preset detected for Deck Translator, but the config is not implemented yet.")
 
     return config
 

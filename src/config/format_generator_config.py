@@ -4,7 +4,7 @@ Configuration dataclass for the Shandalar Tools format generator.
 Defines settings specific to the format generator tool, including
 the input format file and output format type.
 """
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from format_generator.format_const import ForgeFormat
 
 # ==============================

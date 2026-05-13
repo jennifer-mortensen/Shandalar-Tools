@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from common import common_const, file_utils, log_utils
-from config import config_io, config_runtime
-from config.config_io import ConfigFormat
+from common import common_const, file_utils
+from common.common_const import EncodingScanMode
+from config import config_io, runtime
 from config.format_generator_config import FormatGeneratorConfig
 from format_generator import format_const, format_pipeline
 from format_generator.format_const import ForgeFormatInput, ForgeFormatOutput
@@ -17,14 +17,14 @@ logger = logging.getLogger(__name__)
 # MAIN ENTRY POINT
 # ==============================
 def main() -> None:
-    log_utils.configure_logging()
-    
     try:
+        runtime.initialize_runtime()
+
         cli_args = parse_cli_args()
         if not validate_cli_args(cli_args):
             sys.exit(1)
-        config_runtime.set_common_config(config_io.build_config(ConfigFormat.COMMON))            
-        format_config = config_io.build_config(ConfigFormat.FORMAT_GENERATOR)
+
+        format_config = config_io.build_format_generator_config()
         format_config = apply_cli_args(args=cli_args, config=format_config)
 
         input_format: ForgeFormatInput = format_pipeline.build_input_format(format_pipeline.get_input_format_path(format_config.input_format_file))
@@ -123,7 +123,7 @@ def apply_cli_args(args: argparse.Namespace, config: FormatGeneratorConfig) -> F
         config: The configuration object to update.
     """    
     if args.encoding_scan is not None:
-        config_runtime.get_common_config().io_encoding_scan = args.encoding_scan
+        runtime.set_encoding_scan_mode(EncodingScanMode(args.encoding_scan))
     if args.input_file is not None:
         config.input_format_file = args.input_file
     if args.output_format is not None:

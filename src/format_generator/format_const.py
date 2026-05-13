@@ -48,7 +48,7 @@ class ForgeFormatOutput:
     format_data: ForgeFormatData
     banned_cards: list[str]
     additional_cards: list[str]
-    set_codes: list[str]
+    set_codes: set[str]
 
 class ForgeFormat(Enum):
     STANDARD = ForgeFormatData(file_name="Standard", name="Standard", order="101", subtype="Standard", type="Sanctioned")
@@ -68,6 +68,21 @@ class ForgeFormat(Enum):
 FORGE_FORMAT_VALID_VALUES = [f.name.lower() for f in ForgeFormat]
 
 def parse_forge_format(value: str) -> ForgeFormat:
+    """
+    Parse a string into a ForgeFormat enum value.
+
+    Performs a case-insensitive lookup against the supported Forge
+    format names.
+
+    Args:
+        value: The format name to parse.
+
+    Returns:
+        The matching ForgeFormat enum value.
+
+    Raises:
+        ValueError: If the format name is not recognized.
+    """    
     try:
         return ForgeFormat[value.upper()]
     except KeyError:

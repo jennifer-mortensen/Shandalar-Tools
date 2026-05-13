@@ -94,14 +94,11 @@ def build_output_format(input_format: ForgeFormatInput, config: FormatGeneratorC
     supported_lookup: set[str] = common_utils.sanitize_set(format_card_pool) & shandalar_lookup
 
     # User additions that are not supported should be logged and removed.
-    input_format.additional_cards = filter_unsupported_additions(
-        additional_cards=input_format.additional_cards,
-        shandalar_lookup=shandalar_lookup)
+    additional_cards: list[str] = input_format.additional_cards
+    additional_cards = filter_unsupported_additions(additional_cards=additional_cards, shandalar_lookup=shandalar_lookup)
 
     # User additions that were already included should be logged and removed. 
-    input_format.additional_cards = filter_redundant_additions(
-        additional_cards=input_format.additional_cards,
-        format_card_pool=format_card_pool)
+    additional_cards = filter_redundant_additions(additional_cards=additional_cards, format_card_pool=format_card_pool)
 
     # Create the final ban list.
     banned_cards: list[str] = create_ban_list(
@@ -113,7 +110,7 @@ def build_output_format(input_format: ForgeFormatInput, config: FormatGeneratorC
     return ForgeFormatOutput(
         format_data=config.output_format_type.value,
         banned_cards=banned_cards,
-        additional_cards=input_format.additional_cards,
+        additional_cards=additional_cards,
         set_codes=card_processor.collect_scryfall_codes(input_format.editions))
 
 # ==============================
@@ -136,13 +133,15 @@ def validate_additional_cards(input_format: ForgeFormatInput) -> bool:
     )
     if not unresolved_duplicates:
         logger.info("No conflicts found!")
-    return not log_utils.log_duplicates(
+        return True
+    
+    log_utils.log_duplicates_if_any(
         duplicates=unresolved_duplicates,
         list_name_1="additional bans",
         list_name_2="additional cards",
         entry_type_singular="card entry",
-        entry_type_plural="card entries"
-    )
+        entry_type_plural="card entries")
+    return False
 
 def filter_unsupported_additions(additional_cards: list[str], shandalar_lookup: set[str]) -> list[str]:
     """
@@ -157,7 +156,7 @@ def filter_unsupported_additions(additional_cards: list[str], shandalar_lookup: 
         shandalar_lookup: A sanitized set of Shandalar supported card names.
     """
     logger.info("Checking for custom additions that are not supported in Shandalar...")        
-    unsupported_additions: list[str] = sorted(card_processor.list_to_lookup(additional_cards) - shandalar_lookup)
+    unsupported_additions: set[str] = (card_processor.list_to_lookup(additional_cards) - shandalar_lookup)
     if unsupported_additions:
         log_utils.log_preview_if_any(
             items=unsupported_additions,
@@ -224,9 +223,9 @@ def create_ban_list(
             Shandalar.
     """
     logger.info("Checking for redundant bans...")    
-    redundant_bans: list[str] = sorted(card_processor.list_to_lookup(additional_bans) - supported_lookup)
+    redundant_bans: set[str] = card_processor.list_to_lookup(additional_bans) - supported_lookup
     # Using the broader term 'unsupported' for user-facing logs, i.e. the card was never supported in our pool to begin with.
-    if not log_utils.log_duplicates(duplicates=redundant_bans, list_name_1="unsupported", list_name_2="additional bans"):
+    if not log_utils.log_duplicates_if_any(duplicates=redundant_bans, list_name_1="unsupported", list_name_2="additional bans"):
         logger.info("No redundant bans found!")
     relevant_additional_bans: list[str] = [
         i for i in additional_bans

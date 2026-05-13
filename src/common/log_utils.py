@@ -4,20 +4,22 @@ Logging utilities for Shandalar Tools.
 Provides helpers for configuring logging across all CLI entry points,
 and for logging previews and duplicate entries with consistent formatting.
 """
+from collections.abc import Collection
 from common import common_const, common_utils
-from config import config_runtime
+from config import runtime
 from typing import Callable, Iterable
 import logging
 
 logger = logging.getLogger(__name__)
 
-def configure_logging() -> None:
+def initialize_logging() -> None:
     """
-    Configure logging for both CLI and file output.
+    Initialize bootstrap logging for the application.
 
-    CLI logging displays human-readable messages, while file logging
-    includes debug information and full exception tracebacks.
-    """    
+    Configures console and file logging using safe append-mode behavior
+    before runtime configuration has been loaded. Runtime logging behavior
+    may be updated later after CommonConfig initialization.
+    """  
     formatter = logging.Formatter(common_const.LOGGER_FORMAT_FILE)
 
     # CLI-level logging. Prioritize readability.
@@ -35,7 +37,7 @@ def configure_logging() -> None:
     # File-level logging. Full fidelity.
     file_handler = logging.FileHandler(
         filename=common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}",
-        mode=common_const.LOGGER_FILE_MODE,
+        mode="a",
         encoding=common_const.DEFAULT_ENCODING
     )
     file_handler.setLevel(logging.DEBUG)
@@ -45,8 +47,40 @@ def configure_logging() -> None:
     root.setLevel(logging.DEBUG)
     root.handlers = [console, file_handler]
 
+def update_logging_write_mode(overwrite: bool) -> None:
+    """
+    Update the file logging mode after runtime configuration is loaded.
+
+    Replaces the existing FileHandler with a new handler using either
+    overwrite ("w") or append ("a") mode while preserving existing
+    console logging configuration.
+
+    Args:
+        overwrite: If True, recreate the log file in overwrite mode.
+            If False, continue appending to the existing log.
+    """
+    root = logging.getLogger()
+
+    # Remove existing file handlers
+    for handler in root.handlers[:]:
+        if isinstance(handler, logging.FileHandler):
+            root.removeHandler(handler)
+            handler.close()
+
+    # Create replacement file handler
+    file_handler = logging.FileHandler(
+        filename=common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}",
+        mode="w" if overwrite else "a",
+        encoding=common_const.DEFAULT_ENCODING
+    )
+
+    file_handler.setLevel(logging.DEBUG)
+    file_handler.setFormatter(logging.Formatter(common_const.LOGGER_FORMAT_FILE))
+
+    root.addHandler(file_handler)
+
 def log_preview_if_any(
-        items: Iterable[str],
+        items: Collection[str],
         message: str,
         log_function: Callable = logger.warning,
         delimiter: str = common_const.LOG_PREVIEW_DEFAULT_DELIMITER
@@ -54,9 +88,9 @@ def log_preview_if_any(
     """
     Log a preview of a collection if it is non-empty.
 
-    Displays up to preview_limit items as a preview. If additional items
-    exist beyond the preview, notes that the full list was written to the
-    log file at debug level.
+    Displays up to the configured runtime preview limit as a preview. If
+    additional items exist beyond the preview, notes that the full list
+    was written to the log file at debug level.
 
     Returns True if anything was logged, False otherwise.
 
@@ -71,7 +105,7 @@ def log_preview_if_any(
     if not sorted_items:
         return False
 
-    preview_limit = config_runtime.get_common_config().log_preview_limit
+    preview_limit = runtime.get_log_preview_limit()
     is_truncated: bool = len(sorted_items) > preview_limit
 
     preview: str = (delimiter + " ").join(sorted_items[:preview_limit])
@@ -90,10 +124,11 @@ def log_preview_if_any(
         *extra_args
     )
 
-    logger.debug("Full list: %s", sorted_items)
+    if is_truncated:
+        logger.debug("Full list: %s", sorted_items)
     return True
 
-def log_duplicates(
+def log_duplicates_if_any(
         duplicates: Iterable[str],
         list_name_1: str,
         list_name_2: str,
@@ -120,7 +155,9 @@ def log_duplicates(
         preamble: Optional string prepended to the log message.
         log_function: Logging function to use. Defaults to logger.warning.
     """
-    sorted_duplicates: list[str] = sorted(duplicates)
-    entry_type = common_utils.pluralize(quantity=len(sorted_duplicates), singular=entry_type_singular, plural=entry_type_plural)
-    message: str = f"{preamble}{len(sorted_duplicates)} duplicate {entry_type} detected across the {list_name_1} and {list_name_2} lists."
-    return log_preview_if_any(items=sorted_duplicates, message=message, log_function=log_function)
+    duplicates_list: list[str] = list(duplicates)
+
+    entry_type: str = common_utils.pluralize(quantity=len(duplicates_list), singular=entry_type_singular, plural=entry_type_plural)
+    message: str = f"{preamble}{len(duplicates_list)} duplicate {entry_type} detected across the {list_name_1} and {list_name_2} lists."
+
+    return log_preview_if_any(items=duplicates_list, message=message, log_function=log_function)

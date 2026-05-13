@@ -6,7 +6,6 @@ constructing the Shandalar card lookup, collecting Scryfall edition
 codes, and identifying unsupported cards.
 """
 from common import common_const, common_utils
-from config.format_generator_config import FormatGeneratorConfig
 from format_generator import card_loader
 
 import logging
