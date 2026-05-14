@@ -5,7 +5,6 @@ Provides helpers for validating and reading values from parsed TOML
 data, with optional fallback behavior for missing or invalid keys
 and sections.
 """
-from collections.abc import Iterable
 from common import common_utils
 from typing import Callable
 import logging
