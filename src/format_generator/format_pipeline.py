@@ -44,7 +44,8 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         field="editions",
         section=data,
         key=format_const.INPUT_FORMAT_KEY_EDITIONS,
-        expected_type=list
+        expected_type=list,
+        item_type=str
     )
     logger.info("Parsing additional bans from custom format...")
     toml_utils.verify_and_set(
@@ -52,7 +53,8 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         field="additional_bans",
         section=data,
         key=format_const.INPUT_FORMAT_KEY_ADDITIONAL_BANS,
-        expected_type=list
+        expected_type=list,
+        item_type=str
     )
     logger.info("Parsing additional cards from custom format...")
     toml_utils.verify_and_set(
@@ -60,7 +62,8 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         field="additional_cards",
         section=data,
         key=format_const.INPUT_FORMAT_KEY_ADDITIONAL_CARDS,
-        expected_type=list
+        expected_type=list,
+        item_type=str
     )
 
     return input_format

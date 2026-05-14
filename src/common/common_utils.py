@@ -141,6 +141,20 @@ def to_list(value: str | Iterable[str] | None) -> list[str]:
         return list(value)
     return [value]
 
+def validate_collection_items(collection: Iterable[Any], expected_type: type) -> bool:
+    """
+    Validate that all items in a collection match the expected type.
+
+    Args:
+        collection: The collection whose items should be validated.
+        expected_type: The required type for all collection items.
+
+    Returns:
+        True if all items match the expected type, otherwise False.
+    """
+    assert isinstance(collection, Iterable), (f"Attempted to validate non-iterable value of type {type(collection).__name__}.")
+    return all(isinstance(i, expected_type) for i in collection)
+
 def validate_minimum(value: int, minimum: int, field_name: str) -> int:
     """
     Validate that a numeric value meets a minimum threshold.

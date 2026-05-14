@@ -5,6 +5,8 @@ Provides helpers for validating and reading values from parsed TOML
 data, with optional fallback behavior for missing or invalid keys
 and sections.
 """
+from collections.abc import Iterable
+from common import common_utils
 from typing import Callable
 import logging
 
@@ -19,6 +21,7 @@ def verify_and_set(
     section: dict,
     key: str,
     expected_type: type,
+    item_type: type | None = None,
     transform: Callable | None = None,
     allow_fallback: bool = False,
     error_suffix: str = ""   
@@ -26,15 +29,19 @@ def verify_and_set(
     """
     Set a field on a target object from a TOML section if the key is present and valid.
 
+    Validates key presence, outer value type, optional collection item
+    types, and optional transform logic before assigning the final value.
+
     Logs a warning and leaves the field unchanged if fallback is allowed
-    and the value is missing, invalid, or fails transformation.
+    and validation or transformation fails.
 
     Args:
         target: The object whose field will be set.
         field: The name of the field to set on the target.
         section: The TOML section dict to read from.
         key: The key to look up in the section.
-        expected_type: The expected type of the value.
+        expected_type: The expected outer type of the value.
+        item_type: Optional expected type for collection contents.
         transform: Optional callable to apply to the value before setting.
         allow_fallback: If True, preserves the existing field value when
             validation fails.
@@ -44,19 +51,23 @@ def verify_and_set(
     value = section.get(key)    
     if value is None or not isinstance(value, expected_type):
         if allow_fallback:
-            logger.warning("Key %s missing or invalid; using default", key)
+            logger.warning("Key '%s' missing or invalid; using default", key)
             return
-        raise ValueError(f"Mandatory key [{key}] is missing or invalid{error_suffix}")
+        raise ValueError(f"Mandatory key '{key}' is missing or invalid{error_suffix}")
+    
+    # Validate container contents
+    if item_type is not None and not common_utils.validate_collection_items(collection=value, expected_type=item_type):
+        raise ValueError(f"Type mismatch: Key '{key}' must contain only values of type {item_type.__name__}.")
 
     # Transform and validate value
     try:
         final_value = transform(value) if transform else value
     except ValueError as e:
         if allow_fallback:
-            logger.warning("Key %s failed validation (%s); using default", key, e)
+            logger.warning("Key '%s' failed validation (%s); using default", key, e)
             return
 
-        raise ValueError(f"Mandatory key [{key}] is missing or invalid{error_suffix}") from e
+        raise ValueError(f"Mandatory key '{key}' is missing or invalid{error_suffix}") from e
 
     # Assign value
     setattr(target, field, final_value)
