@@ -9,6 +9,7 @@ from common import common_const, common_utils
 from config import runtime
 from typing import Callable, Iterable
 import logging
+import sys
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +47,20 @@ def initialize_logging() -> None:
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)
     root.handlers = [console, file_handler]
+
+def log_unexpected_and_exit() -> None:
+    """
+    Log and report an unexpected CLI exception, then terminate execution.
+
+    Writes the full exception traceback to the configured log file,
+    displays a simplified user-facing error message pointing to the
+    log location, and exits the process with a non-zero status code.
+    """        
+    logger.exception("Unexpected error")
+    # Separate CLI-level output. Full exception is logged externally just above.
+    log_path = common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}"        
+    print(f"ERROR: An unexpected error occurred. See the log file (default: {log_path}) for details.")
+    sys.exit(1)    
 
 def update_logging_write_mode(overwrite: bool) -> None:
     """

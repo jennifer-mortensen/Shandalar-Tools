@@ -33,7 +33,7 @@ def build_common_config() -> CommonConfig:
     data: dict   
     path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
 
-    if (data := _open_config(path)) is None:
+    if (data := _open_config(path, "common")) is None:
         _write_default_config(path)
         return config      
 
@@ -116,7 +116,7 @@ def build_format_generator_config() -> FormatGeneratorConfig:
     data: dict   
     path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
 
-    if (data := _open_config(path)) is None:
+    if (data := _open_config(path, "format generator")) is None:
         _write_default_config(path)
         return config
 
@@ -162,7 +162,7 @@ def build_deck_translator_config() -> DeckTranslatorConfig:
     data: dict   
     path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
 
-    if (data := _open_config(path)) is None:
+    if (data := _open_config(path, "deck translator")) is None:
         _write_default_config(path)
         return config       
 
@@ -179,7 +179,7 @@ def build_deck_translator_config() -> DeckTranslatorConfig:
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
-def _open_config(file_path: Path) -> dict | None:
+def _open_config(file_path: Path, config_name: str) -> dict | None:
     """
     Attempt to read and parse a TOML configuration file.
 
@@ -188,13 +188,14 @@ def _open_config(file_path: Path) -> dict | None:
 
     Args:
         file_path: Path to the configuration file.
+        config_name: Name of the config for logging.
 
     Raises:
         tomllib.TOMLDecodeError: If the configuration file contains
             invalid TOML syntax.
         OSError: If the configuration file exists but cannot be read.
     """    
-    logger.info("Reading configuration file...")    
+    logger.info("Reading %s configuration file...", config_name)    
     try:
         with open(file_path, "rb") as f:
             data = tomllib.load(f)

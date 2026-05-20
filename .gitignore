@@ -64,8 +64,9 @@ installer/
 ShandalarTools_v*.zip
 
 # ==============================
-# PROJECT BUNDLE
+# Personal Notes & Tooling
 # ==============================
 bundle.py
 deck_translator_dump.txt
 format_generator_dump.txt
+notes/
