@@ -4,8 +4,6 @@ Constants, enums, and dataclasses for the Shandalar Tools deck translator.
 Defines the shared data structures used throughout the deck translation
 pipeline, including deck metadata, card representations, color handling,
 and Shandalar sideboard rules.
-
-This module is currently a stub pending full implementation.
 """
 from dataclasses import dataclass
 from enum import Enum
