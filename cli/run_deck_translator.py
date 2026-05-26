@@ -5,6 +5,8 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from common import common_args, log_utils
 from config import config_io, runtime
 from config.deck_translator_config import DeckTranslatorConfig
+from deck_translator.translator_const import Deck
+from deck_translator import translator_pipeline
 import argparse
 import logging
 
@@ -19,7 +21,11 @@ def main() -> None:
         translator_config = config_io.build_deck_translator_config()
         apply_cli_args(args=cli_args, config=translator_config)
 
-        logger.info("Finished execution without error.")        
+        deck: Deck = translator_pipeline.build_deck(deck_name="ForgeDeck") # placeholder deck name
+        translator_pipeline.write_translated_deck(deck=deck, file_name="mydeck") # placeholder file name
+
+        logger.info("Finished execution without error.")
+        
     except Exception:
         log_utils.log_unexpected_and_exit()
         

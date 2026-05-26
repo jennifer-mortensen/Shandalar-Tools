@@ -36,11 +36,15 @@ LOG_DIR = BASE_DIR / "logs"
 # user
 USER_DIR = BASE_DIR / "user"
 CONFIG_DIR = USER_DIR / "config"
-FORMATS_DIR =  USER_DIR / "formats"
-OUTPUT_DECK_TRANSLATOR_DIR = USER_DIR / "output_deck_translator"
-OUTPUT_FORMAT_GENERATOR_DIR = USER_DIR / "output_format_generator"
+# format generator
+INPUT_FORMAT_DIR =  USER_DIR / "input_formats"
+OUTPUT_FORMAT_DIR = USER_DIR / "output_formats"
+# deck translator
+INPUT_DECK_DIR = USER_DIR / "input_decks"
+OUTPUT_FORGE_DECK_DIR = USER_DIR / "output_decks_forge"
+OUTPUT_SHANDALAR_DECK_DIR = USER_DIR / "output_decks_shandalar"
 
-for d in [LOG_DIR, CONFIG_DIR, FORMATS_DIR, OUTPUT_DECK_TRANSLATOR_DIR, OUTPUT_FORMAT_GENERATOR_DIR]:
+for d in [LOG_DIR, CONFIG_DIR, INPUT_FORMAT_DIR, OUTPUT_FORMAT_DIR, INPUT_DECK_DIR, OUTPUT_FORGE_DECK_DIR, OUTPUT_SHANDALAR_DECK_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
 # ==============================

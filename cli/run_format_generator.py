@@ -80,7 +80,7 @@ def parse_cli_args() -> argparse.Namespace:
     parser.add_argument(
         "-i", "--input-file",
         type=lambda file_name: file_utils.ensure_extension(
-            file_path=common_const.FORMATS_DIR / Path(file_name),
+            file_path=common_const.INPUT_FORMAT_DIR / Path(file_name),
             extension=format_const.FILE_TYPE_INPUT_FORMAT
         ),
         help="TOML file describing the format to be generated.",

@@ -264,7 +264,7 @@ def resolve_unsupported_cards(format_card_pool: set[str], shandalar_lookup: set[
 
     return unsupported_cards
 
-def write_output_format(output_format: ForgeFormatOutput, output_dir: Path = common_const.OUTPUT_FORMAT_GENERATOR_DIR) -> None:
+def write_output_format(output_format: ForgeFormatOutput, output_dir: Path = common_const.OUTPUT_FORMAT_DIR) -> None:
     """
     Render and write a ForgeFormatOutput to disk.
 
@@ -274,7 +274,7 @@ def write_output_format(output_format: ForgeFormatOutput, output_dir: Path = com
     Args:
         output_format: The fully resolved output format data to render and write.
         output_dir: Directory to write the output file to. Defaults to
-            OUTPUT_FORMAT_GENERATOR_DIR.
+            OUTPUT_FORMAT_DIR.
 
     Raises:
         OSError: If the file cannot be written.
@@ -297,7 +297,7 @@ def get_input_format_path(format_name: str) -> Path:
     Args:
         format_name: The name of the format file, with or without extension.
     """    
-    return file_utils.ensure_extension(common_const.FORMATS_DIR / format_name, format_const.FILE_TYPE_INPUT_FORMAT)
+    return file_utils.ensure_extension(common_const.INPUT_FORMAT_DIR / format_name, format_const.FILE_TYPE_INPUT_FORMAT)
 
 # ==============================
 # HELPER FUNCTIONS

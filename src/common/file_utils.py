@@ -57,6 +57,27 @@ def ensure_extension(file_path: Path, extension: str) -> Path:
     """    
     return file_path if file_path.suffix else file_path.with_suffix(f".{extension}")
 
+def load_raw_file(path: Path, encoding_full_scan: bool = False) -> str:
+    """
+    Read and return the full contents of a text file.
+
+    Opens the file using automatic encoding detection and returns the
+    entire file contents as a single string.
+
+    Args:
+        path: Path to the file to read.
+        encoding_full_scan: If True, scans the entire file when detecting
+            encoding. If False, scans only a partial portion of the file.
+
+    Returns:
+        The full contents of the file as a string.
+
+    Raises:
+        OSError: If the file cannot be opened or read.
+    """    
+    with open_file(path, encoding_full_scan=encoding_full_scan) as file:
+        return file.read()
+
 @contextmanager
 def open_file(file_path: Path, encoding_full_scan: bool = False, newline: str | None = None) -> Iterator[TextIO]:
     """
