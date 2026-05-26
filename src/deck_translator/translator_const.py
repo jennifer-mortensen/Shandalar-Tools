@@ -13,7 +13,7 @@ from enum import Enum
 # ==============================
 SHANDALAR_SIDEBOARD_MAX_CARDS: int = 3
 FORGE_DECK_HEADER: str = "[Main]"
-FILE_TYPE_DECK: str = "dck"
+FILE_TYPE_DECK: str = "dck" # TODO: Separate into Forge and Shandalar constants
 
 # ==============================
 # ENUMS
