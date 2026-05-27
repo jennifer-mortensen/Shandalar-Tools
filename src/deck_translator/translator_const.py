@@ -22,8 +22,11 @@ SHANDALAR_CARD_FIELD_ID: int = 0
 SHANDALAR_CARD_FIELD_QUANTITY: int = 1
 SHANDALAR_CARD_FIELD_NAME: int = 2
 
+SHANDALAR_CARD_MINIMUM_FIELDS: int = 2
+SHANDALAR_CARD_MINIMUM_QUANTITY: int = 1
+
 # ==============================
-# ENUMS
+# TYPES
 # ==============================
 class Color(Enum):
     """
@@ -35,6 +38,8 @@ class Color(Enum):
     RED = "R"
     GREEN = "G"
     NONE = ""
+
+type ShandalarCardFields = tuple[str, int, str]
 
 # ==============================
 # DICTIONARIES
@@ -69,14 +74,14 @@ class Card:
     Represents a single deck entry.
 
     Stores card identity and metadata shared across supported deck
-    formats, including copy count, set information, Shandalar IDs,
+    formats, including quantity, set information, Shandalar IDs,
     and Forge art variant data.
     """
-    art_variant: int        
-    copies: int
-    shandalar_id: int        
-    name: str
-    scryfall_code: str
+    art_variant: int = 1
+    quantity: int = 1
+    shandalar_id: str = ""
+    name: str = ""
+    scryfall_code: str = ""
 
 @dataclass
 class ShandalarCard:

@@ -6,7 +6,7 @@ formats, including format detection, translation routing, validation,
 and cross-format transformations. Currently a stub pending full
 implementation.
 """
-from common.common_const import DeckType
+from common.common_types import DeckType
 from common import file_utils, path_utils
 from deck_translator import forge_deck
 import logging

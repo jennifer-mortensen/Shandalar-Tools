@@ -5,6 +5,7 @@ Will orchestrate the deck translation workflow, including input
 handling, format detection, deck processing, and output generation.
 Currently a stub pending full implementation.
 """
+from common import path_utils
 from common.common_types import DeckType
 from deck_translator.translator_const import Deck
 from deck_translator import deck_processor
@@ -98,7 +99,7 @@ def _write_forge_deck(deck: Deck, file_name: str) -> None:
         deck: The deck to write.
         file_path: Name of the written deck file.
     """
-    file_path = deck_processor.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.FORGE)
+    file_path = path_utils.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.FORGE)
     logger.info("Writing MTG: Forge deck to %s...", file_path)    
     pass
 
@@ -110,5 +111,5 @@ def _write_shandalar_deck(deck: Deck, file_name: str) -> None:
         deck: The deck to write.
         file_path: Name of the written deck file.
     """
-    file_path = deck_processor.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.SHANDALAR)    
+    file_path = path_utils.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.SHANDALAR)    
     logger.info("Writing Shandalar deck to %s...", file_path)            
