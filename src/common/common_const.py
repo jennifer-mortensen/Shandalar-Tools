@@ -5,7 +5,6 @@ Defines file paths, directory structure, logging configuration, encoding
 settings, and parsing constants used across all modules. Directory creation
 for user-facing and log directories is handled at import time.
 """
-from enum import Enum
 from pathlib import Path
 import sys
 
@@ -27,22 +26,22 @@ def get_base_dir() -> Path:
     return Path(__file__).resolve().parent.parent.parent
 
 # root
-BASE_DIR = get_base_dir()
+BASE_DIR: Path = get_base_dir()
 # data
-DATA_DIR = BASE_DIR / "data"
-EDITIONS_DIR = DATA_DIR / "editions"
+DATA_DIR: Path = BASE_DIR / "data"
+EDITIONS_DIR: Path = DATA_DIR / "editions"
 # logs
-LOG_DIR = BASE_DIR / "logs"
+LOG_DIR: Path = BASE_DIR / "logs"
 # user
-USER_DIR = BASE_DIR / "user"
-CONFIG_DIR = USER_DIR / "config"
+USER_DIR: Path = BASE_DIR / "user"
+CONFIG_DIR: Path = USER_DIR / "config"
 # format generator
-INPUT_FORMAT_DIR =  USER_DIR / "input_formats"
-OUTPUT_FORMAT_DIR = USER_DIR / "output_formats"
+INPUT_FORMAT_DIR: Path =  USER_DIR / "input_formats"
+OUTPUT_FORMAT_DIR: Path = USER_DIR / "output_formats"
 # deck translator
-INPUT_DECK_DIR = USER_DIR / "input_decks"
-OUTPUT_FORGE_DECK_DIR = USER_DIR / "output_decks_forge"
-OUTPUT_SHANDALAR_DECK_DIR = USER_DIR / "output_decks_shandalar"
+INPUT_DECK_DIR: Path = USER_DIR / "input_decks"
+OUTPUT_FORGE_DECK_DIR: Path = USER_DIR / "output_decks_forge"
+OUTPUT_SHANDALAR_DECK_DIR: Path = USER_DIR / "output_decks_shandalar"
 
 for d in [LOG_DIR, CONFIG_DIR, INPUT_FORMAT_DIR, OUTPUT_FORMAT_DIR, INPUT_DECK_DIR, OUTPUT_FORGE_DECK_DIR, OUTPUT_SHANDALAR_DECK_DIR]:
     d.mkdir(parents=True, exist_ok=True)
@@ -50,72 +49,48 @@ for d in [LOG_DIR, CONFIG_DIR, INPUT_FORMAT_DIR, OUTPUT_FORMAT_DIR, INPUT_DECK_D
 # ==============================
 # FILE NAMES & TYPES
 # ==============================
-FILE_NAME_CONFIG = "config"
-FILE_NAME_LOG = "shandalar_tools"
+FILE_NAME_CONFIG: str = "config"
+FILE_NAME_LOG: str = "shandalar_tools"
 
-FILE_TYPE_CONFIG = "toml"
-FILE_TYPE_FORGE_EDITION = "txt"
-FILE_TYPE_LOG = "log"
-FILE_TYPE_SHANDALAR_DATA = "csv"
+FILE_TYPE_CONFIG: str = "toml"
+FILE_TYPE_FORGE_EDITION: str = "txt"
+FILE_TYPE_LOG: str = "log"
+FILE_TYPE_SHANDALAR_DATA: str = "csv"
+FILE_TYPE_DECK: str = "dck" # TODO: Separate into Forge and Shandalar constants
 
 # ==============================
 # LOGGER CONSTANTS
 # ==============================
-
-LOGGER_FORMAT_CLI = "%(levelname)s: %(message)s"
-LOGGER_FORMAT_FILE = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-LOG_PREVIEW_DEFAULT_DELIMITER = ";"
-LOG_PREVIEW_LIMIT_MINIMUM = 1
-LOG_PREVIEW_LIMIT_FIELD_NAME = "Log preview limit"
+LOGGER_FORMAT_CLI: str = "%(levelname)s: %(message)s"
+LOGGER_FORMAT_FILE: str = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+LOG_PREVIEW_DEFAULT_DELIMITER: str = ";"
+LOG_PREVIEW_LIMIT_MINIMUM: int = 1
+LOG_PREVIEW_LIMIT_FIELD_NAME: str = "Log preview limit"
 
 # ==============================
 # FILE ENCODING
 # ==============================
-DEFAULT_ENCODING = "utf-8"
-FALLBACK_ENCODING = "latin-1"
-FILE_ENCODINGS = ["utf-8", "utf-8-sig", "cp1252", "latin-1"]
-FILE_ENCODING_READ_SIZE_DEFAULT = 10240
-
-class EncodingScanMode(Enum):
-    AUTO = "auto"
-    FAST = "fast"
-    FULL = "full"
-
-    def resolve(self, default_full_scan: bool = False) -> bool:
-        """
-        Resolve the encoding scan mode to a boolean full_scan value.
-
-        Returns True for FULL, False for FAST, and the value of
-        default_full_scan for AUTO.
-
-        Args:
-            default_full_scan: Fallback value used when mode is AUTO.
-                Defaults to False.
-        """        
-        if self is EncodingScanMode.FULL:
-            return True
-        if self is EncodingScanMode.FAST:
-            return False
-        return default_full_scan
-    
-ENCODING_SCAN_VALID_VALUES = [m.name.lower() for m in EncodingScanMode]
+DEFAULT_ENCODING: str = "utf-8"
+FALLBACK_ENCODING: str = "latin-1"
+FILE_ENCODINGS: list[str] = ["utf-8", "utf-8-sig", "cp1252", "latin-1"]
+FILE_ENCODING_READ_SIZE_DEFAULT: int = 10240
 
 # ==============================
 # CSV / TEXT PARSING
 # ==============================
-DEFAULT_CSV_DELIMITER = ","
-COMMENT_PREFIX = "#"
+DEFAULT_CSV_DELIMITER: str = ","
+COMMENT_PREFIX: str = "#"
 
 # ==============================
 # SHANDALAR DATA
 # ==============================
-SHANDALAR_CARD_NAME_STARTING_COLUMN = 0
+SHANDALAR_CARD_NAME_STARTING_COLUMN: int = 0
 
 # ==============================
 # FORGE DATA
 # ==============================
-EDITION_FILE_SUFFIX = ".txt"
-EDITIONS_CARD_NAME_STARTING_COLUMN = 2
-FORGE_CARDS_HEADER = "[cards]"
-FORGE_EDITION_CARD_DELIMITER = " @"
-SCRYFALL_CODE_PREFIX = "ScryfallCode="
+EDITION_FILE_SUFFIX: str = ".txt"
+EDITIONS_CARD_NAME_STARTING_COLUMN: int = 2
+FORGE_CARDS_HEADER: str = "[cards]"
+FORGE_EDITION_CARD_DELIMITER: str = " @"
+SCRYFALL_CODE_PREFIX: str = "ScryfallCode="

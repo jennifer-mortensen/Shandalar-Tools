@@ -15,8 +15,6 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-#TODO: Add validate_string_list for TOML content validation.
-
 def find_duplicates(sets: Iterable[set[Any]]) -> list[Any]:
     """
     Identify duplicate entries across multiple sets. Set data must be hashable.
@@ -103,7 +101,19 @@ def pluralize(quantity: int, singular: str, plural: str) -> str:
     """    
     return singular if quantity == 1 else plural
 
-def sanitize_name(name: str) -> str:
+
+def sanitize_set(items: set[str]) -> set[str]:
+    """
+    Sanitize a set of strings for consistent comparison.
+
+    Applies sanitize_string to each item in the set.
+
+    Args:
+        items: The set of strings to sanitize.
+    """    
+    return {sanitize_string(i) for i in items}
+
+def sanitize_string(string: str) -> str:
     """
     Sanitize a string for consistent comparison.
 
@@ -112,18 +122,7 @@ def sanitize_name(name: str) -> str:
     Args:
         name: The string to sanitize.
     """    
-    return name.strip().lower()
-
-def sanitize_set(items: set[str]) -> set[str]:
-    """
-    Sanitize a set of strings for consistent comparison.
-
-    Applies sanitize_name to each item in the set.
-
-    Args:
-        items: The set of strings to sanitize.
-    """    
-    return {sanitize_name(i) for i in items}
+    return string.strip().lower()
 
 def to_list(value: str | Iterable[str] | None) -> list[str]:
     """
@@ -143,7 +142,7 @@ def to_list(value: str | Iterable[str] | None) -> list[str]:
 
 def validate_collection_items(collection: Iterable[Any], expected_type: type) -> bool:
     """
-    Validate that all items in a collection match the expected type.
+    Validate that all items in a collection match the expected type.W
 
     Args:
         collection: The collection whose items should be validated.
@@ -152,7 +151,7 @@ def validate_collection_items(collection: Iterable[Any], expected_type: type) ->
     Returns:
         True if all items match the expected type, otherwise False.
     """
-    assert isinstance(collection, Iterable), (f"Attempted to validate non-iterable value of type {type(collection).__name__}.")
+    assert isinstance(collection, Iterable), f"Attempted to validate non-iterable value of type {type(collection).__name__}."
     return all(isinstance(i, expected_type) for i in collection)
 
 def validate_minimum(value: int, minimum: int, field_name: str) -> int:

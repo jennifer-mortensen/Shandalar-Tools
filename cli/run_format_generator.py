@@ -3,7 +3,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
 from common import common_args, common_const, file_utils, log_utils
-from common.common_const import EncodingScanMode
+from common.common_types import EncodingScanMode
 from config import config_io, runtime
 from config.format_generator_config import FormatGeneratorConfig
 from format_generator import format_const, format_pipeline

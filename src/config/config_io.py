@@ -6,6 +6,7 @@ Required configuration values raise errors when missing or invalid, while
 optional values fall back to dataclass defaults with logged warnings.
 """
 from common import common_const, common_utils, file_utils, toml_utils
+from common.common_types import EncodingScanMode
 from config import config_const
 from config.common_config import CommonConfig
 from config.deck_translator_config import DeckTranslatorConfig
@@ -65,7 +66,7 @@ def build_common_config() -> CommonConfig:
             section=section,
             key=config_const.CONFIG_KEY_ENCODING_SCAN,
             expected_type=str,
-            transform=common_const.EncodingScanMode,
+            transform=EncodingScanMode,
             allow_fallback=True
         )
 

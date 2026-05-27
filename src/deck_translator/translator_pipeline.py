@@ -5,9 +5,9 @@ Will orchestrate the deck translation workflow, including input
 handling, format detection, deck processing, and output generation.
 Currently a stub pending full implementation.
 """
-from deck_translator.translator_const import Deck, DeckType
+from common.common_types import DeckType
+from deck_translator.translator_const import Deck
 from deck_translator import deck_processor
-from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)

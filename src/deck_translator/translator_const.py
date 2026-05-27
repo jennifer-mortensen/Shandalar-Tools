@@ -5,15 +5,22 @@ Defines the shared data structures used throughout the deck translation
 pipeline, including deck metadata, card representations, color handling,
 and Shandalar sideboard rules.
 """
+from common.common_types import DeckType
 from dataclasses import dataclass, field
 from enum import Enum
 
 # ==============================
 # CONSTANTS
 # ==============================
-SHANDALAR_SIDEBOARD_MAX_CARDS: int = 3
+# Forge Const
 FORGE_DECK_HEADER: str = "[Main]"
-FILE_TYPE_DECK: str = "dck" # TODO: Separate into Forge and Shandalar constants
+
+# Shandalar Const
+SHANDALAR_SIDEBOARD_MAX_CARDS: int = 3
+
+SHANDALAR_CARD_FIELD_ID: int = 0
+SHANDALAR_CARD_FIELD_QUANTITY: int = 1
+SHANDALAR_CARD_FIELD_NAME: int = 2
 
 # ==============================
 # ENUMS
@@ -29,31 +36,9 @@ class Color(Enum):
     GREEN = "G"
     NONE = ""
 
-class DeckType(Enum):
-    """
-    Supported deck formats recognized by the deck translator.
-    """    
-    FORGE = "forge"
-    SHANDALAR = "shandalar"
-    NONE = "none" 
-
-    def inverse(self) -> "DeckType":
-        """
-        Return the opposite supported deck type.
-
-        Returns:
-            The opposite deck type.
-
-        Raises:
-            AssertionError: If the deck type is unsupported.
-        """        
-        if self is DeckType.FORGE:
-            return DeckType.SHANDALAR
-        if self is DeckType.SHANDALAR:
-            return DeckType.FORGE
-
-        raise AssertionError(f"Unhandled deck type: {self}")    
-
+# ==============================
+# DICTIONARIES
+# ==============================
 COLOR_ORDER: dict[Color, int] = {
     Color.WHITE: 0,
     Color.BLUE: 1,
@@ -61,6 +46,18 @@ COLOR_ORDER: dict[Color, int] = {
     Color.RED: 3,
     Color.GREEN: 4,
     Color.NONE: 5
+}
+
+SHANDALAR_SIDEBOARD_HEADER: dict[str, Color] = {
+    # Color order matches typical Shandalar deck pattern rather than proper MTG ordering,
+    # though it makes no difference in practice.
+    # Case insensitive.
+    ".vnone": Color.NONE,
+    ".vblack": Color.BLACK,
+    ".vblue": Color.BLUE,
+    ".vgreen": Color.GREEN,
+    ".vred": Color.RED,
+    ".vwhite": Color.WHITE
 }
 
 # ==============================
@@ -80,6 +77,18 @@ class Card:
     shandalar_id: int        
     name: str
     scryfall_code: str
+
+@dataclass
+class ShandalarCard:
+    """
+    Represents canonical card metadata from the Shandalar card pool.
+
+    Stores card data used for deck parsing, validation, color derivation,
+    and translation between Shandalar and Forge deck formats.
+    """    
+    card_name: str
+    cost: str
+    set: str            
 
 @dataclass
 class ShandalarSideboard:

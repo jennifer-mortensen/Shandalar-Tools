@@ -5,8 +5,7 @@ Provides reusable argument definitions and parser utilities shared across
 multiple CLI entry points. Centralizing shared arguments helps maintain
 consistent CLI behavior, validation, and help text across tools.
 """
-
-from common import common_const
+from common.common_types import ENCODING_SCAN_VALID_VALUES
 import argparse
 
 def add_encoding_scan_argument(parser: argparse.ArgumentParser) -> None:
@@ -22,7 +21,7 @@ def add_encoding_scan_argument(parser: argparse.ArgumentParser) -> None:
     """    
     parser.add_argument(
         "-s", "--encoding-scan",
-        choices=common_const.ENCODING_SCAN_VALID_VALUES,
+        choices=ENCODING_SCAN_VALID_VALUES,
         help=(
             "Encoding detection mode: "
             "auto (use built-in defaults), "

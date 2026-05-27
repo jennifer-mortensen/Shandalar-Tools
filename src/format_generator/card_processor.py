@@ -30,7 +30,7 @@ def build_format_card_pool(edition_names: list[str]) -> set[str]:
     cards: set[str] = set()
 
     for e in edition_names:
-        sanitized_edition_name: str = common_utils.sanitize_name(e)
+        sanitized_edition_name: str = common_utils.sanitize_string(e)
         if sanitized_edition_name in editions_loaded:
             logger.warning("Duplicate edition '%s' detected; skipping.", e)
             continue
@@ -42,7 +42,7 @@ def build_format_card_pool(edition_names: list[str]) -> set[str]:
 
     return cards
 
-def build_shandalar_card_lookup() -> set[str]:
+def build_shandalar_card_name_lookup() -> set[str]:
     """
     Build a sanitized set of Shandalar card names for lookup.
 
@@ -82,7 +82,7 @@ def find_unsupported_in_shandalar(card_names: set[str], shandalar_lookup: set[st
         card_names: The set of card names to check.
         shandalar_lookup: A sanitized set of Shandalar supported card names.
     """    
-    unsupported_card_names: list[str] = [c for c in card_names if common_utils.sanitize_name(c) not in shandalar_lookup]
+    unsupported_card_names: list[str] = [c for c in card_names if common_utils.sanitize_string(c) not in shandalar_lookup]
     logger.info("Identified %d unsupported cards.", len(unsupported_card_names))
     
     return unsupported_card_names

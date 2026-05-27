@@ -87,7 +87,7 @@ def build_output_format(input_format: ForgeFormatInput, config: FormatGeneratorC
     if not validate_additional_cards(input_format):
         raise ValueError("Unable to resolve output format.")
 
-    shandalar_lookup: set[str] = card_processor.build_shandalar_card_lookup()
+    shandalar_lookup: set[str] = card_processor.build_shandalar_card_name_lookup()
 
     # Find cards within the custom format that are not supported by Shandalar.
     format_card_pool: set[str] = card_processor.build_format_card_pool(input_format.editions)
@@ -168,7 +168,7 @@ def filter_unsupported_additions(additional_cards: list[str], shandalar_lookup: 
         return [
             card for card in additional_cards
             if common_utils.is_comment(card)
-            or common_utils.sanitize_name(card) not in set(unsupported_additions)
+            or common_utils.sanitize_string(card) not in set(unsupported_additions)
         ]
     logger.info("No unsupported additions found!")
     return additional_cards
@@ -197,7 +197,7 @@ def filter_redundant_additions(
         return [
             card for card in additional_cards
             if common_utils.is_comment(card)
-            or common_utils.sanitize_name(card) not in sanitized_card_pool
+            or common_utils.sanitize_string(card) not in sanitized_card_pool
         ]    
     logger.info("No redundant additions found!")
     return additional_cards
@@ -233,7 +233,7 @@ def create_ban_list(
     relevant_additional_bans: list[str] = [
         i for i in additional_bans
         if common_utils.is_comment(i)
-        or common_utils.sanitize_name(i) not in redundant_bans
+        or common_utils.sanitize_string(i) not in redundant_bans
     ]
 
     logger.info("Finalizing ban list...")

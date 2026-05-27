@@ -5,7 +5,7 @@ Defines settings common to all tools, including card pool selection,
 encoding scan behavior, and logging preferences. Instantiated during
 runtime initialization and accessed globally through runtime.py.
 """
-from common.common_const import EncodingScanMode
+from common.common_types import EncodingScanMode
 from dataclasses import dataclass
 
 # ==============================

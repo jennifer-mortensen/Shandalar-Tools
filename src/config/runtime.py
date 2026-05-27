@@ -7,7 +7,7 @@ settings such as encoding behavior, logging preferences, and active
 Shandalar data selection.
 """
 from common import common_const, common_utils, log_utils
-from common.common_const import EncodingScanMode
+from common.common_types import EncodingScanMode
 from config import config_io
 from config.common_config import CommonConfig
 
