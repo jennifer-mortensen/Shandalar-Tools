@@ -90,6 +90,23 @@ def merge_and_dedupe_sequences(seq_1: Sequence[Any], seq_2: Sequence[Any]) -> li
 
     return merged
 
+# NOTE: Restricting to str is intentional. int("5.7") raises ValueError,
+# while int(5.7) truncates to 5 and would incorrectly return the value.
+def parse_int(val: str) -> int | None:
+    """
+    Attempt to parse a string as an integer.
+
+    Args:
+        val: The string to parse.
+
+    Returns:
+        The parsed integer if successful, otherwise None.
+    """  
+    try:
+        return int(val)
+    except (TypeError, ValueError):
+        return None
+
 def pluralize(quantity: int, singular: str, plural: str) -> str:
     """
     Return the singular or plural form of a word based on quantity.
@@ -100,7 +117,6 @@ def pluralize(quantity: int, singular: str, plural: str) -> str:
         plural: The plural form to return for all other quantities.
     """    
     return singular if quantity == 1 else plural
-
 
 def sanitize_set(items: set[str]) -> set[str]:
     """

@@ -108,7 +108,7 @@ def read_csv_column(
     csv_delimiter: str = common_const.DEFAULT_CSV_DELIMITER, 
     skip_prefixes: str | list[str] | None = None,
     encoding_full_scan: bool = False
-) -> Iterable[str]:
+) -> Iterator[str]:
     """
     Read a single column from a CSV file, yielding one value per row.
 
@@ -144,6 +144,32 @@ def read_csv_column(
                 yield row[column_number]
             else:
                 logger.warning("Row %d has no column %d in %s. Row may be malformed.", i, column_number, file_path)
+
+def read_csv_rows(
+    file_path: Path,
+    csv_delimiter: str = common_const.DEFAULT_CSV_DELIMITER,
+    encoding_full_scan: bool = False
+) -> Iterator[list[str]]:
+    """
+    Read a CSV file and yield rows as lists of fields.
+
+    Opens the CSV file using automatic encoding detection and yields each
+    parsed row as a list of string fields.
+
+    Args:
+        file_path: Path to the CSV file.
+        csv_delimiter: Delimiter character used in the CSV file.
+        encoding_full_scan: If True, reads the entire file to detect
+            encoding. If False, reads only the first 10,240 bytes.
+
+    Yields:
+        Parsed CSV rows as lists of string fields.
+    """    
+    with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, newline="") as file:
+        reader = csv.reader(file, delimiter=csv_delimiter)
+
+        for row in reader:
+            yield row  
             
 def read_text_section(
     file_path: Path,

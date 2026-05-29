@@ -84,7 +84,7 @@ def get_shandalar_card_names() -> set[str]:
     file_path: Path = path_utils.build_shandalar_card_pool_path()
     return set(file_utils.read_csv_column(
         file_path=file_path,
-        column_number=common_const.SHANDALAR_CARD_NAME_STARTING_COLUMN,
+        column_number=common_const.SHANDALAR_DATA_FIELD_CARD_NAME,
         encoding_full_scan=runtime.get_encoding_scan_mode(True))
     )
 

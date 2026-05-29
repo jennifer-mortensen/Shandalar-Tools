@@ -5,9 +5,11 @@ Will provide functions for reading, validating, transforming, and
 writing Shandalar deck data. Currently a stub pending full
 implementation.
 """
-from common import common_utils
+from common import common_const, common_utils, file_utils, path_utils
+from config import runtime
 from deck_translator.translator_const import Card, Color, ShandalarCard, ShandalarCardFields, SHANDALAR_SIDEBOARD_HEADER
 from deck_translator import translator_const
+from pathlib import Path
 import logging
 
 logger = logging.getLogger(__name__)
@@ -26,8 +28,23 @@ def build_shandalar_card_lookup() -> dict[str, ShandalarCard]:
     Returns:
         A dictionary mapping Shandalar card IDs to ShandalarCard metadata.
     """
-    # TODO: Implement this. :)    
-    pass
+    # TODO for v2.1+: Cache the lookup table after first build and reuse it
+    # when the source dataset has not changed.
+
+    card_lookup: dict[str, ShandalarCard] = {}
+    file_path: Path = path_utils.build_shandalar_card_pool_path()
+
+    for row in file_utils.read_csv_rows(file_path=file_path, encoding_full_scan=runtime.get_encoding_scan_mode()):
+        card_id: str = normalize_shandalar_card_id(row[common_const.SHANDALAR_DATA_FIELD_SHANDALAR_ID])
+        if not _looks_like_shandalar_card_id(card_id):
+            continue
+        card_lookup[card_id] = ShandalarCard(
+            card_name=row[common_const.SHANDALAR_DATA_FIELD_CARD_NAME],
+            cost=row[common_const.SHANDALAR_DATA_FIELD_COST],
+            set=row[common_const.SHANDALAR_DATA_FIELD_SET]
+        )
+
+    return card_lookup
 
 def get_sideboard_color(raw_line: str) -> Color | None:
     """
@@ -50,7 +67,22 @@ def get_sideboard_color(raw_line: str) -> Color | None:
     
     return SHANDALAR_SIDEBOARD_HEADER.get(sanitized_line.split()[0]) # ignore text after whitespace
 
-def parse_shandalar_card(raw_line: str) -> Card | None:
+def normalize_shandalar_card_id(card_id: str) -> str:
+    """
+    Normalize a Shandalar card ID.
+
+    Removes leading zeros, which are ignored by Shandalar when
+    interpreting card IDs.
+
+    Args:
+        card_id: The card ID to normalize.
+
+    Returns:
+        The normalized card ID.
+    """    
+    return card_id.lstrip("0")
+
+def parse_shandalar_card(raw_line: str, shandalar_card_lookup: dict[str, ShandalarCard]) -> Card | None:
     """
     Parse a raw Shandalar card line into a normalized Card object.
 
@@ -59,11 +91,16 @@ def parse_shandalar_card(raw_line: str) -> Card | None:
 
     Args:
         raw_line: A raw line from a Shandalar deck file.
+        shandalar_card_lookup: Lookup table of canonical Shandalar card
+            metadata keyed by normalized Shandalar card ID.        
 
     Returns:
         A parsed Card object if successful, otherwise None.
     """    
-    card_fields: ShandalarCardFields | None  = _parse_shandalar_card_fields(raw_line)
+    card_fields: ShandalarCardFields | None  = _parse_shandalar_card_fields(
+        raw_line=raw_line,
+        shandalar_card_lookup=shandalar_card_lookup
+    )
     
     if card_fields is None:
         return None
@@ -77,7 +114,7 @@ def parse_shandalar_card(raw_line: str) -> Card | None:
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
-def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
+def _parse_shandalar_card_fields(raw_line: str, shandalar_card_lookup: dict[str, ShandalarCard]) -> ShandalarCardFields | None:
     """
     Parse a raw Shandalar card line into normalized card fields.
 
@@ -86,9 +123,12 @@ def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
 
     Args:
         raw_line: A raw card line from a Shandalar deck file.
+        shandalar_card_lookup: Lookup table of canonical Shandalar card
+            metadata keyed by normalized Shandalar card ID.
 
     Returns:
-        A tuple containing card ID, quantity, and card name.
+        A tuple containing the normalized card ID, quantity, and card name,
+        or None if the line does not represent a valid Shandalar card entry.
     """    
     raw_fields: list[str] = raw_line.strip().split()
 
@@ -104,7 +144,7 @@ def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
 
     # Parse card ID
     card_id: str = raw_fields[translator_const.SHANDALAR_CARD_FIELD_ID] 
-    if not _validate_shandalar_card_id(card_id=card_id, raw_line=raw_line):
+    if not _validate_shandalar_card_id(card_id=card_id, raw_line=raw_line, shandalar_card_lookup=shandalar_card_lookup):
         return None
     
     # Parse card quantity
@@ -119,40 +159,82 @@ def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
     return (card_id, quantity, name)
 
 def _looks_like_shandalar_card_id(field_value: str) -> bool:
-    # TODO: Check for resemblance with Shandalar ID. Should begin with '.' and be followed by numbers.
-    return True
+    """
+    Determine whether a value resembles a Shandalar card ID.
 
-def _validate_shandalar_card_id(card_id: str, raw_line: str) -> bool:
+    Performs a lightweight structural check by verifying that the value
+    begins with the expected Shandalar ID prefix and that the remaining
+    characters can be parsed as an integer.
+
+    Args:
+        field_value: The value to test.
+
+    Returns:
+        True if the value resembles a Shandalar card ID, otherwise False.
+    """    
+    field_value = normalize_shandalar_card_id(field_value)
+    
+    return (
+        field_value.startswith(translator_const.SHANDALAR_ID_PREFIX) 
+        and common_utils.parse_int(field_value[len(translator_const.SHANDALAR_ID_PREFIX):]) is not None
+    )
+
+def _validate_shandalar_card_id(card_id: str, raw_line: str, shandalar_card_lookup: dict[str, ShandalarCard]) -> bool:
+    """
+    Validate a Shandalar card ID.
+
+    Verifies that the ID matches the expected Shandalar ID format and
+    exists in the canonical Shandalar card pool.
+
+    Args:
+        card_id: The card ID to validate.
+        raw_line: The source line being validated, used for logging.
+        shandalar_card_lookup: Lookup table of canonical Shandalar card
+            metadata keyed by normalized Shandalar card ID.        
+
+    Returns:
+        True if the card ID is valid, otherwise False.
+    """    
     if not _looks_like_shandalar_card_id(card_id):
         logger.debug("Shandalar card line lacks Shandalar ID signature: '%s'", raw_line)
         return False
 
-    if not _shandalar_id_exists(card_id):
+    if card_id not in shandalar_card_lookup:
        logger.warning("Shandalar card line has invalid ID (ID: '%s'): '%s'", card_id, raw_line)
        return False
     
     return True
 
-def _shandalar_id_exists(card_id: str) -> bool:
-    # TODO: Check ID against Shandalar card lookup—will have to pass lookup as a param.    
-    return True
-
 def _validate_shandalar_card_quantity(quantity_field: str, raw_line: str) -> bool:
-    try:
-        quantity: int = int(quantity_field)
-        if quantity < translator_const.SHANDALAR_CARD_MINIMUM_QUANTITY:
-            logger.warning(
-                "Shandalar card line has insufficient quantity (quantity: %d, minimum: %d): '%s'",
-                quantity,
-                translator_const.SHANDALAR_CARD_MINIMUM_QUANTITY,
-                raw_line
-            )
-            return False
-    except ValueError:
+    """
+    Validate a Shandalar card quantity field.
+
+    Verifies that the quantity field can be parsed as an integer and
+    meets the minimum allowed card quantity.
+
+    Args:
+        quantity_field: The quantity field to validate.
+        raw_line: The source line being validated, used for logging.
+
+    Returns:
+        True if the quantity field is valid, otherwise False.
+    """   
+    quantity: int | None = common_utils.parse_int(quantity_field)
+   
+    if quantity is None:
         logger.warning(
             "Shandalar card line has invalid quantity field ('%s'): '%s'",
             quantity_field,
             raw_line
         )
-        return False
-    return True
+        return False   
+    if quantity < translator_const.SHANDALAR_CARD_MINIMUM_QUANTITY:
+        logger.warning(
+            "Shandalar card line has insufficient quantity (quantity: %d, minimum: %d): '%s'",
+            quantity,
+            translator_const.SHANDALAR_CARD_MINIMUM_QUANTITY,
+            raw_line
+        )
+        return False       
+
+    return True  

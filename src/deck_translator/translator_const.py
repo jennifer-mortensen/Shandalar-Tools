@@ -25,6 +25,8 @@ SHANDALAR_CARD_FIELD_NAME: int = 2
 SHANDALAR_CARD_MINIMUM_FIELDS: int = 2
 SHANDALAR_CARD_MINIMUM_QUANTITY: int = 1
 
+SHANDALAR_ID_PREFIX: str = "."
+
 # ==============================
 # TYPES
 # ==============================
