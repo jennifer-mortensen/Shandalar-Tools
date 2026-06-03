@@ -27,6 +27,8 @@ SHANDALAR_CARD_MINIMUM_QUANTITY: int = 1
 
 SHANDALAR_ID_PREFIX: str = "."
 
+SHANDALAR_DECK_TITLE_LINE: int = 1
+
 # ==============================
 # TYPES
 # ==============================

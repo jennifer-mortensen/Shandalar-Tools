@@ -7,8 +7,8 @@ Currently a stub pending full implementation.
 """
 from common import path_utils
 from common.common_types import DeckType
-from deck_translator.translator_const import Deck
-from deck_translator import deck_processor
+from deck_translator.translator_const import Card, Color, Deck
+from deck_translator import translator_const, deck_processor, shandalar_deck
 import logging
 
 logger = logging.getLogger(__name__)
@@ -75,6 +75,10 @@ def _build_deck_from_forge(raw_deck: str) -> Deck:
     """
     logger.info("Building deck from MTG: Forge format...")    
     deck: Deck = Deck(type=DeckType.FORGE)
+
+    for line_number, line in enumerate(raw_deck.splitlines(), start=1):
+        pass
+
     return deck
 
 def _build_deck_from_shandalar(raw_deck: str) -> Deck:
@@ -89,6 +93,29 @@ def _build_deck_from_shandalar(raw_deck: str) -> Deck:
     """ 
     logger.info("Building deck from Shandalar format...")   
     deck: Deck = Deck(type=DeckType.SHANDALAR)
+    current_deck_section: list[Card] = deck.cards
+    shandalar_card_lookup: dict = shandalar_deck.build_shandalar_card_lookup()
+
+    for line_number, line in enumerate(raw_deck.splitlines(), start=1):
+        line = line.strip()
+        if line == "":
+            continue
+
+        sideboard_color: Color | None = shandalar_deck.get_sideboard_color(line)
+        if sideboard_color is not None:
+            current_deck_section = deck.shandalar_sideboards[sideboard_color].cards
+            continue
+
+        card: Card | None = shandalar_deck.parse_shandalar_card(raw_line=line, shandalar_card_lookup=shandalar_card_lookup)
+        if not card:
+            if line_number == translator_const.SHANDALAR_DECK_TITLE_LINE:
+                deck.name = shandalar_deck.parse_shandalar_deck_title(line)
+            else:
+                logger.warning("Unable to parse card at line %d: '%s'", line_number, line)
+            continue
+
+        current_deck_section.append(card)
+
     return deck
 
 def _write_forge_deck(deck: Deck, file_name: str) -> None:

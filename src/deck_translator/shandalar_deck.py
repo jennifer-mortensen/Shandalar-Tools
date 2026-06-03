@@ -111,6 +111,25 @@ def parse_shandalar_card(raw_line: str, shandalar_card_lookup: dict[str, Shandal
         name=card_fields[translator_const.SHANDALAR_CARD_FIELD_NAME]
     )
 
+def parse_shandalar_deck_title(line: str) -> str:
+    """
+    Parse a Shandalar deck title line.
+
+    Extracts the deck name from a Shandalar deck title line by removing
+    any trailing metadata beginning with the title delimiter.
+
+    Examples:
+        "Lord of Fate (Bl/Wh, 4th Edition)" -> "Lord of Fate"
+        "Lord of Fate" -> "Lord of Fate"
+
+    Args:
+        line: The raw title line from a Shandalar deck file.
+
+    Returns:
+        The parsed deck title with surrounding whitespace removed.
+    """    
+    return line.split(translator_const.SHANDALAR_DECK_TITLE_DELIMITER, maxsplit=1)[0].strip()
+
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
