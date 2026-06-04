@@ -11,6 +11,8 @@ from enum import Enum
 # ==============================
 # FILE NAMES & TYPES
 # ==============================
+FORMAT_GENERATOR_LOG_NAME: str = "format_generator"
+
 FILE_TYPE_OUTPUT_FORMAT = "txt"
 FILE_TYPE_INPUT_FORMAT = "toml"
 

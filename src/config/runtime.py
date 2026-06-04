@@ -6,26 +6,39 @@ and exposes runtime configuration accessors for common cross-tool
 settings such as encoding behavior, logging preferences, and active
 Shandalar data selection.
 """
-from common import common_const, common_utils, log_utils
+from common import common_const, common_utils, file_utils, log_utils, path_utils
 from common.common_types import EncodingScanMode
 from config import config_io
 from config.common_config import CommonConfig
+from pathlib import Path
 
 _active_common_config: CommonConfig | None = None
 
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def initialize_runtime() -> None:
+def initialize_runtime(log_name: str) -> None:
     """
     Initialize shared runtime services for the application.
 
     Establishes bootstrap logging, loads the shared CommonConfig,
-    and applies runtime-controlled logging behavior.
-    """    
-    log_utils.initialize_logging()
-    _initialize_common_config()
-    log_utils.update_logging_write_mode(_active_common_config.log_overwrite)
+    configures the active log file, and applies runtime-controlled
+    logging behavior.
+
+    Args:
+        log_name: Name of the log file to use for the current tool.
+            The file extension is optional.
+    """
+    log_file_path: Path = path_utils.build_log_file_path(log_name)
+    log_utils.initialize_logging(log_file_path)
+    _initialize_common_config(log_file_path)
+
+    # NOTE:
+    # Runtime configuration is populated directly during initialization
+    # and therefore bypasses the runtime setters that normally refresh
+    # logging automatically. Refresh explicitly after initialization to
+    # apply the loaded logging configuration.
+    log_utils.refresh_logging()
 
 # ==============================
 # PUBLIC GETTERS/SETTERS
@@ -97,24 +110,57 @@ def set_log_overwrite(overwrite_mode: bool) -> None:
     if config.log_overwrite == overwrite_mode: # avoid unnecessary handler updates
         return 
     config.log_overwrite = overwrite_mode
-    log_utils.update_logging_write_mode(overwrite_mode)
+    log_utils.refresh_logging()
+
+def get_log_file_path() -> Path:
+    """
+    Retrieve the active runtime log file path.
+
+    Returns:
+        The configured log file path for the current tool.
+    """    
+    return _get_common_config().log_file_path
+
+def set_log_file_path(file_path: Path) -> None:
+    """
+    Update the active runtime log file path.
+
+    Updates both the stored runtime setting and the active file
+    logging handler configuration.
+
+    Args:
+        file_path: New log file path to use. The file extension
+            is optional and will be normalized automatically.
+    """
+    normalized_path: Path = file_utils.ensure_extension(file_path=file_path, extension=common_const.FILE_TYPE_LOG)
+    config = _get_common_config()
+    if config.log_file_path == normalized_path: # avoid unnecessary handler updates
+        return
+    config.log_file_path = normalized_path
+    log_utils.refresh_logging()
 
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
-def _initialize_common_config() -> None:
+def _initialize_common_config(log_file_path: Path) -> None:
     """
     Load and store the active runtime CommonConfig.
 
-    Builds the shared application configuration from config.toml
-    and stores it for runtime access throughout the application.
+    Builds the shared application configuration from config.toml,
+    overrides the configured log file name with the value supplied
+    by the caller, and stores the resulting configuration for
+    runtime access throughout the application.
+
+    Args:
+        log_file_path: Path to the log file to use for the current tool.
+            The file extension is optional.
 
     Raises:
         ValueError: If configuration values are missing or invalid.
         OSError: If the configuration file cannot be read.
     """
     global _active_common_config
-    _active_common_config = config_io.build_common_config()
+    _active_common_config = config_io.build_common_config(log_file_path)
 
 def _get_common_config() -> CommonConfig:
     """

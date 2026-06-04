@@ -5,6 +5,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from common import common_args, log_utils
 from config import config_io, runtime
 from config.deck_translator_config import DeckTranslatorConfig
+from deck_translator import translator_const
 from deck_translator.translator_const import Deck
 from deck_translator import translator_pipeline
 import argparse
@@ -14,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     try:
-        runtime.initialize_runtime()
+        runtime.initialize_runtime(translator_const.DECK_TRANSLATOR_LOG_NAME)
 
         cli_args = parse_cli_args()
 

@@ -21,18 +21,32 @@ logger = logging.getLogger(__name__)
 # PUBLIC FUNCTIONS
 # ==============================
 
-def build_common_config() -> CommonConfig:
+def build_common_config(log_file_path: Path) -> CommonConfig:
     """
     Build and return a CommonConfig from parsed TOML data.
 
     Reads shared settings including card pool, encoding scan mode,
-    preview limit, and log overwrite behavior. Required values raise
-    errors when missing or invalid, while optional values fall back
-    to dataclass defaults.
+    preview limit, and log overwrite behavior. The log file name is
+    provided by the caller and overrides the dataclass default.
+
+    Args:
+        log_file_path: Path to the log file to use for the current tool.
+            The file extension is optional.
+
+    Returns:
+        A populated CommonConfig instance.
+
+    Raises:
+        ValueError: If required configuration values are missing or invalid.
+        OSError: If the configuration file cannot be read.
     """
     config: CommonConfig = CommonConfig()
     data: dict   
-    path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
+    path: Path = file_utils.ensure_extension(
+        file_path=Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG),
+        extension=common_const.FILE_TYPE_CONFIG)
+
+    config.log_file_path = file_utils.ensure_extension(file_path=log_file_path, extension=common_const.FILE_TYPE_LOG)
 
     if (data := _open_config(path, "common")) is None:
         _write_default_config(path)

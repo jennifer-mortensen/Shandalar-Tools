@@ -5,22 +5,27 @@ Provides helpers for configuring logging across all CLI entry points,
 and for logging previews and duplicate entries with consistent formatting.
 """
 from collections.abc import Collection
-from common import common_const, common_utils
+from common import common_const, common_utils, file_utils
 from config import runtime
 from typing import Callable, Iterable
+from pathlib import Path
 import logging
 import sys
 
 logger = logging.getLogger(__name__)
 
-def initialize_logging() -> None:
+def initialize_logging(file_path: Path) -> None:
     """
     Initialize bootstrap logging for the application.
 
-    Configures console and file logging using safe append-mode behavior
-    before runtime configuration has been loaded. Runtime logging behavior
-    may be updated later after CommonConfig initialization.
-    """  
+    Configures console and file logging before runtime configuration
+    has been loaded. The specified log file is normalized and opened
+    in append mode during bootstrap. Runtime logging behavior may be
+    updated later after CommonConfig initialization.
+
+    Args:
+        file_path: Path to the log file to use.
+    """
     formatter = logging.Formatter(common_const.LOGGER_FORMAT_FILE)
 
     # CLI-level logging. Prioritize readability.
@@ -37,7 +42,7 @@ def initialize_logging() -> None:
 
     # File-level logging. Full fidelity.
     file_handler = logging.FileHandler(
-        filename=common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}",
+        filename=file_path,
         mode="a",
         encoding=common_const.DEFAULT_ENCODING
     )
@@ -57,24 +62,24 @@ def log_unexpected_and_exit() -> None:
     log location, and exits the process with a non-zero status code.
     """        
     logger.exception("Unexpected error")
-    # Separate CLI-level output. Full exception is logged externally just above.
-    log_path = common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}"        
-    print(f"ERROR: An unexpected error occurred. See the log file (default: {log_path}) for details.")
+    # Separate CLI-level output. Full exception is logged externally just above.        
+    print(f"ERROR: An unexpected error occurred. See the log file ({runtime.get_log_file_path()}) for details.")
     sys.exit(1)    
 
-def update_logging_write_mode(overwrite: bool) -> None:
+def refresh_logging() -> None:
     """
-    Update the file logging mode after runtime configuration is loaded.
+    Refresh file logging using the current runtime configuration.
 
-    Replaces the existing FileHandler with a new handler using either
-    overwrite ("w") or append ("a") mode while preserving existing
-    console logging configuration.
+    Rebuilds the active FileHandler using the current runtime log
+    file path and overwrite mode. Existing console logging handlers
+    are preserved.
 
-    Args:
-        overwrite: If True, recreate the log file in overwrite mode.
-            If False, continue appending to the existing log.
+    This function should be called after runtime logging settings
+    have changed to synchronize the active logging handlers with
+    the stored configuration.
     """
     root = logging.getLogger()
+    overwrite: bool = runtime.get_log_overwrite()
 
     # Remove existing file handlers
     for handler in root.handlers[:]:
@@ -84,7 +89,7 @@ def update_logging_write_mode(overwrite: bool) -> None:
 
     # Create replacement file handler
     file_handler = logging.FileHandler(
-        filename=common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}",
+        filename=runtime.get_log_file_path(),
         mode="w" if overwrite else "a",
         encoding=common_const.DEFAULT_ENCODING
     )
@@ -130,7 +135,7 @@ def log_preview_if_any(
 
     if is_truncated:
         suffix = "...\nFull details written to the log file (default: %s)"
-        extra_args = (common_const.LOG_DIR / f"{common_const.FILE_NAME_LOG}.{common_const.FILE_TYPE_LOG}",)
+        extra_args = (runtime.get_log_file_path(),)
 
     log_function(f"%s %s: %s{suffix}",
         message,

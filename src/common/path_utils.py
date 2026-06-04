@@ -40,6 +40,21 @@ def build_input_deck_file_path(deck_name: str) -> Path:
     """    
     return file_utils.ensure_extension(file_path=common_const.INPUT_DECK_DIR / deck_name, extension=common_const.FILE_TYPE_DECK)
 
+def build_log_file_path(log_name: str) -> Path:
+    """
+    Build the path to a log file within the application's log directory.
+
+    Ensures the expected log file extension is present and returns
+    the normalized path.
+
+    Args:
+        log_name: Log file name or stem. The file extension is optional.
+
+    Returns:
+        Path to the log file.
+    """    
+    return file_utils.ensure_extension(file_path=common_const.LOG_DIR / log_name, extension=common_const.FILE_TYPE_LOG)
+
 def build_output_deck_file_path(deck_name: str, deck_type: DeckType) -> Path:
     """
     Build the normalized path for an output deck file.
@@ -58,7 +73,16 @@ def build_output_deck_file_path(deck_name: str, deck_type: DeckType) -> Path:
     return file_utils.ensure_extension(file_path=output_dir / deck_name, extension=common_const.FILE_TYPE_DECK)
 
 def build_shandalar_card_pool_path() -> Path:
+    """
+    Build the path to the active Shandalar card pool data file.
+
+    Uses the currently configured card pool name from runtime
+    configuration and ensures the expected file extension is present.
+
+    Returns:
+        Path to the active Shandalar card pool data file.
+    """    
     return file_utils.ensure_extension(
-        common_const.DATA_DIR / runtime.get_shandalar_card_pool(),
-        common_const.FILE_TYPE_SHANDALAR_DATA
+        file_path=common_const.DATA_DIR / runtime.get_shandalar_card_pool(),
+        extension=common_const.FILE_TYPE_SHANDALAR_DATA
     )

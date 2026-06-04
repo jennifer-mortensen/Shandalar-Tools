@@ -12,6 +12,9 @@ from enum import Enum
 # ==============================
 # CONSTANTS
 # ==============================
+# Log Filename
+DECK_TRANSLATOR_LOG_NAME: str = "deck_translator"
+
 # Forge Const
 FORGE_DECK_HEADER: str = "[Main]"
 
@@ -28,6 +31,7 @@ SHANDALAR_CARD_MINIMUM_QUANTITY: int = 1
 SHANDALAR_ID_PREFIX: str = "."
 
 SHANDALAR_DECK_TITLE_LINE: int = 1
+SHANDALAR_DECK_TITLE_DELIMITER = "("
 
 # ==============================
 # TYPES
@@ -110,13 +114,23 @@ class ShandalarSideboard:
     cards: list[Card]
 
     def total_cards(self) -> int:
-        return sum(card.copies for card in self.cards)
+        return sum(card.quantity for card in self.cards)
     
     def validate_card_count(self) -> None:
         if self.total_cards() > SHANDALAR_SIDEBOARD_MAX_CARDS:
             raise ValueError(f"Shandalar sideboards may contain at most {SHANDALAR_SIDEBOARD_MAX_CARDS} cards.")
     def __post_init__(self) -> None:
         self.validate_card_count()
+
+def _build_default_sideboards() -> dict[Color, ShandalarSideboard]:
+    """
+    Build the default Shandalar sideboard collection.
+
+    Creates an empty sideboard for every supported color identity,
+    ensuring all sideboard buckets are available during deck parsing
+    and translation.
+    """    
+    return { color: ShandalarSideboard(cards=[]) for color in Color}
 
 @dataclass
 class Deck:
@@ -131,7 +145,7 @@ class Deck:
     name: str = ""
     cards: list[Card] = field(default_factory=list)
     colors: set[Color] = field(default_factory=set)
-    shandalar_sideboards: dict[Color, ShandalarSideboard] = field(default_factory=dict)
+    shandalar_sideboards: dict[Color, ShandalarSideboard] = field(default_factory=_build_default_sideboards)
 
     def sorted_colors(self) -> list[Color]:
         return sorted(self.colors, key=COLOR_ORDER.get)

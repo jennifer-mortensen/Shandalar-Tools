@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # ==============================
 def main() -> None:
     try:
-        runtime.initialize_runtime()
+        runtime.initialize_runtime(format_const.FORMAT_GENERATOR_LOG_NAME)
 
         cli_args = parse_cli_args()
         validate_cli_args(cli_args)
