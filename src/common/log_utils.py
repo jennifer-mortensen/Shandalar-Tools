@@ -74,9 +74,8 @@ def refresh_logging() -> None:
     file path and overwrite mode. Existing console logging handlers
     are preserved.
 
-    This function should be called after runtime logging settings
-    have changed to synchronize the active logging handlers with
-    the stored configuration.
+    Synchronizes active file logging handlers with current 
+    runtime configuration.
     """
     root = logging.getLogger()
     overwrite: bool = runtime.get_log_overwrite()
@@ -134,7 +133,7 @@ def log_preview_if_any(
     extra_args: tuple = () # pass nothing by default
 
     if is_truncated:
-        suffix = "...\nFull details written to the log file (default: %s)"
+        suffix = "...\nFull details written to the log file (%s)"
         extra_args = (runtime.get_log_file_path(),)
 
     log_function(f"%s %s: %s{suffix}",

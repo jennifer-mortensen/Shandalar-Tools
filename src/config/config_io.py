@@ -11,7 +11,7 @@ from config import config_const
 from config.common_config import CommonConfig
 from config.deck_translator_config import DeckTranslatorConfig
 from config.format_generator_config import FormatGeneratorConfig
-from format_generator import format_const
+from format_generator import format_common
 from pathlib import Path
 import logging, tomllib
 
@@ -155,7 +155,7 @@ def build_format_generator_config() -> FormatGeneratorConfig:
         section=section,
         key=config_const.CONFIG_KEY_OUTPUT_FORMAT_TYPE,
         expected_type=str,
-        transform=format_const.parse_forge_format,
+        transform=format_common.parse_forge_format,
         error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
     )             
 

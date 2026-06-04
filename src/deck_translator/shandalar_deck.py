@@ -7,8 +7,8 @@ implementation.
 """
 from common import common_const, common_utils, file_utils, path_utils
 from config import runtime
-from deck_translator.translator_const import Card, Color, ShandalarCard, ShandalarCardFields, SHANDALAR_SIDEBOARD_HEADER
-from deck_translator import translator_const
+from deck_translator.translator_common import Card, Color, ShandalarCard, ShandalarCardFields, SHANDALAR_SIDEBOARD_HEADER
+from deck_translator import translator_common
 from pathlib import Path
 import logging
 
@@ -106,9 +106,9 @@ def parse_shandalar_card(raw_line: str, shandalar_card_lookup: dict[str, Shandal
         return None
     
     return Card(
-        copies=card_fields[translator_const.SHANDALAR_CARD_FIELD_QUANTITY],
-        shandalar_id=card_fields[translator_const.SHANDALAR_CARD_FIELD_ID],
-        name=card_fields[translator_const.SHANDALAR_CARD_FIELD_NAME]
+        copies=card_fields[translator_common.SHANDALAR_CARD_FIELD_QUANTITY],
+        shandalar_id=card_fields[translator_common.SHANDALAR_CARD_FIELD_ID],
+        name=card_fields[translator_common.SHANDALAR_CARD_FIELD_NAME]
     )
 
 def parse_shandalar_deck_title(line: str) -> str:
@@ -128,7 +128,7 @@ def parse_shandalar_deck_title(line: str) -> str:
     Returns:
         The parsed deck title with surrounding whitespace removed.
     """    
-    return line.split(translator_const.SHANDALAR_DECK_TITLE_DELIMITER, maxsplit=1)[0].strip()
+    return line.split(translator_common.SHANDALAR_DECK_TITLE_DELIMITER, maxsplit=1)[0].strip()
 
 # ==============================
 # PRIVATE FUNCTIONS
@@ -152,28 +152,28 @@ def _parse_shandalar_card_fields(raw_line: str, shandalar_card_lookup: dict[str,
     raw_fields: list[str] = raw_line.strip().split()
 
     # Ensure sufficient fields
-    if len(raw_fields) < translator_const.SHANDALAR_CARD_MINIMUM_FIELDS:
+    if len(raw_fields) < translator_common.SHANDALAR_CARD_MINIMUM_FIELDS:
         logger.debug(
             "Ignoring Shandalar card line with insufficient fields (count: %d, minimum: %d): '%s'",
             len(raw_fields),
-            translator_const.SHANDALAR_CARD_MINIMUM_FIELDS,
+            translator_common.SHANDALAR_CARD_MINIMUM_FIELDS,
             raw_line
         )
         return None    
 
     # Parse card ID
-    card_id: str = raw_fields[translator_const.SHANDALAR_CARD_FIELD_ID] 
+    card_id: str = raw_fields[translator_common.SHANDALAR_CARD_FIELD_ID] 
     if not _validate_shandalar_card_id(card_id=card_id, raw_line=raw_line, shandalar_card_lookup=shandalar_card_lookup):
         return None
     
     # Parse card quantity
-    if not _validate_shandalar_card_quantity(quantity_field=raw_fields[translator_const.SHANDALAR_CARD_FIELD_QUANTITY], raw_line=raw_line):
+    if not _validate_shandalar_card_quantity(quantity_field=raw_fields[translator_common.SHANDALAR_CARD_FIELD_QUANTITY], raw_line=raw_line):
         return None 
-    quantity: int = int(raw_fields[translator_const.SHANDALAR_CARD_FIELD_QUANTITY]) # assign after validation to evade conversion value error
+    quantity: int = int(raw_fields[translator_common.SHANDALAR_CARD_FIELD_QUANTITY]) # assign after validation to evade conversion value error
     
     # Parse card name
-    contains_name: bool = len(raw_fields) > translator_const.SHANDALAR_CARD_FIELD_NAME # offset by 1 due to list index 0
-    name: str = " ".join(raw_fields[translator_const.SHANDALAR_CARD_FIELD_NAME:]) if contains_name else ""
+    contains_name: bool = len(raw_fields) > translator_common.SHANDALAR_CARD_FIELD_NAME # offset by 1 due to list index 0
+    name: str = " ".join(raw_fields[translator_common.SHANDALAR_CARD_FIELD_NAME:]) if contains_name else ""
 
     return (card_id, quantity, name)
 
@@ -194,8 +194,8 @@ def _looks_like_shandalar_card_id(field_value: str) -> bool:
     field_value = normalize_shandalar_card_id(field_value)
     
     return (
-        field_value.startswith(translator_const.SHANDALAR_ID_PREFIX) 
-        and common_utils.parse_int(field_value[len(translator_const.SHANDALAR_ID_PREFIX):]) is not None
+        field_value.startswith(translator_common.SHANDALAR_ID_PREFIX) 
+        and common_utils.parse_int(field_value[len(translator_common.SHANDALAR_ID_PREFIX):]) is not None
     )
 
 def _validate_shandalar_card_id(card_id: str, raw_line: str, shandalar_card_lookup: dict[str, ShandalarCard]) -> bool:
@@ -247,11 +247,11 @@ def _validate_shandalar_card_quantity(quantity_field: str, raw_line: str) -> boo
             raw_line
         )
         return False   
-    if quantity < translator_const.SHANDALAR_CARD_MINIMUM_QUANTITY:
+    if quantity < translator_common.SHANDALAR_CARD_MINIMUM_QUANTITY:
         logger.warning(
             "Shandalar card line has insufficient quantity (quantity: %d, minimum: %d): '%s'",
             quantity,
-            translator_const.SHANDALAR_CARD_MINIMUM_QUANTITY,
+            translator_common.SHANDALAR_CARD_MINIMUM_QUANTITY,
             raw_line
         )
         return False       

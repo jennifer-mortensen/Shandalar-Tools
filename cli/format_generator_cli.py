@@ -6,8 +6,8 @@ from common import common_args, common_const, file_utils, log_utils
 from common.common_types import EncodingScanMode
 from config import config_io, runtime
 from config.format_generator_config import FormatGeneratorConfig
-from format_generator import format_const, format_pipeline
-from format_generator.format_const import ForgeFormatInput, ForgeFormatOutput
+from format_generator import format_common, format_pipeline
+from format_generator.format_common import ForgeFormatInput, ForgeFormatOutput
 import argparse
 import logging
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # ==============================
 def main() -> None:
     try:
-        runtime.initialize_runtime(format_const.FORMAT_GENERATOR_LOG_NAME)
+        runtime.initialize_runtime(format_common.FORMAT_GENERATOR_LOG_NAME)
 
         cli_args = parse_cli_args()
         validate_cli_args(cli_args)
@@ -62,7 +62,7 @@ def parse_cli_args() -> argparse.Namespace:
     )    
     parser.add_argument(
         "-o", "--output-format",
-        choices=format_const.FORGE_FORMAT_VALID_VALUES,
+        choices=format_common.FORGE_FORMAT_VALID_VALUES,
         help="Forge format type to be generated.",
     )
     parser.add_argument(
@@ -81,7 +81,7 @@ def parse_cli_args() -> argparse.Namespace:
         "-i", "--input-file",
         type=lambda file_name: file_utils.ensure_extension(
             file_path=common_const.INPUT_FORMAT_DIR / Path(file_name),
-            extension=format_const.FILE_TYPE_INPUT_FORMAT
+            extension=format_common.FILE_TYPE_INPUT_FORMAT
         ),
         help="TOML file describing the format to be generated.",
     )
@@ -121,7 +121,7 @@ def apply_cli_args(args: argparse.Namespace, config: FormatGeneratorConfig) -> N
     if args.input_file is not None:
         config.input_format_file = args.input_file
     if args.output_format is not None:
-        config.output_format_type = format_const.parse_forge_format(args.output_format)
+        config.output_format_type = format_common.parse_forge_format(args.output_format)
 
 if __name__ == "__main__":
     main()

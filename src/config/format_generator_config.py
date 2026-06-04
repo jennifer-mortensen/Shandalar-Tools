@@ -5,7 +5,7 @@ Defines settings specific to the format generator tool, including
 the input format file and output format type.
 """
 from dataclasses import dataclass
-from format_generator.format_const import ForgeFormat
+from format_generator.format_common import ForgeFormat
 
 # ==============================
 # DEFAULTS

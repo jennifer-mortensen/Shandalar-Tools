@@ -7,8 +7,8 @@ Currently a stub pending full implementation.
 """
 from common import path_utils
 from common.common_types import DeckType
-from deck_translator.translator_const import Card, Color, Deck
-from deck_translator import translator_const, deck_processor, shandalar_deck
+from deck_translator.translator_common import Card, Color, Deck
+from deck_translator import translator_common, deck_processor, shandalar_deck
 import logging
 
 logger = logging.getLogger(__name__)
@@ -108,7 +108,7 @@ def _build_deck_from_shandalar(raw_deck: str) -> Deck:
 
         card: Card | None = shandalar_deck.parse_shandalar_card(raw_line=line, shandalar_card_lookup=shandalar_card_lookup)
         if not card:
-            if line_number == translator_const.SHANDALAR_DECK_TITLE_LINE:
+            if line_number == translator_common.SHANDALAR_DECK_TITLE_LINE:
                 deck.name = shandalar_deck.parse_shandalar_deck_title(line)
             else:
                 logger.warning("Unable to parse card at line %d: '%s'", line_number, line)

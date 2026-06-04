@@ -5,7 +5,7 @@ Will provide functions for reading, validating, transforming, and
 writing MTG: Forge deck data. Currently a stub pending full
 implementation.
 """
-from deck_translator.translator_const import FORGE_DECK_HEADER
+from deck_translator.translator_common import FORGE_DECK_HEADER
 
 def is_forge_deck(raw_deck: str) -> bool:
     """

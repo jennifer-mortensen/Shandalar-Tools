@@ -7,8 +7,8 @@ card pool construction, ban list resolution, and rendering.
 """
 from common import common_const, common_utils, file_utils, log_utils, toml_utils
 from config.format_generator_config import FormatGeneratorConfig
-from format_generator import card_processor, format_const
-from format_generator.format_const import ForgeFormatInput, ForgeFormatOutput
+from format_generator import card_processor, format_common
+from format_generator.format_common import ForgeFormatInput, ForgeFormatOutput
 from pathlib import Path
 import logging, tomllib
 
@@ -43,7 +43,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="editions",
         section=data,
-        key=format_const.INPUT_FORMAT_KEY_EDITIONS,
+        key=format_common.INPUT_FORMAT_KEY_EDITIONS,
         expected_type=list,
         item_type=str
     )
@@ -52,7 +52,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="additional_bans",
         section=data,
-        key=format_const.INPUT_FORMAT_KEY_ADDITIONAL_BANS,
+        key=format_common.INPUT_FORMAT_KEY_ADDITIONAL_BANS,
         expected_type=list,
         item_type=str
     )
@@ -61,7 +61,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="additional_cards",
         section=data,
-        key=format_const.INPUT_FORMAT_KEY_ADDITIONAL_CARDS,
+        key=format_common.INPUT_FORMAT_KEY_ADDITIONAL_CARDS,
         expected_type=list,
         item_type=str
     )
@@ -279,7 +279,7 @@ def write_output_format(output_format: ForgeFormatOutput, output_dir: Path = com
     Raises:
         OSError: If the file cannot be written.
     """   
-    output_file_path: Path = output_dir / file_utils.ensure_extension(Path(output_format.format_data.file_name), format_const.FILE_TYPE_OUTPUT_FORMAT)    
+    output_file_path: Path = output_dir / file_utils.ensure_extension(Path(output_format.format_data.file_name), format_common.FILE_TYPE_OUTPUT_FORMAT)    
     logger.info("Writing MTG: Forge format to %s...", output_file_path)
     try:
         with output_file_path.open("w", encoding=common_const.DEFAULT_ENCODING) as file:
@@ -297,7 +297,7 @@ def get_input_format_path(format_name: str) -> Path:
     Args:
         format_name: The name of the format file, with or without extension.
     """    
-    return file_utils.ensure_extension(common_const.INPUT_FORMAT_DIR / format_name, format_const.FILE_TYPE_INPUT_FORMAT)
+    return file_utils.ensure_extension(common_const.INPUT_FORMAT_DIR / format_name, format_common.FILE_TYPE_INPUT_FORMAT)
 
 # ==============================
 # HELPER FUNCTIONS
@@ -312,7 +312,7 @@ def _render_output_format(output_format: ForgeFormatOutput) -> str:
     Args:
         output_format: The fully resolved output format data to render.
     """
-    return format_const.FORGE_FORMAT_BODY.format(
+    return format_common.FORGE_FORMAT_BODY.format(
         name=output_format.format_data.name,
         order=output_format.format_data.order,
         subtype=output_format.format_data.subtype,
