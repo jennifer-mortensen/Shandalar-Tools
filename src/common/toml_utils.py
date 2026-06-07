@@ -81,7 +81,14 @@ def verify_section(data: dict, section_name: str, allow_fallback: bool = False, 
     Args:
         data: The top-level parsed TOML dict.
         section_name: The name of the section to retrieve.
-    """    
+        allow_fallback: If True, returns None when the section is
+            missing or invalid.
+        error_suffix: Optional message appended to raised ValueErrors.
+
+    Returns:
+        The requested section if found and valid, otherwise None when
+        fallback behavior is enabled.
+    """
     section = data.get(section_name)
     if section is None or not isinstance(section, dict):
         if allow_fallback:

@@ -5,13 +5,13 @@ Reads config.toml and constructs typed configuration objects for each tool.
 Required configuration values raise errors when missing or invalid, while
 optional values fall back to dataclass defaults with logged warnings.
 """
-from common import common_const, common_utils, file_utils, toml_utils
+from common import common_const, common_utils, file_utils, path_utils, toml_utils
 from common.common_types import EncodingScanMode
 from config import config_const
 from config.common_config import CommonConfig
-from config.deck_translator_config import DeckTranslatorConfig
+from config.deck_converter_config import DeckConverterConfig
 from config.format_generator_config import FormatGeneratorConfig
-from format_generator import format_common
+from pipeline import format_generator_types
 from pathlib import Path
 import logging, tomllib
 
@@ -42,9 +42,7 @@ def build_common_config(log_file_path: Path) -> CommonConfig:
     """
     config: CommonConfig = CommonConfig()
     data: dict   
-    path: Path = file_utils.ensure_extension(
-        file_path=Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG),
-        extension=common_const.FILE_TYPE_CONFIG)
+    path: Path = path_utils.build_config_file_path()
 
     config.log_file_path = file_utils.ensure_extension(file_path=log_file_path, extension=common_const.FILE_TYPE_LOG)
 
@@ -115,6 +113,39 @@ def build_common_config(log_file_path: Path) -> CommonConfig:
 
     return config
 
+def build_deck_converter_config() -> DeckConverterConfig:
+    """
+    Build and return a DeckConverterConfig from config.toml.
+
+    Reads the deck converter configuration section and applies any
+    valid tool-specific settings. Currently acts as a placeholder until
+    deck converter configuration fields are implemented.
+
+    Returns:
+        A populated DeckConverterConfig instance.
+
+    Raises:
+        OSError: If config.toml cannot be opened.
+        ValueError: If mandatory configuration values are missing or invalid.
+    """
+    config: DeckConverterConfig = DeckConverterConfig()
+    data: dict   
+    path: Path = path_utils.build_config_file_path()
+
+    if (data := _open_config(path, "deck converter")) is None:
+        _write_default_config(path)
+        return config       
+
+    # [deck converter]
+    section = toml_utils.verify_section(
+        data=data,
+        section_name=config_const.CONFIG_SECTION_DECK_CONVERTER,
+        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+    )
+    logger.debug("Config preset detected for Deck Converter, but the config is not implemented yet.")
+
+    return config
+
 def build_format_generator_config() -> FormatGeneratorConfig:
     """
     Build and return a FormatGeneratorConfig from config.toml.
@@ -123,13 +154,16 @@ def build_format_generator_config() -> FormatGeneratorConfig:
     valid tool-specific settings. Missing or invalid required values
     raise errors, while optional values fall back to dataclass defaults.
 
+    Returns:
+        A populated FormatGeneratorConfig instance.
+
     Raises:
         OSError: If config.toml cannot be opened.
         ValueError: If mandatory configuration values are missing or invalid.
     """
     config: FormatGeneratorConfig = FormatGeneratorConfig()
     data: dict   
-    path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
+    path: Path = path_utils.build_config_file_path()
 
     if (data := _open_config(path, "format generator")) is None:
         _write_default_config(path)
@@ -143,9 +177,9 @@ def build_format_generator_config() -> FormatGeneratorConfig:
     )
     toml_utils.verify_and_set(
         target=config,
-        field="input_format_file",
+        field="format_config_file",
         section=section,
-        key=config_const.CONFIG_KEY_INPUT_FORMAT_FILE,
+        key=config_const.CONFIG_KEY_FORMAT_CONFIG_FILE,
         expected_type=str,
         error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
     )
@@ -155,39 +189,9 @@ def build_format_generator_config() -> FormatGeneratorConfig:
         section=section,
         key=config_const.CONFIG_KEY_OUTPUT_FORMAT_TYPE,
         expected_type=str,
-        transform=format_common.parse_forge_format,
+        transform=format_generator_types.parse_forge_format,
         error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
     )             
-
-    return config
-
-def build_deck_translator_config() -> DeckTranslatorConfig:
-    """
-    Build and return a DeckTranslatorConfig from config.toml.
-
-    Reads the deck translator configuration section and applies any
-    valid tool-specific settings. Currently acts as a placeholder until
-    deck translator configuration fields are implemented.
-
-    Raises:
-        OSError: If config.toml cannot be opened.
-        ValueError: If mandatory configuration values are missing or invalid.
-    """
-    config: DeckTranslatorConfig = DeckTranslatorConfig()
-    data: dict   
-    path: Path = file_utils.ensure_extension(Path(common_const.CONFIG_DIR / common_const.FILE_NAME_CONFIG), common_const.FILE_TYPE_CONFIG)
-
-    if (data := _open_config(path, "deck translator")) is None:
-        _write_default_config(path)
-        return config       
-
-    # [deck_translator]
-    section = toml_utils.verify_section(
-        data=data,
-        section_name=config_const.CONFIG_SECTION_DECK_TRANSLATOR,
-        error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-    )
-    logger.debug("Config preset detected for Deck Translator, but the config is not implemented yet.")
 
     return config
 
@@ -237,9 +241,9 @@ def _write_default_config(file_path: Path) -> None:
 
     common_config = CommonConfig()
     format_generator_config: FormatGeneratorConfig = FormatGeneratorConfig()
-    # deck_translator_config: DeckTranslatorConfig = DeckTranslatorConfig() # Does nothing yet.
+    # deck_converter_config: DeckConverterConfig = DeckConverterConfig() # Does nothing yet.
 
-    config_data: str = config_const.DEFAULT_CONFIG_CONSTRUCTOR.format(
+    config_data: str = config_const.DEFAULT_CONFIG_TEMPLATE.format(
         section_data=config_const.CONFIG_SECTION_DATA,
         key_card_pool=config_const.CONFIG_KEY_CARD_POOL,
         shandalar_card_pool=common_config.data_shandalar_card_pool,
@@ -255,12 +259,12 @@ def _write_default_config(file_path: Path) -> None:
         overwrite=str(common_config.log_overwrite).lower(),
 
         section_format_generator=config_const.CONFIG_SECTION_FORMAT_GENERATOR,
-        key_input_format_file=config_const.CONFIG_KEY_INPUT_FORMAT_FILE,
-        input_format_file=format_generator_config.input_format_file,
+        key_format_config_file=config_const.CONFIG_KEY_FORMAT_CONFIG_FILE,
+        format_config_file=format_generator_config.format_config_file,
         key_output_format_type=config_const.CONFIG_KEY_OUTPUT_FORMAT_TYPE,
         output_format_type=format_generator_config.output_format_type.name.lower(),
 
-        section_deck_translator=config_const.CONFIG_SECTION_DECK_TRANSLATOR
+        section_deck_converter=config_const.CONFIG_SECTION_DECK_CONVERTER
     )
 
     file_path.write_text(config_data, encoding=common_const.DEFAULT_ENCODING)

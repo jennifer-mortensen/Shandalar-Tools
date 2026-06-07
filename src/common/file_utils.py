@@ -9,7 +9,7 @@ from collections.abc import Iterator
 from common import common_const, common_utils
 from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterable, TextIO
+from typing import TextIO
 import csv
 import logging
 
@@ -23,14 +23,17 @@ def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     Detect the encoding of a file by attempting to decode its contents.
 
     Tries each encoding defined in common_const.FILE_ENCODINGS in order,
-    returning the first one that succeeds. Falls back to FALLBACK_ENCODING
-    if none match.
+    returning the first one that successfully decodes the file contents.
+    Falls back to FALLBACK_ENCODING if no encoding matches.
 
     Args:
         file_path: Path to the file to inspect.
         full_scan: If True, reads the entire file. If False, reads only
             the first 10 KB.
-    """    
+
+    Returns:
+        The detected file encoding, or FALLBACK_ENCODING if detection fails.
+    """   
     read_size: int = -1 if full_scan else common_const.FILE_ENCODING_READ_SIZE_DEFAULT
 
     with file_path.open("rb") as file:
@@ -54,10 +57,14 @@ def ensure_extension(file_path: Path, extension: str) -> Path:
     Args:
         file_path: The path to check.
         extension: The extension to append, without a leading dot.
-    """    
+
+    Returns:
+        The original path if it already has an extension, otherwise
+        a new path with the specified extension appended.
+    """
     return file_path if file_path.suffix else file_path.with_suffix(f".{extension}")
 
-def load_raw_file(path: Path, encoding_full_scan: bool = False) -> str:
+def load_raw_file(file_path: Path, encoding_full_scan: bool = False) -> str:
     """
     Read and return the full contents of a text file.
 
@@ -65,7 +72,7 @@ def load_raw_file(path: Path, encoding_full_scan: bool = False) -> str:
     entire file contents as a single string.
 
     Args:
-        path: Path to the file to read.
+        file_path: Path to the file to read.
         encoding_full_scan: If True, scans the entire file when detecting
             encoding. If False, scans only a partial portion of the file.
 
@@ -75,7 +82,7 @@ def load_raw_file(path: Path, encoding_full_scan: bool = False) -> str:
     Raises:
         OSError: If the file cannot be opened or read.
     """    
-    with open_file(path, encoding_full_scan=encoding_full_scan) as file:
+    with open_file(file_path, encoding_full_scan=encoding_full_scan) as file:
         return file.read()
 
 @contextmanager
@@ -178,7 +185,7 @@ def read_text_section(
     skip_prefixes: str | list[str] | None = "#",
     skip_first_line: bool = False,
     encoding_full_scan: bool = False
-) -> Iterable[str]:
+) -> Iterator[str]:
     """
     Read a section of a text file, yielding one line at a time.
 
@@ -230,7 +237,3 @@ def read_text_section(
                 continue
             
             yield clean_line
-
-# ==============================
-# PRIVATE FUNCTIONS
-# ==============================

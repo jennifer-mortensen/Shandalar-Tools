@@ -1,21 +1,22 @@
 """
-Pipeline functions for generating MTG: Forge format files.
+Pipeline functions for generating Forge format files.
 
 Orchestrates the full format generation workflow, from parsing user-supplied
 TOML input to writing a Forge-compatible output file. Handles validation,
 card pool construction, ban list resolution, and rendering.
 """
-from common import common_const, common_utils, file_utils, log_utils, toml_utils
+from common import common_const, common_utils, file_utils, log_utils, path_utils, toml_utils
 from config.format_generator_config import FormatGeneratorConfig
-from format_generator import card_processor, format_common
-from format_generator.format_common import ForgeFormatInput, ForgeFormatOutput
+from mtg import forge_data, shandalar_data
+from pipeline import format_generator_const, format_generator_types
+from pipeline.format_generator_types import ForgeFormatInput, ForgeFormatOutput
 from pathlib import Path
 import logging, tomllib
 
 logger = logging.getLogger(__name__)
 
 # ==============================
-# DATA CLASS CONSTRUCTORS
+# DATACLASS CONSTRUCTORS
 # ==============================
 def build_input_format(source: Path) -> ForgeFormatInput:
     """
@@ -43,7 +44,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="editions",
         section=data,
-        key=format_common.INPUT_FORMAT_KEY_EDITIONS,
+        key=format_generator_const.INPUT_FORMAT_KEY_EDITIONS,
         expected_type=list,
         item_type=str
     )
@@ -52,7 +53,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="additional_bans",
         section=data,
-        key=format_common.INPUT_FORMAT_KEY_ADDITIONAL_BANS,
+        key=format_generator_const.INPUT_FORMAT_KEY_ADDITIONAL_BANS,
         expected_type=list,
         item_type=str
     )
@@ -61,7 +62,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="additional_cards",
         section=data,
-        key=format_common.INPUT_FORMAT_KEY_ADDITIONAL_CARDS,
+        key=format_generator_const.INPUT_FORMAT_KEY_ADDITIONAL_CARDS,
         expected_type=list,
         item_type=str
     )
@@ -82,23 +83,24 @@ def build_output_format(input_format: ForgeFormatInput, config: FormatGeneratorC
     Raises:
         ValueError: If additional bans and additional cards conflict.
     """
-    logger.info("Preparing output format for MTG: Forge...")
+    logger.info("Preparing output format for Forge...")
+    
     # Ensure no conflicts between additional bans and additional cards, which would make it impossible to resolve user intent.
     if not validate_additional_cards(input_format):
         raise ValueError("Unable to resolve output format.")
 
-    shandalar_lookup: set[str] = card_processor.build_shandalar_card_name_lookup()
+    shandalar_card_name_lookup: set[str] = shandalar_data.build_shandalar_card_name_lookup()
 
     # Find cards within the custom format that are not supported by Shandalar.
-    format_card_pool: set[str] = card_processor.build_format_card_pool(input_format.editions)
+    format_card_pool: set[str] = forge_data.build_format_card_pool(input_format.editions)
     unsupported_in_format: list[str] = sorted(resolve_unsupported_cards(
         format_card_pool=format_card_pool,
-        shandalar_lookup=shandalar_lookup))
-    supported_lookup: set[str] = common_utils.sanitize_set(format_card_pool) & shandalar_lookup
+        shandalar_card_name_lookup=shandalar_card_name_lookup))
+    supported_lookup: set[str] = common_utils.sanitize_set(format_card_pool) & shandalar_card_name_lookup
 
     # User additions that are not supported should be logged and removed.
     additional_cards: list[str] = input_format.additional_cards
-    additional_cards = filter_unsupported_additions(additional_cards=additional_cards, shandalar_lookup=shandalar_lookup)
+    additional_cards = filter_unsupported_additions(additional_cards=additional_cards, shandalar_card_name_lookup=shandalar_card_name_lookup)
 
     # User additions that were already included should be logged and removed. 
     additional_cards = filter_redundant_additions(additional_cards=additional_cards, format_card_pool=format_card_pool)
@@ -109,12 +111,12 @@ def build_output_format(input_format: ForgeFormatInput, config: FormatGeneratorC
         unsupported_in_format=unsupported_in_format,
         supported_lookup=supported_lookup)
     
-    logger.info("Finalizing output format for MTG: Forge...")
+    logger.info("Finalizing output format for Forge...")
     return ForgeFormatOutput(
         format_data=config.output_format_type.value,
         banned_cards=banned_cards,
         additional_cards=additional_cards,
-        set_codes=card_processor.collect_scryfall_codes(input_format.editions))
+        set_codes=forge_data.collect_scryfall_codes(input_format.editions))
 
 # ==============================
 # HIGH LEVEL FUNCTIONS
@@ -129,10 +131,11 @@ def validate_additional_cards(input_format: ForgeFormatInput) -> bool:
     Args:
         input_format: The parsed input format containing both lists to validate.
     """
-    logger.info("Checking for conflicts between additional bans and additional cards...")    
+    logger.info("Checking for conflicts between additional bans and additional cards...")
+
     unresolved_duplicates: list[str] = common_utils.find_duplicates(
-        sets=[card_processor.list_to_lookup(input_format.additional_bans), 
-              card_processor.list_to_lookup(input_format.additional_cards)]
+        sets=[common_utils.list_to_lookup(input_format.additional_bans), 
+              common_utils.list_to_lookup(input_format.additional_cards)]
     )
     if not unresolved_duplicates:
         logger.info("No conflicts found!")
@@ -146,7 +149,7 @@ def validate_additional_cards(input_format: ForgeFormatInput) -> bool:
         entry_type_plural="card entries")
     return False
 
-def filter_unsupported_additions(additional_cards: list[str], shandalar_lookup: set[str]) -> list[str]:
+def filter_unsupported_additions(additional_cards: list[str], shandalar_card_name_lookup: set[str]) -> list[str]:
     """
     Remove additional cards that are not supported in the Shandalar data set.
 
@@ -156,10 +159,12 @@ def filter_unsupported_additions(additional_cards: list[str], shandalar_lookup: 
     Args:
         additional_cards: The original additional cards list preserving
             user-defined formatting and ordering.
-        shandalar_lookup: A sanitized set of Shandalar supported card names.
+        shandalar_card_name_lookup: A sanitized set of Shandalar supported card names.
     """
     logger.info("Checking for custom additions that are not supported in Shandalar...")        
-    unsupported_additions: set[str] = (card_processor.list_to_lookup(additional_cards) - shandalar_lookup)
+
+    unsupported_additions: set[str] = (common_utils.list_to_lookup(additional_cards) - shandalar_card_name_lookup)
+
     if unsupported_additions:
         log_utils.log_preview_if_any(
             items=unsupported_additions,
@@ -170,13 +175,11 @@ def filter_unsupported_additions(additional_cards: list[str], shandalar_lookup: 
             if common_utils.is_comment(card)
             or common_utils.sanitize_string(card) not in set(unsupported_additions)
         ]
+    
     logger.info("No unsupported additions found!")
     return additional_cards
 
-def filter_redundant_additions(
-        additional_cards: list[str],
-        format_card_pool: set[str]
-) -> list[str]:
+def filter_redundant_additions(additional_cards: list[str], format_card_pool: set[str]) -> list[str]:
     """
     Remove additional cards that are already present in the format card pool.
 
@@ -189,24 +192,22 @@ def filter_redundant_additions(
             user-defined formatting and ordering.
         format_card_pool: The set of card names from the selected editions.
     """
-    logger.info("Checking for redundant custom additions...")       
+    logger.info("Checking for redundant custom additions...")      
+
     sanitized_card_pool: set[str] = common_utils.sanitize_set(format_card_pool)
-    redundant_additions: set[str] = card_processor.list_to_lookup(additional_cards) & sanitized_card_pool
+    redundant_additions: set[str] = common_utils.list_to_lookup(additional_cards) & sanitized_card_pool
     if redundant_additions:
         log_utils.log_preview_if_any(items=redundant_additions, message="Redundant items found in additional cards.")
         return [
             card for card in additional_cards
             if common_utils.is_comment(card)
             or common_utils.sanitize_string(card) not in sanitized_card_pool
-        ]    
+        ]
+        
     logger.info("No redundant additions found!")
     return additional_cards
 
-def create_ban_list(
-        additional_bans: list[str],
-        unsupported_in_format: list[str],
-        supported_lookup: set[str]
-) -> list[str]:
+def create_ban_list(additional_bans: list[str], unsupported_in_format: list[str], supported_lookup: set[str]) -> list[str]:
     """
     Merge unsupported cards and relevant additional bans into a final
     deduplicated ban list.
@@ -226,10 +227,12 @@ def create_ban_list(
             Shandalar.
     """
     logger.info("Checking for redundant bans...")    
-    redundant_bans: set[str] = card_processor.list_to_lookup(additional_bans) - supported_lookup
+    redundant_bans: set[str] = common_utils.list_to_lookup(additional_bans) - supported_lookup
+
     # Using the broader term 'unsupported' for user-facing logs, i.e. the card was never supported in our pool to begin with.
     if not log_utils.log_duplicates_if_any(duplicates=redundant_bans, list_name_1="unsupported", list_name_2="additional bans"):
         logger.info("No redundant bans found!")
+    
     relevant_additional_bans: list[str] = [
         i for i in additional_bans
         if common_utils.is_comment(i)
@@ -239,7 +242,7 @@ def create_ban_list(
     logger.info("Finalizing ban list...")
     return common_utils.merge_and_dedupe_sequences(seq_1=unsupported_in_format, seq_2=relevant_additional_bans)
 
-def resolve_unsupported_cards(format_card_pool: set[str], shandalar_lookup: set[str]) -> list[str]:
+def resolve_unsupported_cards(format_card_pool: set[str], shandalar_card_name_lookup: set[str]) -> list[str]:
     """
     Identify cards in the format pool that are not supported by Shandalar.
 
@@ -248,13 +251,13 @@ def resolve_unsupported_cards(format_card_pool: set[str], shandalar_lookup: set[
 
     Args:
         format_card_pool: The set of card names from the selected editions.
-        shandalar_lookup: A sanitized set of Shandalar supported card names.
+        shandalar_card_name_lookup: A sanitized set of Shandalar supported card names.
     """ 
     logger.info("Resolving cards from custom format that are not supported in Shandalar...")
 
-    unsupported_cards: list[str] = card_processor.find_unsupported_in_shandalar(
+    unsupported_cards: list[str] = shandalar_data.find_unsupported_in_shandalar(
         card_names=format_card_pool,
-        shandalar_lookup=shandalar_lookup
+        shandalar_card_name_lookup=shandalar_card_name_lookup
     )        
     if not unsupported_cards:
         logger.warning(
@@ -264,41 +267,28 @@ def resolve_unsupported_cards(format_card_pool: set[str], shandalar_lookup: set[
 
     return unsupported_cards
 
-def write_output_format(output_format: ForgeFormatOutput, output_dir: Path = common_const.OUTPUT_FORMAT_DIR) -> None:
+def write_output_format(output_format: ForgeFormatOutput) -> None:
     """
     Render and write a ForgeFormatOutput to disk.
 
-    The output file name is derived from the format metadata. Defaults to
-    the standard format generator output directory.
+    The output file path is derived from the format metadata and resolved
+    using the project's standard format path rules.
 
     Args:
         output_format: The fully resolved output format data to render and write.
-        output_dir: Directory to write the output file to. Defaults to
-            OUTPUT_FORMAT_DIR.
 
     Raises:
         OSError: If the file cannot be written.
-    """   
-    output_file_path: Path = output_dir / file_utils.ensure_extension(Path(output_format.format_data.file_name), format_common.FILE_TYPE_OUTPUT_FORMAT)    
-    logger.info("Writing MTG: Forge format to %s...", output_file_path)
+    """
+    output_file_path: Path = path_utils.build_format_path(output_format.format_data.file_name)
+    
+    logger.info("Writing Forge format to %s...", output_file_path)
     try:
         with output_file_path.open("w", encoding=common_const.DEFAULT_ENCODING) as file:
             file.write(_render_output_format(output_format))
     except OSError as e:
         raise OSError(f"Could not write to output file '{output_file_path}': {e}") from e
     
-def get_input_format_path(format_name: str) -> Path:
-    """
-    Resolve the full path to a user-supplied input format file.
-
-    Prepends the formats directory and appends the input format
-    extension if not already present.
-
-    Args:
-        format_name: The name of the format file, with or without extension.
-    """    
-    return file_utils.ensure_extension(common_const.INPUT_FORMAT_DIR / format_name, format_common.FILE_TYPE_INPUT_FORMAT)
-
 # ==============================
 # HELPER FUNCTIONS
 # ==============================    
@@ -312,7 +302,7 @@ def _render_output_format(output_format: ForgeFormatOutput) -> str:
     Args:
         output_format: The fully resolved output format data to render.
     """
-    return format_common.FORGE_FORMAT_BODY.format(
+    return format_generator_const.FORGE_FORMAT_BODY.format(
         name=output_format.format_data.name,
         order=output_format.format_data.order,
         subtype=output_format.format_data.subtype,

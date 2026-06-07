@@ -1,8 +1,8 @@
 """
-Configuration dataclass for the Shandalar Tools deck translator.
+Configuration dataclass for the Shandalar Tools deck converter.
 
 Defines settings specific to the deck translator tool. Tool-specific
-fields will be added as the deck translator is implemented.
+fields will be added as the deck converter is implemented.
 """
 from dataclasses import dataclass
 
@@ -14,7 +14,7 @@ from dataclasses import dataclass
 # DATA CLASSES
 # ==============================
 @dataclass
-class DeckTranslatorConfig:
+class DeckConverterConfig:
     """
     Configuration for the deck translator tool.
 

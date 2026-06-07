@@ -5,12 +5,12 @@ Defines settings specific to the format generator tool, including
 the input format file and output format type.
 """
 from dataclasses import dataclass
-from format_generator.format_common import ForgeFormat
+from pipeline.format_generator_types import ForgeFormat
 
 # ==============================
 # DEFAULTS
 # ==============================
-INPUT_FORMAT_FILE_DEFAULT = "custom_format"
+FORMAT_CONFIG_FILE_DEFAULT = "custom_format"
 OUTPUT_FORMAT_TYPE_DEFAULT = ForgeFormat.EXTENDED
 
 # ==============================
@@ -24,5 +24,5 @@ class FormatGeneratorConfig:
     Includes format generator specific settings
     for input and output format selection.
     """
-    input_format_file: str = INPUT_FORMAT_FILE_DEFAULT
-    output_format_type: ForgeFormat = OUTPUT_FORMAT_TYPE_DEFAULT        
+    format_config_file: str = FORMAT_CONFIG_FILE_DEFAULT
+    output_format_type: ForgeFormat = OUTPUT_FORMAT_TYPE_DEFAULT

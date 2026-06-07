@@ -1,13 +1,20 @@
+"""
+Command-line entry point for the Shandalar Tools format generator.
+
+Initializes shared runtime services, loads configuration, applies
+command-line overrides, and generates Forge format files from
+user-supplied format specifications.
+"""
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from common import common_args, common_const, file_utils, log_utils
+from common import args_utils, common_args, log_utils, path_utils, runtime
 from common.common_types import EncodingScanMode
-from config import config_io, runtime
+from config import config_io
 from config.format_generator_config import FormatGeneratorConfig
-from format_generator import format_common, format_pipeline
-from format_generator.format_common import ForgeFormatInput, ForgeFormatOutput
+from pipeline import format_generator_const, format_generator_pipeline, format_generator_types
+from pipeline.format_generator_types import ForgeFormatInput, ForgeFormatOutput
 import argparse
 import logging
 
@@ -18,17 +25,17 @@ logger = logging.getLogger(__name__)
 # ==============================
 def main() -> None:
     try:
-        runtime.initialize_runtime(format_common.FORMAT_GENERATOR_LOG_NAME)
+        runtime.initialize_runtime(format_generator_const.LOG_NAME)
 
         cli_args = parse_cli_args()
         validate_cli_args(cli_args)
 
-        format_config = config_io.build_format_generator_config()
-        apply_cli_args(args=cli_args, config=format_config)
+        config = config_io.build_format_generator_config()
+        apply_cli_args(args=cli_args, config=config)
 
-        input_format: ForgeFormatInput = format_pipeline.build_input_format(format_pipeline.get_input_format_path(format_config.input_format_file))
-        output_format: ForgeFormatOutput = format_pipeline.build_output_format(input_format=input_format, config=format_config)
-        format_pipeline.write_output_format(output_format)
+        input_format: ForgeFormatInput = format_generator_pipeline.build_input_format(path_utils.build_format_config_path(config.format_config_file))
+        output_format: ForgeFormatOutput = format_generator_pipeline.build_output_format(input_format=input_format, config=config)
+        format_generator_pipeline.write_output_format(output_format)
 
         logger.info("Compilation completed successfully!")
     except ValueError as e:
@@ -49,47 +56,34 @@ def parse_cli_args() -> argparse.Namespace:
         and configuration options.
     """    
     parser = argparse.ArgumentParser(
-        prog="format-generator",
-        description="Generate Shandalar-compatible formats for use with MTG: Forge.",
-        epilog=(
-            "Examples:\n"
-            "  %(prog)s\n"
-            "  %(prog)s -i my_format.toml\n"
-            "  %(prog)s -o modern\n"
-            "  %(prog)s -s full"
-        ),
+        prog=format_generator_const.CLI_PROG,
+        description=format_generator_const.CLI_DESCRIPTION,
+        epilog=format_generator_const.CLI_EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )    
     parser.add_argument(
         "-o", "--output-format",
-        choices=format_common.FORGE_FORMAT_VALID_VALUES,
+        choices=format_generator_types.FORGE_FORMAT_VALID_VALUES,
         help="Forge format type to be generated.",
     )
     parser.add_argument(
-        "-e", "--editions",
-        action="store_true",
-        default=False,
-        help="Deprecated. --editions and --user-banned are no longer supported. Format specification has moved to a single .toml file. See the readme for migration details."
-    )
-    parser.add_argument(
-        "-b", "--user-banned",
-        action="store_true",
-        default=False,
-        help="Deprecated. --editions and --user-banned are no longer supported. Format specification has moved to a single .toml file. See the readme for migration details."
-    )    
-    parser.add_argument(
         "-i", "--input-file",
-        type=lambda file_name: file_utils.ensure_extension(
-            file_path=common_const.INPUT_FORMAT_DIR / Path(file_name),
-            extension=format_common.FILE_TYPE_INPUT_FORMAT
-        ),
+        type=path_utils.build_format_config_path,
         help="TOML file describing the format to be generated.",
     )
+    for argument in format_generator_const.DEPRECATED_ARGUMENTS:
+        parser.add_argument(
+            argument.short_name,
+            argument.long_name,
+            action="store_true",
+            default=False,
+            help=args_utils.build_deprecated_arg_message(argument)
+        )
     common_args.add_encoding_scan_argument(parser)
 
     return parser.parse_args()
 
-def validate_cli_args(args: argparse.Namespace):
+def validate_cli_args(args: argparse.Namespace) -> None:
     """
     Validate command-line arguments for deprecated or unsupported options.
 
@@ -100,9 +94,9 @@ def validate_cli_args(args: argparse.Namespace):
 
     Raises:
         ValueError: If deprecated or unsupported arguments are provided.
-    """   
-    if args.editions or args.user_banned:
-        raise ValueError("--editions and --user-banned are no longer supported. Format specification has moved to a single .toml file. See the readme for migration details.")
+    """
+    if args_utils.has_any_arg(source_args=args, cli_arguments=format_generator_const.DEPRECATED_ARGUMENTS):
+        raise ValueError(format_generator_const.ERROR_DEPRECATED_ARGUMENTS)
 
 def apply_cli_args(args: argparse.Namespace, config: FormatGeneratorConfig) -> None:
     """
@@ -121,7 +115,7 @@ def apply_cli_args(args: argparse.Namespace, config: FormatGeneratorConfig) -> N
     if args.input_file is not None:
         config.input_format_file = args.input_file
     if args.output_format is not None:
-        config.output_format_type = format_common.parse_forge_format(args.output_format)
+        config.output_format_type = format_generator_types.parse_forge_format(args.output_format)
 
 if __name__ == "__main__":
     main()

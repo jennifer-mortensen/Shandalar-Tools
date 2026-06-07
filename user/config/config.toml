@@ -9,7 +9,7 @@ preview_limit = 5
 overwrite = true
 
 [format_generator]
-input_format_file = "custom_format"
+format_config_file = "custom_format"
 output_format_type = "extended"
 
-[deck_translator]
+[deck_converter]

@@ -20,7 +20,7 @@ LOG_OVERWRITE_DEFAULT: bool = True
 LOG_FILE_PATH_DEFAULT: Path = common_const.LOG_DIR / f"shandalar_tools.{common_const.FILE_TYPE_LOG}" # default fallback
 
 # ==============================
-# DATA CLASSES
+# DATACLASSES
 # ==============================
 @dataclass
 class CommonConfig:

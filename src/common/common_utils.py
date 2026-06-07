@@ -15,6 +15,20 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
+def filter_prefixes_from_set(items: set[str], prefixes: list[str]) -> set[str]:
+    """
+    Return a copy of a set with prefixed entries removed.
+
+    Filters out any strings that begin with one of the specified
+    prefixes. Prefix matching is case-sensitive and assumes any
+    required normalization has already been applied.
+
+    Args:
+        items: The set of strings to filter.
+        prefixes: Prefixes used to identify entries to remove.
+    """    
+    return {i for i in items if not has_any_prefix(i, prefixes)}
+
 def find_duplicates(sets: Iterable[set[Any]]) -> list[Any]:
     """
     Identify duplicate entries across multiple sets. Set data must be hashable.
@@ -37,20 +51,6 @@ def find_duplicates(sets: Iterable[set[Any]]) -> list[Any]:
 
     return sorted(duplicates)
 
-def filter_prefixes_from_set(items: set[str], prefixes: list[str]) -> set[str]:
-    """
-    Return a copy of a set with prefixed entries removed.
-
-    Filters out any strings that begin with one of the specified
-    prefixes. Prefix matching is case-sensitive and assumes any
-    required normalization has already been applied.
-
-    Args:
-        items: The set of strings to filter.
-        prefixes: Prefixes used to identify entries to remove.
-    """    
-    return {i for i in items if not has_any_prefix(i, prefixes)}
-
 def has_any_prefix(line: str, prefixes: list[str]) -> bool:
     """
     Check if a string starts with any of the given prefixes.
@@ -67,6 +67,23 @@ def is_comment(line: str, prefixes: list[str] | None = None) -> bool:
     """
     prefixes = prefixes or [common_const.COMMENT_PREFIX]
     return has_any_prefix(line.strip(), prefixes)
+
+
+def list_to_lookup(items: list[str]) -> set[str]:
+    """
+    Convert a list of user-provided strings into a sanitized lookup set.
+
+    Sanitizes entries for consistent case-insensitive comparison and
+    removes any entries that begin with the configured comment prefix
+    after sanitization. Intended for normalizing user-authored TOML
+    list fields into lookup sets.
+
+    Args:
+        items: The raw list of strings to normalize.
+    """    
+    lookup: set[str] = sanitize_set(set(items))
+    lookup = filter_prefixes_from_set(lookup, [common_const.COMMENT_PREFIX])
+    return lookup
 
 def merge_and_dedupe_sequences(seq_1: Sequence[Any], seq_2: Sequence[Any]) -> list[Any]:
     """
@@ -90,8 +107,6 @@ def merge_and_dedupe_sequences(seq_1: Sequence[Any], seq_2: Sequence[Any]) -> li
 
     return merged
 
-# NOTE: Restricting to str is intentional. int("5.7") raises ValueError,
-# while int(5.7) truncates to 5 and would incorrectly return the value.
 def parse_int(val: str) -> int | None:
     """
     Attempt to parse a string as an integer.
@@ -101,7 +116,10 @@ def parse_int(val: str) -> int | None:
 
     Returns:
         The parsed integer if successful, otherwise None.
-    """  
+    """
+    # NOTE: 
+    # Restricting to str is intentional. int("5.7") raises ValueError,
+    # while int(5.7) truncates to 5 and would incorrectly return the value.      
     try:
         return int(val)
     except (TypeError, ValueError):
@@ -136,7 +154,7 @@ def sanitize_string(string: str) -> str:
     Strips leading and trailing whitespace and converts to lowercase.
 
     Args:
-        name: The string to sanitize.
+        string: The string to sanitize.
     """    
     return string.strip().lower()
 
@@ -158,7 +176,7 @@ def to_list(value: str | Iterable[str] | None) -> list[str]:
 
 def validate_collection_items(collection: Iterable[Any], expected_type: type) -> bool:
     """
-    Validate that all items in a collection match the expected type.W
+    Validate that all items in a collection match the expected type.
 
     Args:
         collection: The collection whose items should be validated.
@@ -167,7 +185,11 @@ def validate_collection_items(collection: Iterable[Any], expected_type: type) ->
     Returns:
         True if all items match the expected type, otherwise False.
     """
+    # NOTE:
+    # Guard against programmer misuse. This helper validates the contents
+    # of a collection, not whether the supplied value is a collection.
     assert isinstance(collection, Iterable), f"Attempted to validate non-iterable value of type {type(collection).__name__}."
+
     return all(isinstance(i, expected_type) for i in collection)
 
 def validate_minimum(value: int, minimum: int, field_name: str) -> int:

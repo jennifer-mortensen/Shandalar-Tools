@@ -46,7 +46,10 @@ def initialize_runtime(log_name: str) -> None:
 def get_shandalar_card_pool() -> str:
     """
     Retrieve the configured Shandalar card pool name.
-    """    
+
+    Returns:
+        The configured Shandalar card pool name.
+    """
     return _get_common_config().data_shandalar_card_pool
 
 def set_shandalar_card_pool(card_pool: str) -> None:
@@ -66,17 +69,25 @@ def get_encoding_scan_mode(default_full_scan: bool = False) -> bool:
 
 def set_encoding_scan_mode(scan_mode: EncodingScanMode) -> None:
     """
-    Override the active runtime encoding scan mode.
+    Retrieve the resolved encoding scan behavior.
 
     Args:
-        scan_mode: The encoding scan mode to apply for future file reads.
-    """    
+        default_full_scan: Default behavior used when the runtime
+            scan mode is AUTO.
+
+    Returns:
+        True if a full encoding scan should be performed,
+        otherwise False.
+    """
     _get_common_config().io_encoding_scan = scan_mode
 
 def get_log_preview_limit() -> int:
     """
     Retrieve the configured log preview item limit.
-    """    
+
+    Returns:
+        The maximum number of preview items displayed in log output.
+    """
     return _get_common_config().log_preview_limit
 
 def set_log_preview_limit(preview_limit: int) -> None:
@@ -92,7 +103,10 @@ def set_log_preview_limit(preview_limit: int) -> None:
 def get_log_overwrite() -> bool:
     """
     Retrieve the configured log overwrite behavior.
-    """    
+
+    Returns:
+        True if log files should be overwritten, otherwise False.
+    """ 
     return _get_common_config().log_overwrite
 
 def set_log_overwrite(overwrite_mode: bool) -> None:

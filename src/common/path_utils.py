@@ -5,25 +5,91 @@ Provides centralized helpers for building normalized file paths used
 throughout the application, including deck files, Forge edition data,
 and Shandalar card pool resources.
 """
-from common import common_const, file_utils
-from common.common_types import DeckType
-from config import runtime
+from common import common_const, file_utils, runtime
+from mtg.mtg_types import DeckType
 from pathlib import Path
+
+# ==============================
+# PUBLIC FUNCTIONS
+# ==============================
+def build_config_file_path() -> Path:
+    """
+    Build the path to the shared application configuration file.
+
+    Resolves the configuration file within the configured config
+    directory and applies the expected file extension.
+
+    Returns:
+        The normalized configuration file path.
+    """    
+    return _resolve_path_from_string(
+        path_string=common_const.FILE_NAME_CONFIG,
+        extension=common_const.FILE_TYPE_CONFIG,
+        target_dir=common_const.CONFIG_DIR,
+        field_name="Config path")
 
 def build_edition_file_path(edition_name: str) -> Path:
     """
-    Build the file path for a Forge edition file.
+    Build the path to a Forge edition file.
+
+    Resolves the edition file within the configured editions directory
+    and automatically applies the expected file extension if missing.
 
     Args:
-        edition_name: The name of the edition.
+        edition_name: The name of the edition file, with or without
+            extension.
+
+    Returns:
+        The normalized edition file path.
+    """
+    return _resolve_path_from_string(
+        path_string=edition_name,
+        extension=common_const.FILE_TYPE_FORGE_EDITION,
+        target_dir=common_const.EDITIONS_DIR,
+        field_name="Edition name")
+
+def build_format_config_path(format_name: str) -> Path:
+    """
+    Build the normalized path for an input format configuration file.
+
+    Resolves the format file within the configured format directory and
+    automatically applies the expected file extension if missing.
+
+    Args:
+        format_name: The name of the format file, with or without
+            extension.
+
+    Returns:
+        The normalized format configuration file path.
+    """
+    return _resolve_path_from_string(
+        path_string=format_name,
+        extension=common_const.FILE_TYPE_FORMAT_CONFIG,
+        target_dir=common_const.FORMAT_CONFIG_DIR,
+        field_name="Format config file path")
+
+def build_format_path(format_name: str) -> Path:
+    """
+    Build the canonical path to a Forge format file.
+
+    Resolves a format file name into a validated path within the
+    configured formats directory, applying the Forge format file
+    extension if needed.
+
+    Args:
+        format_name: The format file name or path fragment to resolve.
+
+    Returns:
+        The resolved path to the Forge format file.
 
     Raises:
-        ValueError: If the edition name is empty.
+        ValueError: If the format name is empty or otherwise invalid.
     """    
-    if not edition_name:
-        raise ValueError("Edition name cannot be empty.")
-
-    return common_const.EDITIONS_DIR / f"{edition_name}{common_const.EDITION_FILE_SUFFIX}"
+    return _resolve_path_from_string(
+        path_string=format_name,
+        extension=common_const.FILE_TYPE_FORGE_FORMAT,
+        target_dir=common_const.FORMAT_DIR,
+        field_name="Format file name")
 
 def build_input_deck_file_path(deck_name: str) -> Path:
     """
@@ -37,8 +103,12 @@ def build_input_deck_file_path(deck_name: str) -> Path:
 
     Returns:
         The normalized input deck file path.
-    """    
-    return file_utils.ensure_extension(file_path=common_const.INPUT_DECK_DIR / deck_name, extension=common_const.FILE_TYPE_DECK)
+    """
+    return _resolve_path_from_string(
+        path_string=deck_name,
+        extension=common_const.FILE_TYPE_DECK,
+        target_dir=common_const.INPUT_DECK_DIR,
+        field_name="Input deck name")        
 
 def build_log_file_path(log_name: str) -> Path:
     """
@@ -52,8 +122,12 @@ def build_log_file_path(log_name: str) -> Path:
 
     Returns:
         Path to the log file.
-    """    
-    return file_utils.ensure_extension(file_path=common_const.LOG_DIR / log_name, extension=common_const.FILE_TYPE_LOG)
+    """
+    return _resolve_path_from_string(
+        path_string=log_name,
+        extension=common_const.FILE_TYPE_LOG,
+        target_dir=common_const.LOG_DIR,
+        field_name="Log file path")             
 
 def build_output_deck_file_path(deck_name: str, deck_type: DeckType) -> Path:
     """
@@ -70,7 +144,12 @@ def build_output_deck_file_path(deck_name: str, deck_type: DeckType) -> Path:
         The normalized output deck file path.
     """    
     output_dir = common_const.OUTPUT_FORGE_DECK_DIR if deck_type is DeckType.FORGE else common_const.OUTPUT_SHANDALAR_DECK_DIR
-    return file_utils.ensure_extension(file_path=output_dir / deck_name, extension=common_const.FILE_TYPE_DECK)
+    
+    return _resolve_path_from_string(
+        path_string=deck_name,
+        extension=common_const.FILE_TYPE_DECK,
+        target_dir=output_dir,
+        field_name="Output deck name")          
 
 def build_shandalar_card_pool_path() -> Path:
     """
@@ -81,8 +160,43 @@ def build_shandalar_card_pool_path() -> Path:
 
     Returns:
         Path to the active Shandalar card pool data file.
+    """
+    return _resolve_path_from_string(
+        path_string=runtime.get_shandalar_card_pool(),
+        extension=common_const.FILE_TYPE_SHANDALAR_DATA,
+        target_dir=common_const.DATA_DIR,
+        field_name="Shandalar data path")             
+
+# ==============================
+# PRIVATE FUNCTIONS
+# ==============================
+def _resolve_path_from_string(path_string: str, extension: str, target_dir: Path, field_name: str = "Path") -> Path:
+    """
+    Resolve a user-supplied path string into a normalized file path.
+
+    Validates that the supplied path string is non-empty, appends the
+    specified extension if one is not already present, and prepends
+    the target directory when the path does not already include
+    directory components.
+
+    Args:
+        path_string: The user-supplied path string to resolve.
+        extension: The file extension to enforce, without a leading dot.
+        target_dir: Default directory used for relative file names.
+        field_name: Human-readable field name used in validation errors.
+
+    Returns:
+        The normalized file path.
+
+    Raises:
+        ValueError: If path_string is empty.
     """    
-    return file_utils.ensure_extension(
-        file_path=common_const.DATA_DIR / runtime.get_shandalar_card_pool(),
-        extension=common_const.FILE_TYPE_SHANDALAR_DATA
-    )
+    if not path_string:
+        raise ValueError(f"{field_name} cannot be empty.")
+    
+    normalized_path: Path = file_utils.ensure_extension(Path(path_string), extension)
+
+    if len(normalized_path.parts) == 1:
+        normalized_path = target_dir / normalized_path
+
+    return normalized_path

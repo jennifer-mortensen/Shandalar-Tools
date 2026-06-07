@@ -1,30 +1,15 @@
 """
-Constants, dataclasses, and enums for the Shandalar Tools format generator.
+Dataclasses and enums for the Shandalar Tools format generator.
 
-Defines the data structures and reference values used throughout the format
-pipeline, including Forge format metadata, input/output dataclasses, TOML
-key constants, and the Forge format body template.
+Defines the data structures and reference values used throughout the
+format generator pipeline, including Forge format metadata, pipeline
+input/output models, and format parsing helpers.
 """
 from dataclasses import dataclass, field
 from enum import Enum
 
 # ==============================
-# FILE NAMES & TYPES
-# ==============================
-FORMAT_GENERATOR_LOG_NAME: str = "format_generator"
-
-FILE_TYPE_OUTPUT_FORMAT = "txt"
-FILE_TYPE_INPUT_FORMAT = "toml"
-
-# ==============================
-# TOML CONSTANTS
-# ==============================
-INPUT_FORMAT_KEY_EDITIONS = "editions"
-INPUT_FORMAT_KEY_ADDITIONAL_BANS = "additional_bans"
-INPUT_FORMAT_KEY_ADDITIONAL_CARDS = "additional_cards"
-
-# ==============================
-# DATACLASSES & ENUMS
+# DATACLASSES
 # ==============================
 @dataclass
 class ForgeFormatData:
@@ -52,6 +37,9 @@ class ForgeFormatOutput:
     additional_cards: list[str]
     set_codes: set[str]
 
+# ==============================
+# ENUMS
+# ==============================
 class ForgeFormat(Enum):
     STANDARD = ForgeFormatData(file_name="Standard", name="Standard", order="101", subtype="Standard", type="Sanctioned")
     PAUPER = ForgeFormatData(file_name="Pauper", name="Pauper", order="108", subtype="Pauper", type="Sanctioned")
@@ -89,15 +77,3 @@ def parse_forge_format(value: str) -> ForgeFormat:
         return ForgeFormat[value.upper()]
     except KeyError:
         raise ValueError(f"Unknown format '{value}'. Valid formats: {FORGE_FORMAT_VALID_VALUES}")
-
-# ==============================
-# STRING CONSTRUCTORS
-# ==============================
-FORGE_FORMAT_BODY = """[format]
-Name:{name}
-Order:{order}
-Subtype:{subtype}
-Type:{type}
-Banned: {banned_cards}
-Additional: {additional_cards}
-Sets: {set_codes}"""
