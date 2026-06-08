@@ -63,7 +63,7 @@ def resolve_scryfall_map_collision(
         new_edition: str
 )-> str | None:
     """
-    Resolve a Scryfall code collision in the scryfall map.
+    Resolve a Scryfall code collision in the Scryfall map.
 
     When two Forge editions share the same Scryfall code, attempts to
     disambiguate them using their Forge edition codes.
@@ -74,16 +74,21 @@ def resolve_scryfall_map_collision(
 
     If neither edition has a Forge edition code matching the shared
     Scryfall code, both editions are remapped to their Forge edition
-    codes.
+    codes and the shared Scryfall code is released for potential use by
+    a future canonical owner.
 
     Args:
         scryfall_map: Mapping of edition identifiers to Forge edition names.
         scryfall_code: The shared Scryfall code causing the collision.
         new_edition: The edition being added to the map.
 
+    Returns:
+        The released Scryfall code if neither edition could claim it;
+        otherwise None.
+
     Raises:
         ValueError: If the collision cannot be resolved unambiguously.
-    """ 
+    """
     stored_edition: str = scryfall_map[scryfall_code]
     stored_edition_forge_code: str = forge_data.get_forge_edition_code(stored_edition)
     new_edition_forge_code: str = forge_data.get_forge_edition_code(new_edition)
