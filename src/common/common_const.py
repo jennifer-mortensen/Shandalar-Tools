@@ -31,7 +31,10 @@ def get_base_dir() -> Path:
 BASE_DIR: Path = get_base_dir()
 # data
 DATA_DIR: Path = BASE_DIR / "data"
-EDITIONS_DIR: Path = DATA_DIR / "editions"
+FORGE_DATA_DIR: Path = DATA_DIR / "forge"
+FORGE_EDITIONS_DIR: Path = FORGE_DATA_DIR / "editions"
+SHANDALAR_DATA_DIR: Path = DATA_DIR / "shandalar"
+SHANDALAR_CARD_POOLS_DIR: Path = SHANDALAR_DATA_DIR / "card_pools"
 # logs
 LOG_DIR: Path = BASE_DIR / "logs"
 # user
@@ -57,15 +60,18 @@ FILE_NAME_LOG: str = "shandalar_tools"
 FILE_TYPE_LOG: str = "log"
 
 FILE_TYPE_FORMAT_CONFIG: str = "toml"
+FILE_TYPE_DATA_MAP: str = "json"
 
 # MTG Types
 FILE_TYPE_DECK: str = "dck"
 
-# Forge Types
+# Forge Names & Types
+FILE_NAME_FORGE_SCRYFALL_MAP: str = "forge_scryfall_map"
 FILE_TYPE_FORGE_EDITION: str = "txt"
 FILE_TYPE_FORGE_FORMAT: str = "txt"
 
-# Shandalar Types
+# Shandalar Names & Types
+FILE_NAME_SHANDALAR_EDITION_MAP: str = "shandalar_edition_map"
 FILE_TYPE_SHANDALAR_DATA: str = "csv"
 
 # ==============================
@@ -90,6 +96,13 @@ FILE_ENCODING_READ_SIZE_DEFAULT: int = 10240
 # ==============================
 DEFAULT_CSV_DELIMITER: str = ","
 COMMENT_PREFIX: str = "#"
+
+# ==============================
+# DATA MAP PARSING
+# ==============================
+DATA_MAP_VERSION_FIELD: str = "version"
+DATA_MAP_EDITIONS_FIELD: str = "editions"
+DATA_MAP_EDITION_CODE_FIELD: str = "edition_codes"
 
 # ==============================
 # VALID VALUES

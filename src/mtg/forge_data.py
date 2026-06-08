@@ -113,38 +113,58 @@ def get_scryfall_code(edition_name: str) -> str:
         ValueError: If neither a Scryfall code nor a Forge code is
             defined for the edition.
     """
+    encoding_scan_mode: bool = runtime.get_encoding_scan_mode()
     file_path: Path = path_utils.build_edition_file_path(edition_name)
 
-    line = next(
-        file_utils.read_text_section(
-            file_path=file_path,
-            start_prefix=forge_const.SCRYFALL_CODE_PREFIX,
-            encoding_full_scan=runtime.get_encoding_scan_mode()
-        ),
-        None
-    )
+    scryfall_code: str | None = file_utils.read_text_field(
+        file_path=file_path,
+        field_prefix=forge_const.SCRYFALL_CODE_PREFIX,
+        encoding_full_scan=encoding_scan_mode)
 
-    if line is not None:
-        return line[len(forge_const.SCRYFALL_CODE_PREFIX):]
-
-    line = next(
-        file_utils.read_text_section(
-            file_path=file_path,
-            start_prefix=forge_const.SCRYFALL_CODE_PREFIX_FALLBACK,
-            encoding_full_scan=runtime.get_encoding_scan_mode()
-        ),
-        None
-    )
-
-    if line is not None:
+    if scryfall_code is not None:
+        return scryfall_code
+    
+    try:
+        forge_edition_code: str = get_forge_edition_code(edition_name)
         logger.warning(
-            "Edition %s has no Scryfall code defined. Using '%s' field as a fallback.",
+            "Scryfall code undefined for edition '%s'. Using fallback from Forge edition code: '%s%s'.",
             edition_name,
-            forge_const.SCRYFALL_CODE_PREFIX_FALLBACK
+            forge_const.FORGE_EDITION_CODE_PREFIX,
+            forge_edition_code
         )
-        return line[len(forge_const.SCRYFALL_CODE_PREFIX_FALLBACK):]
+        return forge_edition_code        
+    except ValueError as e:
+        raise ValueError(f"Unable to resolve code for edition '{edition_name}'. Scryfall code and Forge edition code were both undefined.") from e
 
-    raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
+def get_forge_edition_code(edition_name: str) -> str:
+    """
+    Read the Forge edition code from a Forge edition file.
+
+    The Forge edition code is defined by the edition's standard Code field
+    and may be used as a fallback identifier when no explicit Scryfall code 
+    is available.
+
+    Args:
+        edition_name: The name of the edition to look up.
+
+    Returns:
+        The Forge edition code associated with the edition.
+
+    Raises:
+        ValueError: If no Forge edition code is defined for the edition.
+    """    
+    encoding_scan_mode: bool = runtime.get_encoding_scan_mode()
+    file_path: Path = path_utils.build_edition_file_path(edition_name)
+
+    forge_edition_code: str | None = file_utils.read_text_field(
+        file_path=file_path,
+        field_prefix=forge_const.FORGE_EDITION_CODE_PREFIX,
+        encoding_full_scan=encoding_scan_mode)
+
+    if forge_edition_code is not None:
+        return forge_edition_code
+    
+    raise ValueError(f"Forge edition code undefined for edition '{edition_name}'")
 
 def _parse_card_name_from_edition_row(row: str) -> str:
     """

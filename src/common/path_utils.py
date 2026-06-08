@@ -45,8 +45,21 @@ def build_edition_file_path(edition_name: str) -> Path:
     return _resolve_path_from_string(
         path_string=edition_name,
         extension=common_const.FILE_TYPE_FORGE_EDITION,
-        target_dir=common_const.EDITIONS_DIR,
+        target_dir=common_const.FORGE_EDITIONS_DIR,
         field_name="Edition name")
+
+def build_forge_scryfall_map_path() -> Path:
+    """
+    Build the path to the Forge Scryfall map file.
+
+    Returns:
+        The path to the Forge Scryfall map.
+    """    
+    return _resolve_path_from_string(
+        path_string=common_const.FILE_NAME_FORGE_SCRYFALL_MAP,
+        extension=common_const.FILE_TYPE_DATA_MAP,
+        target_dir=common_const.FORGE_DATA_DIR,
+        field_name="Forge Scryfall map")
 
 def build_format_config_path(format_name: str) -> Path:
     """
@@ -164,8 +177,21 @@ def build_shandalar_card_pool_path() -> Path:
     return _resolve_path_from_string(
         path_string=runtime.get_shandalar_card_pool(),
         extension=common_const.FILE_TYPE_SHANDALAR_DATA,
-        target_dir=common_const.DATA_DIR,
-        field_name="Shandalar data path")             
+        target_dir=common_const.SHANDALAR_CARD_POOLS_DIR,
+        field_name="Shandalar data path")
+
+def build_shandalar_edition_map_path() -> Path:
+    """
+    Build the path to the Shandalar edition map file.
+
+    Returns:
+        The path to the Shandalar edition map.
+    """    
+    return _resolve_path_from_string(
+        path_string=common_const.FILE_NAME_SHANDALAR_EDITION_MAP,
+        extension=common_const.FILE_TYPE_DATA_MAP,
+        target_dir=common_const.SHANDALAR_DATA_DIR,
+        field_name="Shandalar edition map")                     
 
 # ==============================
 # PRIVATE FUNCTIONS

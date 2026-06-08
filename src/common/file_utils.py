@@ -182,7 +182,7 @@ def read_csv_rows(
 
         for row in reader:
             yield row  
-            
+
 def read_text_section(
     file_path: Path,
     start_prefix: str | None = None,
@@ -242,3 +242,24 @@ def read_text_section(
                 continue
             
             yield clean_line
+
+def read_text_field(file_path: Path, field_prefix: str, encoding_full_scan: bool = False) -> str | None:
+    """
+    Read a text field from a file.
+
+    Searches for the first line beginning with the specified prefix and
+    returns the field value with the prefix removed.
+
+    Args:
+        file_path: The file to read.
+        field_prefix: The field prefix to search for.
+        encoding_full_scan: Whether to use full encoding detection.
+
+    Returns:
+        The field value if found, otherwise None.
+    """    
+    line = next(
+        read_text_section(file_path=file_path, start_prefix=field_prefix, encoding_full_scan=encoding_full_scan), None
+    )
+
+    return line[len(field_prefix):] if line is not None else None
