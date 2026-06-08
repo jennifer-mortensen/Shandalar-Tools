@@ -15,8 +15,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 SCRYFALL_MAP_VERSION_NUMBER: float = 1.0
-SCRYFALL_CODE_AVAILABLE: bool = True
-SCRYFALL_CODE_RESERVED: bool = False
 
 def main() -> None:
     """
