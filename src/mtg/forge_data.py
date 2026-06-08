@@ -100,27 +100,51 @@ def get_scryfall_code(edition_name: str) -> str:
     """
     Read the Scryfall code from a Forge edition file.
 
+    Reads the edition's explicit Scryfall code when present. If no
+    Scryfall code is defined, falls back to the edition's Forge code.
+
     Args:
         edition_name: The name of the edition to look up.
 
     Returns:
-        The Scryfall code defined for the edition.
+        The Scryfall code associated with the edition.
 
     Raises:
-        ValueError: If no Scryfall code is defined for the edition.
-    """ 
+        ValueError: If neither a Scryfall code nor a Forge code is
+            defined for the edition.
+    """
     file_path: Path = path_utils.build_edition_file_path(edition_name)
 
-    try:
-        line = next(file_utils.read_text_section(
+    line = next(
+        file_utils.read_text_section(
             file_path=file_path,
             start_prefix=forge_const.SCRYFALL_CODE_PREFIX,
             encoding_full_scan=runtime.get_encoding_scan_mode()
-        ))
-    except StopIteration:
-        raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
+        ),
+        None
+    )
 
-    return line[len(forge_const.SCRYFALL_CODE_PREFIX):]
+    if line is not None:
+        return line[len(forge_const.SCRYFALL_CODE_PREFIX):]
+
+    line = next(
+        file_utils.read_text_section(
+            file_path=file_path,
+            start_prefix=forge_const.SCRYFALL_CODE_PREFIX_FALLBACK,
+            encoding_full_scan=runtime.get_encoding_scan_mode()
+        ),
+        None
+    )
+
+    if line is not None:
+        logger.warning(
+            "Edition %s has no Scryfall code defined. Using '%s' field as a fallback.",
+            edition_name,
+            forge_const.SCRYFALL_CODE_PREFIX_FALLBACK
+        )
+        return line[len(forge_const.SCRYFALL_CODE_PREFIX_FALLBACK):]
+
+    raise ValueError(f"Edition {edition_name} has no Scryfall code defined.")
 
 def _parse_card_name_from_edition_row(row: str) -> str:
     """

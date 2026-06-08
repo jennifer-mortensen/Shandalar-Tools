@@ -62,7 +62,12 @@ def ensure_extension(file_path: Path, extension: str) -> Path:
         The original path if it already has an extension, otherwise
         a new path with the specified extension appended.
     """
-    return file_path if file_path.suffix else file_path.with_suffix(f".{extension}")
+    extension = f".{extension.lstrip('.')}"
+
+    if file_path.name.endswith(extension):
+        return file_path
+
+    return Path(str(file_path) + extension)
 
 def load_raw_file(file_path: Path, encoding_full_scan: bool = False) -> str:
     """
