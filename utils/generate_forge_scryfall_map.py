@@ -63,7 +63,7 @@ def resolve_scryfall_map_collision(
         new_edition: str
 )-> str | None:
     """
-    Resolve a Scryfall code collision in the edition map.
+    Resolve a Scryfall code collision in the scryfall map.
 
     When two Forge editions share the same Scryfall code, attempts to
     disambiguate them using their Forge edition codes.
@@ -116,7 +116,7 @@ def resolve_scryfall_map_collision(
         secondary_code = stored_edition_forge_code
 
     logger.warning(
-        "Edition map collision between '%s' and '%s'. Resolved as follows:\n"
+        "Scryfall map collision between '%s' and '%s'. Resolved as follows:\n"
         "  %s -> %s\n"
         "  %s -> %s",
         stored_edition,
@@ -192,7 +192,7 @@ def write_scryfall_map(scryfall_map: dict[str, str]) -> None:
 
 def unresolvable_collision_error(existing_edition: str, new_edition: str) -> ValueError:
     """
-    Create an exception for an unresolvable edition map collision.
+    Create an exception for an unresolvable scryfall map collision.
 
     Args:
         existing_edition: The edition already assigned to the identifier.
@@ -201,7 +201,7 @@ def unresolvable_collision_error(existing_edition: str, new_edition: str) -> Val
     Returns:
         A ValueError describing the collision.
     """    
-    return ValueError(f"Unable to resolve edition map collision between editions: '{existing_edition}', '{new_edition}'.")
+    return ValueError(f"Unable to resolve scryfall map collision between editions: '{existing_edition}', '{new_edition}'.")
 
 if __name__ == "__main__":
     main()
