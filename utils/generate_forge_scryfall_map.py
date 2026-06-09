@@ -6,16 +6,27 @@ Forge edition names. The generated map is used to resolve edition
 identifiers across data sources and is written to the Forge data
 directory as JSON.
 """
-from common import common_const, log_utils, path_utils, runtime
+from common import common_args, common_const, log_utils, path_utils, runtime
+from common.common_types import EncodingScanMode
 from mtg import forge_data
 from pathlib import Path
-import json
-import logging
+import argparse, json, logging
 
 logger = logging.getLogger(__name__)
 
+# ==============================
+# CONSTANTS
+# ==============================
 SCRYFALL_MAP_VERSION_NUMBER: float = 1.0
+TOOL_NAME: str = "scryfall_map_generator"
+LOG_NAME: str = TOOL_NAME
+CLI_PROG: str = TOOL_NAME
+CLI_DESCRIPTION: str = "Generate a Forge Scryfall map by scanning Forge edition files and resolving edition code collisions."
+CLI_EPILOG: str = "Examples:\n  %(prog)s\n  %(prog)s -s auto\n  %(prog)s -s fast\n  %(prog)s -s full"
 
+# ==============================
+# MAIN ENTRY POINT
+# ==============================
 def main() -> None:
     """
     Generate the Forge Scryfall map.
@@ -25,7 +36,10 @@ def main() -> None:
     The resulting map is written to disk.
     """    
     try:
-        runtime.initialize_runtime(common_const.FILE_NAME_LOG)
+        runtime.initialize_runtime(LOG_NAME)    
+        cli_args = parse_cli_args()
+        apply_cli_args(cli_args)
+
         scryfall_map: dict[str, str] = {}
         collision_history: set[str] = set()
         
@@ -56,6 +70,41 @@ def main() -> None:
         logger.info("Compilation complete!")
     except Exception:
         log_utils.log_unexpected_and_exit()
+
+# ==============================
+# HIGH LEVEL FUNCTIONS
+# ==============================
+def parse_cli_args() -> argparse.Namespace:
+    """
+    Parse command-line arguments for the CLI.
+
+    Returns:
+        An argparse.Namespace containing encoding scan options.
+    """        
+    parser = argparse.ArgumentParser(
+        prog=CLI_PROG,
+        description=CLI_DESCRIPTION,
+        epilog=CLI_EPILOG,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+
+    common_args.add_encoding_scan_argument(parser)
+
+    return parser.parse_args()
+
+def apply_cli_args(args: argparse.Namespace) -> None:
+    """
+    Apply command-line arguments on top of the loaded configuration.
+
+    CLI arguments take precedence over config.toml values. Only applies
+    arguments that were explicitly provided by the user, mutating the
+    provided configuration object in place.
+
+    Args:
+        args: The parsed command-line arguments.
+    """  
+    if args.encoding_scan is not None:
+        runtime.set_encoding_scan_mode(EncodingScanMode(args.encoding_scan))            
 
 def resolve_scryfall_map_collision(
         scryfall_map: dict[str, str],
@@ -103,7 +152,7 @@ def resolve_scryfall_map_collision(
         raise unresolvable_collision_error(existing_edition=stored_edition, new_edition=new_edition)
     
     if not stored_matches_scryfall and not new_matches_scryfall:
-        # Reassign to Forge codes
+        # Reassign to Forge codes.
         del scryfall_map[scryfall_code]
         scryfall_map[stored_edition_forge_code] = stored_edition
         scryfall_map[new_edition_forge_code] = new_edition

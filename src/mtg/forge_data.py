@@ -6,10 +6,10 @@ names, and retrieving edition metadata such as Scryfall set codes.
 Used to build card pools and format data from Forge edition sources.
 """
 from collections.abc import Iterable
-from common import common_utils, file_utils, path_utils, runtime
+from common import common_const, common_utils, file_utils, path_utils, runtime
 from mtg import forge_const
 from pathlib import Path
-import logging
+import json, logging
 
 logger = logging.getLogger(__name__)
 
@@ -166,6 +166,23 @@ def get_forge_edition_code(edition_name: str) -> str:
     
     raise ValueError(f"Forge edition code undefined for edition '{edition_name}'")
 
+def read_forge_scryfall_map() -> dict[str, str]:
+    """
+    Read the Forge Scryfall map.
+
+    Loads the Forge Scryfall map from disk and returns the edition code
+    mapping contained within the data file.
+
+    Returns:
+        Mapping of edition codes to Forge edition names.
+    """
+    logger.info("Loading Forge Scryfall map...")
+    with path_utils.build_forge_scryfall_map_path().open("r", encoding="utf-8") as file:
+        return json.load(file)[common_const.DATA_MAP_EDITION_CODE_FIELD]
+
+# ==============================
+# PRIVATE FUNCTIONS
+# ==============================
 def _parse_card_name_from_edition_row(row: str) -> str:
     """
     Parse a card name from a single row of a Forge edition file.

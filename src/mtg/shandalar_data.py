@@ -14,12 +14,11 @@ Two lookup types are supported:
   Provides a sanitized set of card names for fast membership checks
   and validation of card names against the configured card pool.
 """
-from common import common_utils, file_utils, path_utils, runtime
+from common import common_const, common_utils, file_utils, path_utils, runtime
 from mtg import shandalar_const
 from mtg.shandalar_types import ShandalarCard
 from pathlib import Path
-
-import logging
+import json, logging
 
 logger = logging.getLogger(__name__)
 
@@ -136,6 +135,20 @@ def normalize_shandalar_card_id(card_id: str) -> str:
         The normalized card ID.
     """    
     return card_id.lstrip("0")
+
+def read_shandalar_edition_map() -> dict[str, str]:
+    """
+    Read the Shandalar edition map.
+
+    Loads the Shandalar edition map from disk and returns the edition
+    mapping contained within the data file.
+
+    Returns:
+        Mapping of Shandalar edition names to edition codes.
+    """
+    logger.info("Loading Shandalar edition map...")    
+    with path_utils.build_shandalar_edition_map_path().open("r", encoding="utf-8") as file:
+        return json.load(file)[common_const.DATA_MAP_EDITIONS_FIELD]
 
 def validate_shandalar_card_id(card_id: str, shandalar_card_id_lookup: dict[str, ShandalarCard]) -> bool:
     """
