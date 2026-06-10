@@ -34,7 +34,7 @@ def main() -> None:
         runtime.initialize_runtime(LOG_NAME)    
         
         forge_scryfall_map: dict[str, str] = forge_data.read_forge_scryfall_map()
-        shandalar_edition_map: dict[str, str] = shandalar_data.read_shandalar_edition_map()
+        shandalar_edition_map: dict[str, str] = shandalar_data.read_shandalar_edition_map(runtime.get_shandalar_card_pool())
         invalid_keys: list[str] = []
 
         logger.info("Validating Shandalar edition map against Forge Scryfall map...")

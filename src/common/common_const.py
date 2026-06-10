@@ -11,6 +11,31 @@ from pathlib import Path
 import sys
 
 # ==============================
+# FILE NAMES & TYPES
+# ==============================
+FILE_NAME_CONFIG: str = "config"
+FILE_TYPE_CONFIG: str = "toml"
+FILE_NAME_LOG: str = "shandalar_tools"
+FILE_TYPE_LOG: str = "log"
+
+FILE_TYPE_FORMAT_CONFIG: str = "toml"
+FILE_TYPE_DATA_MAP: str = "json"
+
+# MTG Types
+FILE_TYPE_DECK: str = "dck"
+
+# Forge Names & Types
+FILE_NAME_FORGE_SCRYFALL_MAP: str = "forge_scryfall_map"
+FILE_TYPE_FORGE_EDITION: str = "txt"
+FILE_TYPE_FORGE_FORMAT: str = "txt"
+
+# Shandalar Names & Types
+FILE_NAME_DEFAULT_SHANDALAR_EDITION_MAP: str = "default_shandalar_edition_map"
+FILE_SUFFIX_SHANDALAR_CARD_MAP: str = "_card_map"
+FILE_SUFFIX_SHANDALAR_EDITION_MAP: str = "_edition_map"
+FILE_TYPE_SHANDALAR_DATA: str = "csv"
+
+# ==============================
 # FILE PATHS
 # ==============================
 def get_base_dir() -> Path:
@@ -35,6 +60,7 @@ FORGE_DATA_DIR: Path = DATA_DIR / "forge"
 FORGE_EDITIONS_DIR: Path = FORGE_DATA_DIR / "editions"
 SHANDALAR_DATA_DIR: Path = DATA_DIR / "shandalar"
 SHANDALAR_CARD_POOLS_DIR: Path = SHANDALAR_DATA_DIR / "card_pools"
+DEFAULT_SHANDALAR_EDITION_MAP_PATH: Path = SHANDALAR_DATA_DIR / f"{FILE_NAME_DEFAULT_SHANDALAR_EDITION_MAP}.{FILE_TYPE_DATA_MAP}"
 # logs
 LOG_DIR: Path = BASE_DIR / "logs"
 # user
@@ -43,36 +69,13 @@ CONFIG_DIR: Path = USER_DIR / "config"
 # format generator
 FORMAT_CONFIG_DIR: Path = USER_DIR / "input_formats"
 FORMAT_DIR: Path = USER_DIR / "output_formats"
-# deck translator
+# deck converter
 INPUT_DECK_DIR: Path = USER_DIR / "input_decks"
 OUTPUT_FORGE_DECK_DIR: Path = USER_DIR / "output_decks_forge"
 OUTPUT_SHANDALAR_DECK_DIR: Path = USER_DIR / "output_decks_shandalar"
 
 for d in [LOG_DIR, CONFIG_DIR, FORMAT_CONFIG_DIR, FORMAT_DIR, INPUT_DECK_DIR, OUTPUT_FORGE_DECK_DIR, OUTPUT_SHANDALAR_DECK_DIR]:
     d.mkdir(parents=True, exist_ok=True)
-
-# ==============================
-# FILE NAMES & TYPES
-# ==============================
-FILE_NAME_CONFIG: str = "config"
-FILE_TYPE_CONFIG: str = "toml"
-FILE_NAME_LOG: str = "shandalar_tools"
-FILE_TYPE_LOG: str = "log"
-
-FILE_TYPE_FORMAT_CONFIG: str = "toml"
-FILE_TYPE_DATA_MAP: str = "json"
-
-# MTG Types
-FILE_TYPE_DECK: str = "dck"
-
-# Forge Names & Types
-FILE_NAME_FORGE_SCRYFALL_MAP: str = "forge_scryfall_map"
-FILE_TYPE_FORGE_EDITION: str = "txt"
-FILE_TYPE_FORGE_FORMAT: str = "txt"
-
-# Shandalar Names & Types
-FILE_NAME_SHANDALAR_EDITION_MAP: str = "shandalar_edition_map"
-FILE_TYPE_SHANDALAR_DATA: str = "csv"
 
 # ==============================
 # LOGGER CONSTANTS

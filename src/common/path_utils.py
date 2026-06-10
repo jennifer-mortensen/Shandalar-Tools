@@ -8,6 +8,9 @@ and Shandalar card pool resources.
 from common import common_const, file_utils, runtime
 from mtg.mtg_types import DeckType
 from pathlib import Path
+import logging
+
+logger = logging.getLogger(__name__)
 
 # ==============================
 # PUBLIC FUNCTIONS
@@ -180,18 +183,52 @@ def build_shandalar_card_pool_path() -> Path:
         target_dir=common_const.SHANDALAR_CARD_POOLS_DIR,
         field_name="Shandalar data path")
 
-def build_shandalar_edition_map_path() -> Path:
+def build_shandalar_edition_map_path(dataset_name: str | None = None) -> Path:
     """
-    Build the path to the Shandalar edition map file.
+    Build the path to a Shandalar edition map.
+
+    When a dataset name is provided, returns the path to the dataset's
+    edition map override. Otherwise, returns the path to the default
+    Shandalar edition map.
+
+    Args:
+        dataset_name: Optional dataset name used to construct a
+            dataset-specific edition map path.
 
     Returns:
-        The path to the Shandalar edition map.
-    """    
+        The path to the resolved Shandalar edition map.
+    """
+    if dataset_name is None:
+        return common_const.DEFAULT_SHANDALAR_EDITION_MAP_PATH
+
     return _resolve_path_from_string(
-        path_string=common_const.FILE_NAME_SHANDALAR_EDITION_MAP,
+        path_string=f"{dataset_name}{common_const.FILE_SUFFIX_SHANDALAR_EDITION_MAP}",
         extension=common_const.FILE_TYPE_DATA_MAP,
-        target_dir=common_const.SHANDALAR_DATA_DIR,
-        field_name="Shandalar edition map")                     
+        target_dir=common_const.SHANDALAR_CARD_POOLS_DIR,
+        field_name="Shandalar edition map")
+
+def resolve_shandalar_edition_map_path(dataset_name: str) -> Path:
+    """
+    Resolve the appropriate Shandalar edition map path for a dataset.
+
+    Attempts to locate a dataset-specific edition map. If no override
+    exists, resolves to the default Shandalar edition map.
+
+    Args:
+        dataset_name: The dataset whose edition map should be resolved.
+
+    Returns:
+        The path to the dataset-specific edition map when present;
+        otherwise the path to the default Shandalar edition map.
+    """    
+    file: Path = build_shandalar_edition_map_path(dataset_name)
+
+    if file.exists():
+        logger.info("Shandalar edition map for dataset '%s' found.", dataset_name)
+        return file
+    
+    logger.info("Shandalar edition map for dataset '%s' not found. Resolving to default edition map.", dataset_name)
+    return build_shandalar_edition_map_path()
 
 # ==============================
 # PRIVATE FUNCTIONS

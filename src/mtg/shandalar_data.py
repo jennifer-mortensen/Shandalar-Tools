@@ -136,18 +136,23 @@ def normalize_shandalar_card_id(card_id: str) -> str:
     """    
     return card_id.lstrip("0")
 
-def read_shandalar_edition_map() -> dict[str, str]:
+def read_shandalar_edition_map(dataset_name: str | None = None) -> dict[str, str]:
     """
-    Read the Shandalar edition map.
+    Read a Shandalar edition map.
 
-    Loads the Shandalar edition map from disk and returns the edition
-    mapping contained within the data file.
+    Attempts to load a dataset-specific edition map when a dataset name
+    is provided. If no dataset-specific map exists, the default
+    Shandalar edition map is loaded instead.
+
+    Args:
+        dataset_name: Optional dataset name whose edition map should be
+            loaded.
 
     Returns:
         Mapping of Shandalar edition names to edition codes.
     """
     logger.info("Loading Shandalar edition map...")    
-    with path_utils.build_shandalar_edition_map_path().open("r", encoding="utf-8") as file:
+    with path_utils.resolve_shandalar_edition_map_path(dataset_name).open("r", encoding="utf-8") as file:
         return json.load(file)[common_const.DATA_MAP_EDITIONS_FIELD]
 
 def validate_shandalar_card_id(card_id: str, shandalar_card_id_lookup: dict[str, ShandalarCard]) -> bool:

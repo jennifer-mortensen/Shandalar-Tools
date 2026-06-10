@@ -142,16 +142,16 @@ def resolve_scryfall_map_collision(
     stored_edition_forge_code: str = forge_data.get_forge_edition_code(stored_edition)
     new_edition_forge_code: str = forge_data.get_forge_edition_code(new_edition)
     forge_codes_match: bool = stored_edition_forge_code == new_edition_forge_code
-    stored_matches_scryfall: bool = stored_edition_forge_code == scryfall_code
-    new_matches_scryfall: bool = new_edition_forge_code == scryfall_code
+    stored_is_canonical: bool = forge_data.edition_codes_are_canonical(scryfall_code=scryfall_code, forge_edition_code=stored_edition_forge_code)
+    new_is_canonical: bool = forge_data.edition_codes_are_canonical(scryfall_code=scryfall_code, forge_edition_code=new_edition_forge_code)
     primary_code: str = scryfall_code
     secondary_code: str
     return_val: str | None = None
 
-    if forge_codes_match and stored_matches_scryfall:
+    if forge_codes_match:
         raise unresolvable_collision_error(existing_edition=stored_edition, new_edition=new_edition)
     
-    if not stored_matches_scryfall and not new_matches_scryfall:
+    if not stored_is_canonical and not new_is_canonical:
         # Reassign to Forge codes.
         del scryfall_map[scryfall_code]
         scryfall_map[stored_edition_forge_code] = stored_edition
@@ -159,7 +159,7 @@ def resolve_scryfall_map_collision(
         primary_code = stored_edition_forge_code
         secondary_code = new_edition_forge_code
         return_val = scryfall_code
-    elif stored_matches_scryfall:
+    elif stored_is_canonical:
         # Map new edition to Forge code.
         scryfall_map[new_edition_forge_code] = new_edition
         secondary_code = new_edition_forge_code
@@ -202,10 +202,10 @@ def resolve_collision_history(scryfall_map: dict[str, str], scryfall_code: str, 
     Raises:
         ValueError: If the required Forge code mapping is already occupied.
     """       
-    forge_code: str = forge_data.get_forge_edition_code(edition_name)
+    forge_edition_code: str = forge_data.get_forge_edition_code(edition_name)
     logger.info("Scryfall code ('%s') for edition '%s' found in collision history.", scryfall_code, edition_name)
 
-    if forge_code == scryfall_code:
+    if forge_data.edition_codes_are_canonical(scryfall_code=scryfall_code, forge_edition_code=forge_edition_code):
         # Scryfall code must be free, because if we had a previous collision where both codes matched,
         # the collision would have been unresolvable and the program would have terminated.
         logger.info(
@@ -214,16 +214,16 @@ def resolve_collision_history(scryfall_map: dict[str, str], scryfall_code: str, 
             edition_name,
             scryfall_code)
         scryfall_map[scryfall_code] = edition_name
-    elif forge_code in scryfall_map:
+    elif forge_edition_code in scryfall_map:
         # We must use the Forge code, but it has already been claimed. This is an unresolvable error.
-        raise unresolvable_collision_error(existing_edition=scryfall_map[forge_code], new_edition=edition_name)
+        raise unresolvable_collision_error(existing_edition=scryfall_map[forge_edition_code], new_edition=edition_name)
     else:
         logger.info(
             "Edition not identified as canonical owner of Scryfall code '%s'. Mapping:\n  %s -> %s",
             scryfall_code,
             edition_name,
-            forge_code)      
-        scryfall_map[forge_code] = edition_name
+            forge_edition_code)      
+        scryfall_map[forge_edition_code] = edition_name
 
 def write_scryfall_map(scryfall_map: dict[str, str]) -> None:
     """

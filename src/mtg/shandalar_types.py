@@ -22,7 +22,13 @@ class ShandalarCard:
     """
     card_name: str
     cost: str
-    set: str            
+    set: str # 'Set' matches the name used in the Shandalar CSVs.
+
+    def resolve_set(self, shandalar_edition_map: dict[str, str]) -> str:
+        resolved_set: str = shandalar_edition_map.get(self.set)
+        if not resolved_set:
+            raise ValueError(f"Unable to resolve set for Shandalar Card:\n  card_name: {self.card_name}\n  set: {self.set}")
+        return resolved_set
     
 # ==============================
 # TYPES
