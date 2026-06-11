@@ -143,7 +143,7 @@ def build_log_file_path(log_name: str) -> Path:
         path_string=log_name,
         extension=common_const.FILE_TYPE_LOG,
         target_dir=common_const.LOG_DIR,
-        field_name="Log file path")             
+        field_name="Log file path")
 
 def build_output_deck_file_path(deck_name: str, deck_type: DeckType) -> Path:
     """
@@ -207,7 +207,7 @@ def build_shandalar_edition_map_path(dataset_name: str | None = None) -> Path:
         target_dir=common_const.SHANDALAR_CARD_POOLS_DIR,
         field_name="Shandalar edition map")
 
-def resolve_shandalar_edition_map_path(dataset_name: str) -> Path:
+def resolve_shandalar_edition_map_path(dataset_name: str | None) -> Path:
     """
     Resolve the appropriate Shandalar edition map path for a dataset.
 
@@ -220,14 +220,16 @@ def resolve_shandalar_edition_map_path(dataset_name: str) -> Path:
     Returns:
         The path to the dataset-specific edition map when present;
         otherwise the path to the default Shandalar edition map.
-    """    
-    file: Path = build_shandalar_edition_map_path(dataset_name)
+    """   
+    if dataset_name is not None:
+        file: Path = build_shandalar_edition_map_path(dataset_name)
 
-    if file.exists():
-        logger.info("Shandalar edition map for dataset '%s' found.", dataset_name)
-        return file
-    
-    logger.info("Shandalar edition map for dataset '%s' not found. Resolving to default edition map.", dataset_name)
+        if file.exists():
+            logger.info("Shandalar edition map for dataset '%s' found.", dataset_name)
+            return file
+
+        logger.info("Shandalar edition map for dataset '%s' not found. Resolving to default edition map.", dataset_name)
+
     return build_shandalar_edition_map_path()
 
 # ==============================

@@ -21,6 +21,8 @@ FILE_TYPE_LOG: str = "log"
 FILE_TYPE_FORMAT_CONFIG: str = "toml"
 FILE_TYPE_DATA_MAP: str = "json"
 
+FILE_NAME_NORMALIZATION_MAP: str = "name_normalization_map"
+
 # MTG Types
 FILE_TYPE_DECK: str = "dck"
 
@@ -61,6 +63,7 @@ FORGE_EDITIONS_DIR: Path = FORGE_DATA_DIR / "editions"
 SHANDALAR_DATA_DIR: Path = DATA_DIR / "shandalar"
 SHANDALAR_CARD_POOLS_DIR: Path = SHANDALAR_DATA_DIR / "card_pools"
 DEFAULT_SHANDALAR_EDITION_MAP_PATH: Path = SHANDALAR_DATA_DIR / f"{FILE_NAME_DEFAULT_SHANDALAR_EDITION_MAP}.{FILE_TYPE_DATA_MAP}"
+NAME_NORMALIZATION_MAP_PATH: Path = DATA_DIR / f"{FILE_NAME_NORMALIZATION_MAP}.{FILE_TYPE_DATA_MAP}"
 # logs
 LOG_DIR: Path = BASE_DIR / "logs"
 # user
@@ -106,6 +109,7 @@ COMMENT_PREFIX: str = "#"
 DATA_MAP_VERSION_FIELD: str = "version"
 DATA_MAP_EDITIONS_FIELD: str = "editions"
 DATA_MAP_EDITION_CODE_FIELD: str = "edition_codes"
+DATA_MAP_NORMALIZATION_MAP_FIELD: str = "normalization_map"
 
 # ==============================
 # VALID VALUES

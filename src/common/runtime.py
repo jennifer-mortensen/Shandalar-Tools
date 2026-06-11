@@ -11,8 +11,12 @@ from common.common_types import EncodingScanMode
 from config import config_io
 from config.common_config import CommonConfig
 from pathlib import Path
+import json, logging
+
+logger = logging.getLogger(__name__)
 
 _active_common_config: CommonConfig | None = None
+_active_name_normalization_map: dict[str, str] | None = None
 
 # ==============================
 # PUBLIC FUNCTIONS
@@ -39,10 +43,22 @@ def initialize_runtime(log_name: str) -> None:
     # logging automatically. Refresh explicitly after initialization to
     # apply the loaded logging configuration.
     log_utils.refresh_logging()
+    _initialize_name_normalization_map()
 
 # ==============================
 # PUBLIC GETTERS/SETTERS
 # ==============================
+def get_name_normalization_map() -> dict[str, str]:
+    """
+    Retrieve the active runtime name normalization map.
+
+    Returns:
+        The loaded name normalization map used to reconcile
+        known naming inconsistencies between external data
+        sources.
+    """    
+    return _active_name_normalization_map
+
 def get_shandalar_card_pool() -> str:
     """
     Retrieve the configured Shandalar card pool name.
@@ -191,4 +207,25 @@ def _get_common_config() -> CommonConfig:
         Runtime initialization must occur before this function is called.
     """  
     assert _active_common_config is not None, "Runtime configuration accessed before runtime initialization."
-    return _active_common_config 
+    return _active_common_config
+
+def _initialize_name_normalization_map() -> None:
+    """
+    Load and cache the active name normalization map.
+
+    Reads the project-wide normalization map from disk and stores
+    it in runtime memory for fast lookup during string
+    normalization operations.
+
+    Raises:
+        OSError: If the normalization map file cannot be read.
+        KeyError: If the normalization map field is missing from
+            the data file.
+        json.JSONDecodeError: If the normalization map file
+            contains invalid JSON.
+    """    
+    global _active_name_normalization_map
+    
+    logger.info("Loading name normalization map...")    
+    with common_const.NAME_NORMALIZATION_MAP_PATH.open("r", encoding="utf-8") as file:
+        _active_name_normalization_map = json.load(file)[common_const.DATA_MAP_NORMALIZATION_MAP_FIELD]

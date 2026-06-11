@@ -1,0 +1,11 @@
+{
+    "version": 1.0,
+    "normalization_map":
+    {
+        "Ã†": "Ae",
+        "Æ": "Ae",
+        "Archdeof Unx": "Archdemon of Unx",
+        "XXValor (Valor)": "Valor",
+        "IchneuDruid": "Ichneumon Druid"
+    }
+}

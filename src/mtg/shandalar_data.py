@@ -44,12 +44,12 @@ def build_shandalar_card_id_lookup() -> dict[str, ShandalarCard]:
     card_lookup: dict[str, ShandalarCard] = {}
     file_path: Path = path_utils.build_shandalar_card_pool_path()
 
-    for row in file_utils.read_csv_rows(file_path=file_path, encoding_full_scan=runtime.get_encoding_scan_mode()):
+    for row in file_utils.read_csv_rows(file_path=file_path, encoding_full_scan=runtime.get_encoding_scan_mode(True)):
         card_id: str = normalize_shandalar_card_id(row[shandalar_const.SHANDALAR_DATA_FIELD_SHANDALAR_ID])
         if not looks_like_shandalar_card_id(card_id):
             continue
         card_lookup[card_id] = ShandalarCard(
-            card_name=row[shandalar_const.SHANDALAR_DATA_FIELD_CARD_NAME],
+            name=row[shandalar_const.SHANDALAR_DATA_FIELD_CARD_NAME],
             cost=row[shandalar_const.SHANDALAR_DATA_FIELD_COST],
             set=row[shandalar_const.SHANDALAR_DATA_FIELD_SET]
         )
@@ -64,7 +64,7 @@ def build_shandalar_card_name_lookup() -> set[str]:
     card names suitable for case-insensitive comparison.
     """    
     logger.info("Loading Shandalar card pool...")
-    return common_utils.sanitize_set(get_shandalar_card_names())
+    return common_utils.sanitize_set(items=get_shandalar_card_names(), normalization_map=runtime.get_name_normalization_map())
 
 def find_unsupported_in_shandalar(card_names: set[str], shandalar_card_name_lookup: set[str]) -> list[str]:
     """
@@ -151,7 +151,8 @@ def read_shandalar_edition_map(dataset_name: str | None = None) -> dict[str, str
     Returns:
         Mapping of Shandalar edition names to edition codes.
     """
-    logger.info("Loading Shandalar edition map...")    
+    logger.info("Loading Shandalar edition map...")
+        
     with path_utils.resolve_shandalar_edition_map_path(dataset_name).open("r", encoding="utf-8") as file:
         return json.load(file)[common_const.DATA_MAP_EDITIONS_FIELD]
 

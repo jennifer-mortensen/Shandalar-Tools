@@ -107,6 +107,28 @@ def merge_and_dedupe_sequences(seq_1: Sequence[Any], seq_2: Sequence[Any]) -> li
 
     return merged
 
+def normalize_string(string: str, normalization_map: dict[str, str]) -> str:
+    """
+    Normalize a string using configured replacement rules.
+
+    Applies project-defined normalization mappings to resolve
+    known inconsistencies between external data sources, such as
+    encoding artifacts, alternate spellings, and source-specific
+    naming variations.
+
+    Args:
+        string: The string to normalize.
+        normalization_map: Mapping of source strings to their
+            normalized replacements.
+
+    Returns:
+        The normalized string.
+    """
+    for key, value in normalization_map.items():
+        string = string.replace(key, value)
+
+    return string
+
 def parse_int(val: str) -> int | None:
     """
     Attempt to parse a string as an integer.
@@ -136,7 +158,7 @@ def pluralize(quantity: int, singular: str, plural: str) -> str:
     """    
     return singular if quantity == 1 else plural
 
-def sanitize_set(items: set[str]) -> set[str]:
+def sanitize_set(items: set[str], normalization_map: dict[str, str] | None = None) -> set[str]:
     """
     Sanitize a set of strings for consistent comparison.
 
@@ -144,18 +166,35 @@ def sanitize_set(items: set[str]) -> set[str]:
 
     Args:
         items: The set of strings to sanitize.
-    """    
-    return {sanitize_string(i) for i in items}
+        normalization_map: Mapping of source strings to their
+            normalized replacements. If None, no normalization
+            is performed.
 
-def sanitize_string(string: str) -> str:
+    Returns:
+        A set containing the sanitized strings.
+    """ 
+    return {sanitize_string(string=i, normalization_map=normalization_map) for i in items}
+
+def sanitize_string(string: str, normalization_map: dict[str, str] | None = None) -> str:
     """
     Sanitize a string for consistent comparison.
 
-    Strips leading and trailing whitespace and converts to lowercase.
+    Optionally applies normalization rules before stripping
+    leading and trailing whitespace and converting the string
+    to lowercase.
 
     Args:
         string: The string to sanitize.
-    """    
+        normalization_map: Mapping of source strings to their
+            normalized replacements. If None, no normalization
+            is performed.
+
+    Returns:
+        The sanitized string.
+    """
+    if normalization_map is not None:
+        string = normalize_string(string=string, normalization_map=normalization_map)
+
     return string.strip().lower()
 
 def to_list(value: str | Iterable[str] | None) -> list[str]:

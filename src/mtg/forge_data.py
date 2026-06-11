@@ -40,7 +40,7 @@ def build_forge_card_name_lookup() -> dict[str, set[str]]:
         edition_cards: set[str] = set(get_edition_card_names(edition_name))
         if edition_cards:
             logger.debug("Loaded %d cards for edition '%s'", len(edition_cards), edition_name)
-            card_pool[edition_name] = common_utils.sanitize_set(edition_cards)
+            card_pool[edition_name] = common_utils.sanitize_set(items=edition_cards, normalization_map=runtime.get_name_normalization_map())
         else:
             logger.warning("No cards found for edition '%s'.", edition_name)
 
@@ -99,7 +99,7 @@ def card_exists(edition_name: str, card_name: str, forge_card_name_lookup: dict[
     # NOTE:
     # Deliberately uses direct indexing. A KeyError indicates a broken
     # invariant: every referenced edition must exist in the lookup.
-    return common_utils.sanitize_string(card_name) in forge_card_name_lookup[edition_name]
+    return common_utils.sanitize_string(string=card_name, normalization_map=runtime.get_name_normalization_map()) in forge_card_name_lookup[edition_name]
 
 def collect_scryfall_codes(edition_names: list[str]) -> set[str]:
     """
