@@ -5,10 +5,12 @@ Provides utilities for converting CLI argument names, building
 user-facing argument messages, and inspecting parsed argument
 namespaces.
 """
-from common import common_const
-from common.common_types import CliArgument
+from common.args_types import CliArgument
 import argparse
 
+# ==============================
+# PUBLIC FUNCTIONS
+# ==============================
 def argument_name_to_attribute(argument_name: str) -> str:
     """
     Convert a CLI argument name into its argparse attribute name.

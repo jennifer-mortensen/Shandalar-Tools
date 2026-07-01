@@ -9,9 +9,9 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from common import common_args, log_utils, runtime
-from config import config_io
-from config.deck_converter_config import DeckConverterConfig
+from common import args_defs, log_utils, runtime
+from resources import config_loader
+from resources.deck_converter_config import DeckConverterConfig
 from mtg.mtg_types import Deck
 from pipeline import deck_converter_const, deck_converter_pipeline
 import argparse
@@ -34,10 +34,10 @@ def main() -> None:
 
         cli_args = parse_cli_args()
 
-        config = config_io.build_deck_converter_config()
+        config = config_loader.get_deck_converter_config()
         apply_cli_args(args=cli_args, config=config)
 
-        deck: Deck = deck_converter_pipeline.build_deck(deck_name="ForgeDeck") # placeholder deck name
+        deck: Deck = deck_converter_pipeline.build_deck(deck_name="ForgeDeck")       # placeholder deck name
         deck_converter_pipeline.write_translated_deck(deck=deck, file_name="mydeck") # placeholder file name
 
         logger.info("Finished execution without error.")
@@ -61,7 +61,7 @@ def parse_cli_args() -> argparse.Namespace:
         epilog=deck_converter_const.CLI_EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    common_args.add_encoding_scan_argument(parser)
+    args_defs.add_encoding_scan_mode_argument(parser)
 
     return parser.parse_args()
 

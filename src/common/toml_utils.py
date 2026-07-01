@@ -5,7 +5,7 @@ Provides helpers for validating and reading values from parsed TOML
 data, with optional fallback behavior for missing or invalid keys
 and sections.
 """
-from common import common_utils
+from common import validation_utils
 from typing import Callable
 import logging
 
@@ -55,7 +55,7 @@ def verify_and_set(
         raise ValueError(f"Mandatory key '{key}' is missing or invalid{error_suffix}")
     
     # Validate container contents
-    if item_type is not None and not common_utils.validate_collection_items(collection=value, expected_type=item_type):
+    if item_type is not None and not validation_utils.validate_collection_items(collection=value, expected_type=item_type):
         raise ValueError(f"Type mismatch: Key '{key}' must contain only values of type {item_type.__name__}.")
 
     # Transform and validate value
@@ -93,6 +93,6 @@ def verify_section(data: dict, section_name: str, allow_fallback: bool = False, 
     if section is None or not isinstance(section, dict):
         if allow_fallback:
             logger.warning("Section [%s] is missing or invalid; using default values", section_name)
-            return
+            return None
         raise ValueError(f"Mandatory section [{section_name}] is missing or invalid{error_suffix}")
     return section

@@ -1,61 +1,20 @@
 """
-Logging utilities for Shandalar Tools.
+Application logging helpers.
 
-Provides helpers for configuring logging across all CLI entry points,
-and for logging previews and duplicate entries with consistent formatting.
+Provides reusable helpers for logging common application
+messages with consistent formatting, including previews,
+duplicate entries, and unexpected failures.
 """
 from collections.abc import Collection
-from common import common_const, common_utils
-from common import runtime
+from common import log_const, settings, string_utils
 from typing import Callable, Iterable
-from pathlib import Path
-import logging
-import sys
+import logging, sys
 
 logger = logging.getLogger(__name__)
 
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def initialize_logging(file_path: Path) -> None:
-    """
-    Initialize bootstrap logging for the application.
-
-    Configures console and file logging before runtime configuration
-    has been loaded. The specified log file is normalized and opened
-    in append mode during bootstrap. Runtime logging behavior may be
-    updated later after CommonConfig initialization.
-
-    Args:
-        file_path: Path to the log file to use.
-    """
-    formatter = logging.Formatter(common_const.LOGGER_FORMAT_FILE)
-
-    # CLI-level logging. Prioritize readability.
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    console.setFormatter(logging.Formatter(common_const.LOGGER_FORMAT_CLI))
-
-    # Filter out exception tracebacks from CLI
-    class NoExceptionTracebackFilter(logging.Filter):
-        def filter(self, record: logging.LogRecord) -> bool:
-            return record.exc_info is None
-
-    console.addFilter(NoExceptionTracebackFilter())
-
-    # File-level logging. Full fidelity.
-    file_handler = logging.FileHandler(
-        filename=file_path,
-        mode="a",
-        encoding=common_const.DEFAULT_ENCODING
-    )
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(formatter)
-
-    root = logging.getLogger()
-    root.setLevel(logging.DEBUG)
-    root.handlers = [console, file_handler]
-
 def log_duplicates_if_any(
         duplicates: Iterable[str],
         list_name_1: str,
@@ -87,7 +46,7 @@ def log_duplicates_if_any(
     """
     duplicates_list: list[str] = list(duplicates)
 
-    entry_type: str = common_utils.pluralize(quantity=len(duplicates_list), singular=entry_type_singular, plural=entry_type_plural)
+    entry_type: str = string_utils.pluralize(quantity=len(duplicates_list), singular=entry_type_singular, plural=entry_type_plural)
     message: str = f"{preamble}{len(duplicates_list)} duplicate {entry_type} detected across the {list_name_1} and {list_name_2} lists."
 
     return log_preview_if_any(items=duplicates_list, message=message, log_function=log_function)
@@ -96,7 +55,7 @@ def log_preview_if_any(
         items: Collection[str],
         message: str,
         log_function: Callable = logger.warning,
-        delimiter: str = common_const.LOG_PREVIEW_DEFAULT_DELIMITER
+        delimiter: str = log_const.LOG_PREVIEW_DEFAULT_DELIMITER
 ) -> bool:
     """
     Log a preview of a collection if it is non-empty.
@@ -119,7 +78,7 @@ def log_preview_if_any(
     if not sorted_items:
         return False
 
-    preview_limit = runtime.get_log_preview_limit()
+    preview_limit = settings.get_log_preview_limit()
     is_truncated: bool = len(sorted_items) > preview_limit
 
     preview: str = (delimiter + " ").join(sorted_items[:preview_limit])
@@ -129,11 +88,11 @@ def log_preview_if_any(
 
     if is_truncated:
         suffix = "...\nFull details written to the log file (%s)"
-        extra_args = (runtime.get_log_file_path(),)
+        extra_args = (settings.get_log_file_path(),)
 
     log_function(f"%s %s: %s{suffix}",
         message,
-        common_utils.pluralize(quantity=len(sorted_items), singular="Example",  plural="Examples"),
+        string_utils.pluralize(quantity=len(sorted_items), singular="Example",  plural="Examples"),
         preview,
         *extra_args
     )
@@ -152,34 +111,5 @@ def log_unexpected_and_exit() -> None:
     """        
     logger.exception("Unexpected error")
     # Separate CLI-level output. Full exception is logged externally just above.        
-    print(f"ERROR: An unexpected error occurred. See the log file ({runtime.get_log_file_path()}) for details.")
+    print(f"ERROR: An unexpected error occurred. See the log file ({settings.get_log_file_path()}) for details.")
     sys.exit(1)    
-
-def refresh_logging() -> None:
-    """
-    Refresh file logging using the current runtime configuration.
-
-    Rebuilds the active FileHandler using the current runtime log
-    file path and overwrite mode. Existing console logging handlers
-    are preserved.
-    """
-    root = logging.getLogger()
-    overwrite: bool = runtime.get_log_overwrite()
-
-    # Remove existing file handlers
-    for handler in root.handlers[:]:
-        if isinstance(handler, logging.FileHandler):
-            root.removeHandler(handler)
-            handler.close()
-
-    # Create replacement file handler
-    file_handler = logging.FileHandler(
-        filename=runtime.get_log_file_path(),
-        mode="w" if overwrite else "a",
-        encoding=common_const.DEFAULT_ENCODING
-    )
-
-    file_handler.setLevel(logging.DEBUG)
-    file_handler.setFormatter(logging.Formatter(common_const.LOGGER_FORMAT_FILE))
-
-    root.addHandler(file_handler)

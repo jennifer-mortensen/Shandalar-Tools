@@ -1,20 +1,24 @@
 """
 Forge-specific constants for Shandalar Tools.
 
-Defines identifiers, parsing rules, and file format details used when
-reading Forge edition data and generating Forge-compatible deck files.
+Defines identifiers, parsing rules, and file format metadata used when
+reading Forge edition files and generating Forge-compatible deck files.
+Includes section names, field definitions, and parsing markers used by
+the Forge data formats.
 """
 # ==============================
 # FORGE DECKS
 # ==============================
-FORGE_DECK_HEADER: str = "[Main]"
+# Sections
+FORGE_DECK_MAIN_HEADER: str = "[Main]"
 
 # ==============================
 # FORGE EDITIONS
 # ==============================
-EDITION_FILE_SUFFIX: str = ".txt"
-EDITIONS_CARD_NAME_STARTING_COLUMN: int = 2
+# Sections
 FORGE_EDITION_CARDS_HEADER: str = "[cards]"
-FORGE_EDITION_CARD_DELIMITER: str = " @"
-SCRYFALL_CODE_PREFIX: str = "ScryfallCode="
+# Section: [metadata]
 FORGE_EDITION_CODE_PREFIX: str = "Code="
+# Card Fields
+FORGE_EDITION_CARD_NAME_TERMINATOR: str = "@"
+FORGE_EDITION_CARD_NAME_FIELD: int = 2

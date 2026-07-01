@@ -6,7 +6,7 @@ including deck loading and format detection. Acts as the entry point
 for deck-level logic that is not specific to either Forge or
 Shandalar deck formats.
 """
-from common import file_utils, path_utils
+from common import file_utils, paths
 from mtg import forge_deck
 from mtg.mtg_types import DeckType
 from pathlib import Path
@@ -57,6 +57,6 @@ def load_raw_deck(deck_name: str) -> str:
     Raises:
         OSError: If the deck file cannot be opened or read.
     """  
-    file_path: Path = path_utils.build_input_deck_file_path(deck_name)
+    file_path: Path = paths.build_input_deck_file_path(deck_name)
     logger.info("Loading '%s'...", file_path)         
     return file_utils.load_raw_file(file_path)

@@ -4,8 +4,8 @@ Forge deck parsing and serialization for Shandalar Tools.
 Provides helpers for detecting, reading, and writing Forge deck
 files and converting them to and from the shared Deck model.
 """
-from common import path_utils
-from mtg.forge_const import FORGE_DECK_HEADER
+from common import paths
+from mtg.forge_const import FORGE_DECK_MAIN_HEADER
 from mtg.mtg_types import Deck, DeckType
 from pathlib import Path
 import logging
@@ -50,7 +50,7 @@ def is_forge_deck(raw_deck: str) -> bool:
         True if the file appears to match the Forge deck format,
         otherwise False.
     """    
-    return FORGE_DECK_HEADER in raw_deck
+    return FORGE_DECK_MAIN_HEADER in raw_deck
 
 def write_forge_deck(deck: Deck, file_name: str) -> None:
     """
@@ -63,5 +63,5 @@ def write_forge_deck(deck: Deck, file_name: str) -> None:
         deck: The deck to write.
         file_name: Name of the deck file to write.
     """
-    file_path: Path = path_utils.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.FORGE)
+    file_path: Path = paths.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.FORGE)
     logger.info("Writing Forge deck to %s...", file_path)    

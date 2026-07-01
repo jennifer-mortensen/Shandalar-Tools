@@ -1,15 +1,15 @@
 [data]
-shandalar_card_pool = "shandalar_2016"
+shandalar_dataset = "shandalar_2016"
 
 [io]
-encoding_scan = "auto"
+encoding_scan_mode = "auto"
 
 [logging]
 preview_limit = 5
 overwrite = true
 
 [format_generator]
-format_config_file = "custom_format"
+format_config_file_name = "custom_format"
 output_format_type = "extended"
 
 [deck_converter]

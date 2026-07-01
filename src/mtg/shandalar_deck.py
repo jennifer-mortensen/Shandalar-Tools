@@ -1,15 +1,14 @@
 """
-Shandalar deck parsing utilities for Shandalar Tools.
+Shandalar deck parsing and writing utilities.
 
-Provides functions for parsing and validating Shandalar deck files,
-including deck titles, sideboard sections, and card entries. Also
-contains helpers used to validate deck records against canonical
-Shandalar card data.
+Provides helpers for parsing, validating, and writing
+Shandalar deck files, including deck titles, sideboard
+sections, and card entries.
 """
-from common import common_utils, path_utils
+from common import paths, parse_utils, string_utils
 from mtg import shandalar_const, shandalar_data
 from mtg.mtg_types import Card, Color, Deck, DeckType
-from mtg.shandalar_types import ShandalarCard, ShandalarCardFields
+from mtg.shandalar_types import ShandalarCardFields
 from pathlib import Path
 import logging
 
@@ -32,7 +31,6 @@ def build_deck_from_shandalar(raw_deck: str) -> Deck:
 
     deck: Deck = Deck(type=DeckType.SHANDALAR)
     current_deck_section: list[Card] = deck.cards
-    shandalar_card_id_lookup: dict[str, ShandalarCard] = shandalar_data.build_shandalar_card_id_lookup()
 
     for line_number, line in enumerate(raw_deck.splitlines(), start=1):
         line = line.strip()
@@ -44,7 +42,7 @@ def build_deck_from_shandalar(raw_deck: str) -> Deck:
             current_deck_section = deck.color_sideboards[sideboard_color].cards
             continue
 
-        card: Card | None = parse_shandalar_deck_card(raw_line=line, shandalar_card_id_lookup=shandalar_card_id_lookup)
+        card: Card | None = parse_shandalar_deck_card(line)
         if not card:
             if line_number == shandalar_const.SHANDALAR_DECK_TITLE_LINE:
                 deck.name = parse_shandalar_deck_title(line)
@@ -70,32 +68,28 @@ def get_sideboard_color(raw_line: str) -> Color | None:
         The associated sideboard color if the line is a valid sideboard
         header, otherwise None.
     """    
-    sanitized_line: str = common_utils.sanitize_string(raw_line)
+    sanitized_line: str = string_utils.sanitize_string(raw_line)
 
     if not sanitized_line:
         return None
     
     return shandalar_const.SHANDALAR_SIDEBOARD_HEADER.get(sanitized_line.split()[0]) # ignore text after whitespace
 
-def parse_shandalar_deck_card(raw_line: str, shandalar_card_id_lookup: dict[str, ShandalarCard]) -> Card | None:
+def parse_shandalar_deck_card(raw_line: str) -> Card | None:
     """
     Parse a raw Shandalar card line into a normalized Card object.
 
-    Attempts to parse a raw deck line as a valid Shandalar card entry. If
-    the line does not represent a parsable card record, returns None.
+    Attempts to parse a raw deck line as a valid Shandalar card
+    entry. If the line does not represent a valid card record,
+    returns None.
 
     Args:
         raw_line: A raw line from a Shandalar deck file.
-        shandalar_card_id_lookup: Lookup table of canonical Shandalar card
-            metadata keyed by normalized Shandalar card ID.        
 
     Returns:
         A parsed Card object if successful, otherwise None.
-    """    
-    card_fields: ShandalarCardFields | None  = _parse_shandalar_card_fields(
-        raw_line=raw_line,
-        shandalar_card_id_lookup=shandalar_card_id_lookup
-    )
+    """
+    card_fields: ShandalarCardFields | None  = _parse_shandalar_card_fields(raw_line)
     
     if card_fields is None:
         return None
@@ -133,28 +127,29 @@ def write_shandalar_deck(deck: Deck, file_name: str) -> None:
         deck: The deck to write.
         file_name: Name of the written deck file.
     """
-    file_path: Path = path_utils.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.SHANDALAR)    
+    file_path: Path = paths.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.SHANDALAR)    
     logger.info("Writing Shandalar deck to %s...", file_path)            
 
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
-def _parse_shandalar_card_fields(raw_line: str, shandalar_card_id_lookup: dict[str, ShandalarCard]) -> ShandalarCardFields | None:
+def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
     """
     Parse a raw Shandalar card line into normalized card fields.
 
-    Splits a raw deck line into its component card fields and reconstructs
-    the card name as a single field, preserving spaces in multi-word names.
+    Splits a raw deck line into its component card fields,
+    validates the card ID and quantity, and reconstructs the
+    card name as a single field, preserving spaces in multi-word
+    names.
 
     Args:
         raw_line: A raw card line from a Shandalar deck file.
-        shandalar_card_id_lookup: Lookup table of canonical Shandalar card
-            metadata keyed by normalized Shandalar card ID.
 
     Returns:
-        A tuple containing the normalized card ID, quantity, and card name,
-        or None if the line does not represent a valid Shandalar card entry.
-    """    
+        A tuple containing the normalized card ID, quantity,
+        and card name, or None if the line does not represent
+        a valid Shandalar card entry.
+    """
     raw_fields: list[str] = raw_line.strip().split()
 
     # Ensure sufficient fields
@@ -171,7 +166,12 @@ def _parse_shandalar_card_fields(raw_line: str, shandalar_card_id_lookup: dict[s
     card_id: str = raw_fields[shandalar_const.SHANDALAR_CARD_FIELD_ID] 
     if not shandalar_data.looks_like_shandalar_card_id(card_id):
         return None
-    if not shandalar_data.validate_shandalar_card_id(card_id=card_id, shandalar_card_id_lookup=shandalar_card_id_lookup):
+    if not shandalar_data.validate_shandalar_card_id(card_id):
+        logger.warning(
+            "Attempted to parse invalid Shandalar ID '%s' (normalized: '%s')",
+            card_id,
+            shandalar_data.normalize_shandalar_card_id(card_id)
+        )        
         return None
     
     # Parse card quantity
@@ -199,7 +199,7 @@ def _validate_shandalar_card_quantity(quantity_field: str, raw_line: str) -> boo
     Returns:
         True if the quantity field is valid, otherwise False.
     """   
-    quantity: int | None = common_utils.parse_int(quantity_field)
+    quantity: int | None = parse_utils.parse_int(quantity_field)
    
     if quantity is None:
         logger.warning(

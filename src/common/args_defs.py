@@ -1,17 +1,17 @@
 """
-Shared argparse helpers for Shandalar Tools.
+Shared argument definitions for Shandalar Tools.
 
-Provides reusable argument definitions and parser utilities shared across
-multiple CLI entry points. Centralizing shared arguments helps maintain
+Provides reusable CLI argument definitions shared across multiple
+entry points. Centralizing shared arguments helps maintain
 consistent CLI behavior, validation, and help text across tools.
 """
-from common.common_const import ENCODING_SCAN_VALID_VALUES
+from common.file_types import EncodingScanMode
 import argparse
 
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def add_encoding_scan_argument(parser: argparse.ArgumentParser) -> None:
+def add_encoding_scan_mode_argument(parser: argparse.ArgumentParser) -> None:
     """
     Add the shared encoding scan mode argument to a CLI parser.
 
@@ -24,7 +24,7 @@ def add_encoding_scan_argument(parser: argparse.ArgumentParser) -> None:
     """    
     parser.add_argument(
         "-s", "--encoding-scan",
-        choices=ENCODING_SCAN_VALID_VALUES,
+        choices=EncodingScanMode.options(),
         help=(
             "Encoding detection mode: "
             "auto (use built-in defaults), "

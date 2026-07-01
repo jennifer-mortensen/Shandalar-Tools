@@ -4,6 +4,7 @@ Shared MTG domain types.
 Defines common enums and dataclasses used to represent cards, decks,
 colors, and deck formats in a format-independent manner.
 """
+from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum
 from mtg import mtg_const
@@ -91,7 +92,7 @@ class Card:
     quantity: int = 1
     shandalar_id: str = ""
     name: str = ""
-    scryfall_code: str = ""
+    edition_code: str = ""
 
 def _build_default_sideboards() -> dict[Color, ColorSideboard]:
     """
@@ -126,4 +127,11 @@ class Deck:
     color_sideboards: dict[Color, ColorSideboard] = field(default_factory=_build_default_sideboards)
 
     def sorted_colors(self) -> list[Color]:
+        """
+        Retrieve deck colors in canonical MTG color order.
+
+        Returns:
+            The deck's colors sorted according to the standard
+            MTG color sequence: White, Blue, Black, Red, Green.
+        """        
         return sorted(self.colors, key=COLOR_ORDER.get)

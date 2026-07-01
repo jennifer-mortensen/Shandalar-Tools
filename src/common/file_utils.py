@@ -1,23 +1,44 @@
 """
-File reading and encoding utilities for Shandalar Tools.
+File reading, parsing, and encoding utilities for Shandalar Tools.
 
-Provides helpers for detecting file encoding, reading CSV columns,
-reading sections of text files, and safely opening files with
-automatic encoding detection.
+Provides helpers for detecting file encodings, opening files with
+automatic encoding detection, reading CSV data, and extracting
+structured content from text files.
 """
 from collections.abc import Iterator
-from common import common_const, common_utils
+from common import collection_utils, file_const, paths, string_utils
 from contextlib import contextmanager
 from pathlib import Path
 from typing import TextIO
-import csv
-import logging
+import csv, logging
 
 logger = logging.getLogger(__name__)
 
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
+def archive(file_path: Path) -> None:
+    """
+    Archive a file.
+
+    Renames the specified file to its corresponding backup path,
+    replacing any existing backup.
+
+    Args:
+        file_path: The file to archive.
+
+    Raises:
+        FileNotFoundError: If the file does not exist.
+        OSError: If the file cannot be archived.
+    """
+    backup_path: Path = paths.build_backup_file_path(file_path)
+
+    if backup_path.exists():
+        backup_path.unlink()
+
+    logger.info("Archiving '%s' to '%s'.", file_path, backup_path)
+    file_path.replace(backup_path)    
+
 def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     """
     Detect the encoding of a file by attempting to decode its contents.
@@ -34,12 +55,12 @@ def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     Returns:
         The detected file encoding, or FALLBACK_ENCODING if detection fails.
     """   
-    read_size: int = -1 if full_scan else common_const.FILE_ENCODING_READ_SIZE_DEFAULT
+    read_size: int = -1 if full_scan else file_const.FILE_ENCODING_READ_SIZE_DEFAULT
 
     with file_path.open("rb") as file:
         raw_data = file.read(read_size)
 
-    for enc in common_const.FILE_ENCODINGS:
+    for enc in file_const.FILE_ENCODINGS:
         try:
             raw_data.decode(encoding=enc)
             return enc
@@ -47,8 +68,8 @@ def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
             continue
 
     # Safe fallback if no encoding detected
-    logger.warning("Failed to detect file encoding for %s. Using %s fallback.", file_path, common_const.FALLBACK_ENCODING)
-    return common_const.FALLBACK_ENCODING
+    logger.warning("Failed to detect file encoding for %s. Using %s fallback.", file_path, file_const.FALLBACK_ENCODING)
+    return file_const.FALLBACK_ENCODING
 
 def ensure_extension(file_path: Path, extension: str) -> Path:
     """
@@ -68,6 +89,13 @@ def ensure_extension(file_path: Path, extension: str) -> Path:
         return file_path
 
     return Path(str(file_path) + extension)
+
+def is_comment(line: str, prefixes: list[str] | None = None) -> bool:
+    """
+    Check whether a string should be treated as a comment line.
+    """
+    prefixes = prefixes or [file_const.COMMENT_PREFIX]
+    return string_utils.has_any_prefix(line.strip(), prefixes)
 
 def load_raw_file(file_path: Path, encoding_full_scan: bool = False) -> str:
     """
@@ -117,7 +145,7 @@ def open_file(file_path: Path, encoding_full_scan: bool = False, newline: str | 
 def read_csv_column(
     file_path: Path,
     column_number: int,
-    csv_delimiter: str = common_const.DEFAULT_CSV_DELIMITER, 
+    csv_delimiter: str = file_const.DEFAULT_CSV_DELIMITER, 
     skip_prefixes: str | list[str] | None = None,
     encoding_full_scan: bool = False
 ) -> Iterator[str]:
@@ -137,7 +165,7 @@ def read_csv_column(
         encoding_full_scan: If True, reads the entire file to detect encoding.
             If False, reads only the first 10,240 bytes.
     """    
-    skip_prefixes = [p.lower() for p in common_utils.to_list(skip_prefixes)]
+    skip_prefixes = [p.lower() for p in collection_utils.to_list(skip_prefixes)]
 
     with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, newline="") as file:
         reader = csv.reader(file, delimiter=csv_delimiter)
@@ -149,7 +177,7 @@ def read_csv_column(
             
             # Check skip prefixes
             cell_lower: str = row[0].strip().lower()
-            if skip_prefixes and common_utils.has_any_prefix(line=cell_lower, prefixes=skip_prefixes):
+            if skip_prefixes and string_utils.has_any_prefix(line=cell_lower, prefixes=skip_prefixes):
                 continue
 
             if column_number < len(row):
@@ -159,7 +187,7 @@ def read_csv_column(
 
 def read_csv_rows(
     file_path: Path,
-    csv_delimiter: str = common_const.DEFAULT_CSV_DELIMITER,
+    csv_delimiter: str = file_const.DEFAULT_CSV_DELIMITER,
     encoding_full_scan: bool = False
 ) -> Iterator[list[str]]:
     """
@@ -214,8 +242,8 @@ def read_text_section(
     """    
     is_reading: bool = start_prefix is None
     start_prefix = start_prefix.lower() if start_prefix else None
-    end_prefixes = [p.lower() for p in common_utils.to_list(end_prefixes)]
-    skip_prefixes = [p.lower() for p in common_utils.to_list(skip_prefixes)]
+    end_prefixes = [p.lower() for p in collection_utils.to_list(end_prefixes)]
+    skip_prefixes = [p.lower() for p in collection_utils.to_list(skip_prefixes)]
 
     with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan) as file:
         for line in file:
@@ -234,11 +262,11 @@ def read_text_section(
                     continue
 
             # Check end prefixes
-            elif end_prefixes and common_utils.has_any_prefix(line=line_lower, prefixes=end_prefixes):
+            elif end_prefixes and string_utils.has_any_prefix(line=line_lower, prefixes=end_prefixes):
                 break
 
             # Check skip prefixes
-            if common_utils.has_any_prefix(line=line_lower, prefixes=skip_prefixes):
+            if string_utils.has_any_prefix(line=line_lower, prefixes=skip_prefixes):
                 continue
             
             yield clean_line

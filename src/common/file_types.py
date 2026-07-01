@@ -1,32 +1,19 @@
 """
-Shared enums and type helpers for Shandalar Tools.
+File-related type definitions for Shandalar Tools.
 
-Defines application-wide enums, typed configuration helpers, and other
-shared type structures used across multiple modules.
+Defines enums and other file handling types used for
+encoding detection and file processing operations.
 """
-from dataclasses import dataclass
 from enum import Enum
 
-# ==============================
-# DATACLASSES
-# ==============================
-@dataclass(frozen=True)
-class CliArgument:
-    """
-    Definition of a command-line argument.
-
-    Stores the short and long argument names along with any
-    associated help or migration guidance text used for
-    user-facing messages.
-    """
-    short_name: str
-    long_name: str
-    help_text: str
-
-# ==============================
-# ENUMS
-# ==============================
 class EncodingScanMode(Enum):
+    """
+    Controls how aggressively file encodings are detected.
+
+    AUTO uses tool-defined defaults, FAST performs a partial
+    scan for improved performance, and FULL scans the entire
+    file for maximum reliability.
+    """    
     AUTO = "auto"
     FAST = "fast"
     FULL = "full"
@@ -51,3 +38,10 @@ class EncodingScanMode(Enum):
         if self is EncodingScanMode.FAST:
             return False
         return default_full_scan
+    
+    @classmethod    
+    def options(cls) -> list[str]:
+        """
+        Return the valid string values for encoding scan mode.
+        """        
+        return [e.value for e in cls]

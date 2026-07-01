@@ -1,27 +1,24 @@
 """
-Runtime initialization and shared configuration access for Shandalar Tools.
+Runtime services for Shandalar Tools.
 
-Initializes bootstrap logging, loads shared application configuration,
-and exposes runtime configuration accessors for common cross-tool
-settings such as encoding behavior, logging preferences, and active
-Shandalar data selection.
+Initializes application services, manages cached resources, and
+maintains shared runtime state for the current application instance.
 """
-from common import common_const, common_utils, file_utils, log_utils, path_utils
-from common.common_types import EncodingScanMode
-from config import config_io
-from config.common_config import CommonConfig
+from common import log_manager, paths
 from pathlib import Path
-import json, logging
+from resources.managed_resource import ManagedResource, ResourceKey
+from resources.common_config import CommonConfig
+import logging
 
 logger = logging.getLogger(__name__)
 
-_active_common_config: CommonConfig | None = None
-_active_name_normalization_map: dict[str, str] | None = None
+_log_file_name: str | None = None
+_managed_resources: dict[ResourceKey, ManagedResource] = {}
 
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def initialize_runtime(log_name: str) -> None:
+def initialize_runtime(log_file_name: str) -> None:
     """
     Initialize shared runtime services for the application.
 
@@ -30,202 +27,171 @@ def initialize_runtime(log_name: str) -> None:
     logging behavior.
 
     Args:
-        log_name: Name of the log file to use for the current tool.
+        log_file_name: Name of the log file to use for the current tool.
             The file extension is optional.
     """
-    log_file_path: Path = path_utils.build_log_file_path(log_name)
-    log_utils.initialize_logging(log_file_path)
-    _initialize_common_config(log_file_path)
+    global _log_file_name
+    _log_file_name = log_file_name
+    log_manager.initialize_logging(log_file_name)
+    config: CommonConfig = CommonConfig()
+    register_resource(key=ResourceKey(CommonConfig), resource=config)
 
     # NOTE:
     # Runtime configuration is populated directly during initialization
     # and therefore bypasses the runtime setters that normally refresh
     # logging automatically. Refresh explicitly after initialization to
     # apply the loaded logging configuration.
-    log_utils.refresh_logging()
-    _initialize_name_normalization_map()
+    log_manager.refresh_logging(log_file_name=log_file_name, overwrite=config.io_encoding_scan_mode)
+
+def delete_resource(key: ResourceKey, invoke_termination: bool = True) -> bool:
+    """
+    Remove a managed resource from the runtime.
+
+    Removes the specified resource from the runtime registry and,
+    optionally, invokes its termination callback before removal.
+
+    Args:
+        key: The key of the resource to remove.
+        invoke_termination: Whether to invoke the resource's
+            termination callback before removing it from the
+            runtime.
+
+    Returns:
+        True if the resource was found and removed; otherwise
+        False.
+    """  
+    resource: ManagedResource | None = _managed_resources.pop(key, None)
+
+    if resource is not None:
+        if invoke_termination:
+            resource.on_terminate()
+        return True
+
+    logger.debug("Unable to delete resource with key '%s'. No such resource exists.", key)
+    return False
+
+def register_resource(key: ResourceKey, resource: ManagedResource) -> bool:
+    """
+    Register a managed resource with the runtime.
+
+    Associates a resource with a unique key so it can be
+    tracked, retrieved, and terminated by the runtime.
+    Validates that the resource type matches the type
+    expected by the specified resource key.
+
+    Args:
+        key: Unique identifier for the resource.
+        resource: The resource instance to register.
+
+    Returns:
+        True if the resource was registered; otherwise False
+        if a resource with the same key already exists.
+
+    Raises:
+        AssertionError: If the resource type does not match
+            the type expected by the specified resource key.
+    """
+    assert isinstance(resource, key.resource_type), (
+        f"Attempted to register resource of type "
+        f"'{type(resource).__name__}', but expected "
+        f"'{key.resource_type.__name__}'."
+    )
+
+    if _managed_resources.get(key) is None:
+        _managed_resources[key] = resource
+        return True
+    
+    logger.warning("Unable to register resource with key '%s'. A previous instance already exists.", key)
+    return False
+
+def terminate_resources() -> None:
+    """
+    Terminate all managed resources.
+
+    Invokes termination on every registered managed resource
+    and removes each resource from the runtime registry.
+    """    
+    for key in list(_managed_resources.keys()):
+        delete_resource(key) 
 
 # ==============================
 # PUBLIC GETTERS/SETTERS
 # ==============================
-def get_name_normalization_map() -> dict[str, str]:
+def get_log_file_name() -> str:
     """
-    Retrieve the active runtime name normalization map.
+    Retrieve the active runtime log file name.
 
     Returns:
-        The loaded name normalization map used to reconcile
-        known naming inconsistencies between external data
-        sources.
+        The configured log file name.
+
+    Raises:
+        AssertionError: If runtime has not been initialized.
     """    
-    return _active_name_normalization_map
+    assert _log_file_name is not None, "Attempted to retrieve log file name before runtime initialization."
+    return _log_file_name
 
-def get_shandalar_card_pool() -> str:
+def set_log_file_name(file_name: str) -> None:
     """
-    Retrieve the configured Shandalar card pool name.
+    Set the active runtime log file name.
 
-    Returns:
-        The configured Shandalar card pool name.
-    """
-    return _get_common_config().data_shandalar_card_pool
-
-def set_shandalar_card_pool(card_pool: str) -> None:
-    """
-    Override the active runtime Shandalar card pool name.
+    Refreshes the logging system when the configured log file
+    changes.
 
     Args:
-        card_pool: The Shandalar card pool to use for runtime lookups.
+        file_name: The new log file name.
     """    
-    _get_common_config().data_shandalar_card_pool = card_pool
+    global _log_file_name
+    assert _log_file_name is not None, "Attempted to override log file name before runtime initialization."
 
-def get_encoding_scan_mode(default_full_scan: bool = False) -> bool:
-    """
-    Retrieve the resolved encoding scan behavior.
-    """    
-    return _get_common_config().io_encoding_scan.resolve(default_full_scan)
+    if _log_file_name == file_name:
+        return
 
-def set_encoding_scan_mode(scan_mode: EncodingScanMode) -> None:
-    """
-    Retrieve the resolved encoding scan behavior.
+    _log_file_name = file_name
+    config: CommonConfig = get_resource(ResourceKey(CommonConfig))
 
-    Args:
-        default_full_scan: Default behavior used when the runtime
-            scan mode is AUTO.
+    assert config is not None, "Required CommonConfig resource is not registered."
 
-    Returns:
-        True if a full encoding scan should be performed,
-        otherwise False.
-    """
-    _get_common_config().io_encoding_scan = scan_mode
-
-def get_log_preview_limit() -> int:
-    """
-    Retrieve the configured log preview item limit.
-
-    Returns:
-        The maximum number of preview items displayed in log output.
-    """
-    return _get_common_config().log_preview_limit
-
-def set_log_preview_limit(preview_limit: int) -> None:
-    """
-    Override the active runtime log preview limit.
-
-    Args:
-        preview_limit: Maximum number of preview items to display in logs.
-    """
-    common_utils.validate_minimum(preview_limit, common_const.LOG_PREVIEW_LIMIT_MINIMUM, common_const.LOG_PREVIEW_LIMIT_FIELD_NAME)   
-    _get_common_config().log_preview_limit = preview_limit
-
-def get_log_overwrite() -> bool:
-    """
-    Retrieve the configured log overwrite behavior.
-
-    Returns:
-        True if log files should be overwritten, otherwise False.
-    """ 
-    return _get_common_config().log_overwrite
-
-def set_log_overwrite(overwrite_mode: bool) -> None:
-    """
-    Override the active runtime log overwrite behavior.
-
-    Updates both the stored runtime setting and the active file logging
-    handler configuration.
-
-    Args:
-        overwrite_mode: If True, recreate the log file in overwrite mode.
-            If False, append to the existing log file.
-    """
-    config = _get_common_config()
-    if config.log_overwrite == overwrite_mode: # avoid unnecessary handler updates
-        return 
-    config.log_overwrite = overwrite_mode
-    log_utils.refresh_logging()
+    log_manager.refresh_logging(log_file_name=file_name, overwrite=config.log_overwrite)
 
 def get_log_file_path() -> Path:
     """
-    Retrieve the active runtime log file path.
+    Resolve the active runtime log file path.
+
+    Builds the log file path from the active runtime log file
+    name.
 
     Returns:
-        The configured log file path for the current tool.
-    """    
-    return _get_common_config().log_file_path
-
-def set_log_file_path(file_path: Path) -> None:
-    """
-    Update the active runtime log file path.
-
-    Updates both the stored runtime setting and the active file
-    logging handler configuration.
-
-    Args:
-        file_path: New log file path to use. The file extension
-            is optional and will be normalized automatically.
-    """
-    normalized_path: Path = file_utils.ensure_extension(file_path=file_path, extension=common_const.FILE_TYPE_LOG)
-    config = _get_common_config()
-    if config.log_file_path == normalized_path: # avoid unnecessary handler updates
-        return
-    config.log_file_path = normalized_path
-    log_utils.refresh_logging()
-
-# ==============================
-# PRIVATE FUNCTIONS
-# ==============================
-def _initialize_common_config(log_file_path: Path) -> None:
-    """
-    Load and store the active runtime CommonConfig.
-
-    Builds the shared application configuration from config.toml,
-    overrides the configured log file name with the value supplied
-    by the caller, and stores the resulting configuration for
-    runtime access throughout the application.
-
-    Args:
-        log_file_path: Path to the log file to use for the current tool.
-            The file extension is optional.
+        The absolute path to the active log file.
 
     Raises:
-        ValueError: If configuration values are missing or invalid.
-        OSError: If the configuration file cannot be read.
-    """
-    global _active_common_config
-    _active_common_config = config_io.build_common_config(log_file_path)
+        AssertionError: If runtime has not been initialized.
+    """    
+    return paths.build_log_file_path(get_log_file_name())
 
-def _get_common_config() -> CommonConfig:
+def get_resource(key: ResourceKey) -> ManagedResource | None:
     """
-    Retrieve the active runtime CommonConfig.
+    Retrieve a managed resource from the runtime.
 
-    Serves as a centralized assertion wrapper around runtime config
-    access, ensuring runtime initialization has completed before
-    shared configuration values are accessed.
+    Validates that any registered resource associated with the
+    specified key matches the resource type defined by the key.
+
+    Args:
+        key: The resource identifier.
 
     Returns:
-        The active runtime CommonConfig.
-
-    Notes:
-        Runtime initialization must occur before this function is called.
-    """  
-    assert _active_common_config is not None, "Runtime configuration accessed before runtime initialization."
-    return _active_common_config
-
-def _initialize_name_normalization_map() -> None:
-    """
-    Load and cache the active name normalization map.
-
-    Reads the project-wide normalization map from disk and stores
-    it in runtime memory for fast lookup during string
-    normalization operations.
+        The registered resource associated with the specified
+        key, or None if no such resource exists.
 
     Raises:
-        OSError: If the normalization map file cannot be read.
-        KeyError: If the normalization map field is missing from
-            the data file.
-        json.JSONDecodeError: If the normalization map file
-            contains invalid JSON.
-    """    
-    global _active_name_normalization_map
-    
-    logger.info("Loading name normalization map...")    
-    with common_const.NAME_NORMALIZATION_MAP_PATH.open("r", encoding="utf-8") as file:
-        _active_name_normalization_map = json.load(file)[common_const.DATA_MAP_NORMALIZATION_MAP_FIELD]
+        AssertionError: If a registered resource exists for the
+            specified key but does not match the expected type.
+    """
+    resource: ManagedResource | None = _managed_resources.get(key)
+
+    # Guard against manual modification of the resource registry.
+    assert resource is None or isinstance(resource, key.resource_type), (
+        f"Found resource of type '{type(resource).__name__}', "
+        f"but expected type '{key.resource_type.__name__}'."
+    )
+
+    return resource

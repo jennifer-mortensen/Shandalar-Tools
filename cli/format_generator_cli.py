@@ -9,10 +9,10 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from common import args_utils, common_args, log_utils, path_utils, runtime
-from common.common_types import EncodingScanMode
-from config import config_io
-from config.format_generator_config import FormatGeneratorConfig
+from common import args_defs, args_utils, log_utils, paths, runtime, settings
+from common.file_types import EncodingScanMode
+from mtg import forge_types
+from resources import config_loader
 from pipeline import format_generator_const, format_generator_pipeline, format_generator_types
 from pipeline.format_generator_types import ForgeFormatInput, ForgeFormatOutput
 import argparse
@@ -30,11 +30,13 @@ def main() -> None:
         cli_args = parse_cli_args()
         validate_cli_args(cli_args)
 
-        config = config_io.build_format_generator_config()
-        apply_cli_args(args=cli_args, config=config)
+        config = config_loader.get_format_generator_config()
+        apply_cli_args(cli_args)
 
-        input_format: ForgeFormatInput = format_generator_pipeline.build_input_format(path_utils.build_format_config_path(config.format_config_file))
-        output_format: ForgeFormatOutput = format_generator_pipeline.build_output_format(input_format=input_format, config=config)
+        input_format: ForgeFormatInput = format_generator_pipeline.build_input_format(
+            paths.build_format_config_path(config.format_config_file_name)
+        )
+        output_format: ForgeFormatOutput = format_generator_pipeline.build_output_format(input_format)
         format_generator_pipeline.write_output_format(output_format)
 
         logger.info("Compilation completed successfully!")
@@ -63,12 +65,12 @@ def parse_cli_args() -> argparse.Namespace:
     )    
     parser.add_argument(
         "-o", "--output-format",
-        choices=format_generator_types.FORGE_FORMAT_VALID_VALUES,
+        choices=forge_types.FORGE_FORMAT_VALID_VALUES,
         help="Forge format type to be generated.",
     )
     parser.add_argument(
         "-i", "--input-file",
-        type=path_utils.build_format_config_path,
+        type=paths.build_format_config_path,
         help="TOML file describing the format to be generated.",
     )
     for argument in format_generator_const.DEPRECATED_ARGUMENTS:
@@ -79,7 +81,7 @@ def parse_cli_args() -> argparse.Namespace:
             default=False,
             help=args_utils.build_deprecated_arg_message(argument)
         )
-    common_args.add_encoding_scan_argument(parser)
+    args_defs.add_encoding_scan_mode_argument(parser)
 
     return parser.parse_args()
 
@@ -96,26 +98,24 @@ def validate_cli_args(args: argparse.Namespace) -> None:
         ValueError: If deprecated or unsupported arguments are provided.
     """
     if args_utils.has_any_arg(source_args=args, cli_arguments=format_generator_const.DEPRECATED_ARGUMENTS):
-        raise ValueError(format_generator_const.ERROR_DEPRECATED_ARGUMENTS)
+        raise ValueError(args_utils.build_deprecated_arg_message(format_generator_const.HELP_TEXT_DEPRECATED_ARGUMENTS))
 
-def apply_cli_args(args: argparse.Namespace, config: FormatGeneratorConfig) -> None:
+def apply_cli_args(args: argparse.Namespace) -> None:
     """
     Apply command-line arguments on top of the loaded configuration.
 
-    CLI arguments take precedence over config.toml values. Only applies
-    arguments that were explicitly provided by the user, mutating the
-    provided configuration object in place.
+    CLI arguments take precedence over configuration values. Only
+    arguments explicitly provided by the user are applied.
 
     Args:
         args: The parsed command-line arguments.
-        config: The configuration object to update.
-    """  
+    """
     if args.encoding_scan is not None:
-        runtime.set_encoding_scan_mode(EncodingScanMode(args.encoding_scan))
+        settings.set_encoding_scan_mode(EncodingScanMode(args.encoding_scan))
     if args.input_file is not None:
-        config.input_format_file = args.input_file
+        settings.set_format_config_file_name(args.input_file)
     if args.output_format is not None:
-        config.output_format_type = format_generator_types.parse_forge_format(args.output_format)
+        settings.set_output_format_type(format_generator_types.parse_forge_format(args.output_format))
 
 if __name__ == "__main__":
     main()

@@ -6,47 +6,43 @@
 # 6. Expected Forge Edition
 # 7. Generate map if not found. Prioritize: Date > Canonical > Alphabetical.
 
-from common import common_utils, runtime
-from mtg import forge_data, shandalar_data
-from mtg.shandalar_types import ShandalarCard
+from common import runtime, settings
+from resources import data_map_loader, lookup_loader
+from resources.data_map import DataMap
+from resources.forge_card_lookup import ForgeCardLookup
+from resources.shandalar_card_lookup import ShandalarCardLookup
+import logging
+
+logger = logging.getLogger(__name__)
 
 LOG_NAME: str = "shandalar_card_map_generator"
 
 def main() -> None:
     runtime.initialize_runtime(LOG_NAME)
 
-    forge_lookup: dict[str, set[str]] = forge_data.build_forge_card_name_lookup()
-    forge_scryfall_map: dict[str, str] = forge_data.read_forge_scryfall_map()
-    shandalar_lookup: dict[str, ShandalarCard] = shandalar_data.build_shandalar_card_id_lookup()
-    edition_map: dict[str, str] = shandalar_data.read_shandalar_edition_map()
+    forge_lookup: ForgeCardLookup = lookup_loader.get_forge_card_lookup()
+    shandalar_lookup: ShandalarCardLookup = lookup_loader.get_shandalar_card_lookup()
+    forge_code_map: DataMap = data_map_loader.get_forge_edition_to_code_map()
+    shandalar_edition_map: DataMap = data_map_loader.get_shandalar_to_forge_edition_map(settings.get_shandalar_dataset())
+    dataset: str = settings.get_shandalar_dataset()
 
     broken_references: set[str] = set()
 
-    for card in shandalar_lookup.values():
-        scryfall_code: str = card.resolve_set(edition_map)
-
-        if scryfall_code not in forge_scryfall_map:
-            print(f"Missing Scryfall code: {scryfall_code}")
-            continue
-
-        edition_name: str = forge_scryfall_map[scryfall_code]
+    for card in shandalar_lookup.cards.values():
+        edition_name: str = card.get_forge_edition(dataset)
+        edition_code: str = forge_code_map[edition_name]
 
         if edition_name not in forge_lookup:
-            print(f"Missing Forge edition: {edition_name}")
+            logger.warning(f"Missing Forge edition: %s", edition_name)
             continue
 
-        if not forge_data.card_exists(
-            edition_name=edition_name,
-            card_name=card.name,
-            forge_card_name_lookup=forge_lookup
-        ):
+        if not forge_lookup.contains_card(card_name=card.name, edition=edition_name):
             broken_references.add(card.name)
-
             print(
                 f"\nBroken Reference #{len(broken_references)}"
                 f"\n  Card: {card.name}"
                 f"\n  Set: {card.set}"
-                f"\n  Scryfall: {scryfall_code}"
+                f"\n  Forge Code: {edition_code}"
                 f"\n  Forge Edition: {edition_name}"
             )
 
