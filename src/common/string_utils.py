@@ -11,6 +11,39 @@ from resources.data_map import DataMap
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
+def extract_text_field(text: str, field_name: str, case_sensitive: bool = False, delimiter: str = "\n") -> str | None:
+    """
+    Extract the value of a delimited text field.
+
+    Searches the supplied text for a field in the form
+    `<field_name>=<value>` and returns the associated value.
+
+    Field-name matching is case-insensitive by default. Leading and
+    trailing whitespace is ignored for each delimited record.
+
+    Args:
+        text: The delimited text to search.
+        field_name: The name of the field to retrieve.
+        case_sensitive: Whether the field name comparison should be
+            case-sensitive.
+        delimiter: The delimiter separating text records.
+
+    Returns:
+        The field value if found; otherwise None.
+    """ 
+    prefix: str = f"{field_name}="
+    if not case_sensitive:
+        prefix = sanitize_string(prefix)
+    
+    for line in text.split(delimiter):
+        line = line.strip()
+        field_line: str = line if case_sensitive else line.lower()
+
+        if field_line.startswith(prefix):
+            return line[len(prefix):]
+    
+    return None
+
 def filter_prefixes_from_set(items: set[str], prefixes: list[str]) -> set[str]:
     """
     Return a copy of a set with prefixed entries removed.
@@ -115,6 +148,24 @@ def sanitize_set(items: set[str]) -> set[str]:
         A set containing the sanitized strings.
     """
     return {sanitize_string(i) for i in items}
+
+def sanitized_starts_with(text: str, prefix: str) -> bool:
+    """
+    Determine whether text begins with the specified prefix.
+
+    Performs a case-insensitive comparison after sanitizing both
+    the text and prefix using the project's standard string
+    normalization rules.
+
+    Args:
+        text: The text to examine.
+        prefix: The prefix to compare against.
+
+    Returns:
+        True if the sanitized text begins with the sanitized
+        prefix; otherwise False.
+    """    
+    return sanitize_string(text).startswith(sanitize_string(prefix))
 
 def sanitize_string(string: str) -> str:
     """

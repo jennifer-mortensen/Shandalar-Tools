@@ -97,6 +97,23 @@ def is_comment(line: str, prefixes: list[str] | None = None) -> bool:
     prefixes = prefixes or [file_const.COMMENT_PREFIX]
     return string_utils.has_any_prefix(line.strip(), prefixes)
 
+def is_section_header(line: str) -> bool:
+    """
+    Determine whether a line is a section header.
+
+    Leading and trailing whitespace is ignored. A section header
+    is a line enclosed in square brackets, such as '[Main]' or
+    '[Sideboard]'.
+
+    Args:
+        line: The line to examine.
+
+    Returns:
+        True if the line is a section header; otherwise False.
+    """
+    line = line.strip()    
+    return line.startswith("[") and line.endswith("]")
+
 def load_raw_file(file_path: Path, encoding_full_scan: bool = False) -> str:
     """
     Read and return the full contents of a text file.

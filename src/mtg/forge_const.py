@@ -11,6 +11,8 @@ the Forge data formats.
 # ==============================
 # Sections
 FORGE_DECK_MAIN_HEADER: str = "[Main]"
+# Fields
+FORGE_DECK_NAME_PREFIX: str = "Name="
 
 # ==============================
 # FORGE EDITIONS
