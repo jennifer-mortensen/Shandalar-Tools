@@ -40,6 +40,29 @@ def build_deck(deck_name: str) -> Deck:
 # ==============================
 # HIGH LEVEL FUNCTIONS
 # ==============================
+def get_deck_type(raw_deck: str) -> DeckType:
+    """
+    Determine the detected deck format from a raw deck file.
+
+    Attempts to identify the deck format using known format signatures.
+    If the file does not match the Forge deck format, the deck is assumed
+    to be a Shandalar deck.
+
+    Args:
+        raw_deck: The full raw contents of the deck file.
+
+    Returns:
+        The detected deck format type.
+    """    
+    logger.info("Determining deck format...")
+
+    if forge_deck.is_forge_deck(raw_deck):
+        logger.info("Deck file appears to be of Forge format.")
+        return DeckType.FORGE
+    
+    logger.info("Deck file does not appear to be of Forge format. Defaulting to Shandalar format.")
+    return DeckType.SHANDALAR
+
 def write_translated_deck(deck: Deck, file_name: str) -> None:
     """
     Write a deck to disk using its translated deck format.

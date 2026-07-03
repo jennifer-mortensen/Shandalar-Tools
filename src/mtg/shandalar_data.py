@@ -99,4 +99,4 @@ def validate_shandalar_card_id(card_id: str, dataset: str | None = None) -> bool
     normalized_card_id: str = normalize_shandalar_card_id(card_id)
     lookup: ShandalarCardLookup = lookup_loader.get_shandalar_card_lookup(dataset)    
 
-    return normalized_card_id in lookup.cards
+    return normalized_card_id in lookup

@@ -6,6 +6,7 @@ model and deck structures.
 """
 
 # ==============================
-# MTG CONSTANTS
+# DECK STRUCTURE
 # ==============================
+CARD_MINIMUM_QUANTITY: int = 1
 COLOR_SIDEBOARD_MAX_CARDS: int = 3

@@ -45,7 +45,7 @@ def main() -> None:
         )
 
         logger.info("Collecting editions from dataset '%s'...", dataset)
-        for card in shandalar_lookup.cards.values():
+        for card in shandalar_lookup.values():
             if card.edition in edition_map:
                 continue
 

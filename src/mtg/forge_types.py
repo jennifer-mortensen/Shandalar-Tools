@@ -7,9 +7,30 @@ Forge format names.
 """
 from dataclasses import dataclass
 from enum import Enum
+from typing import NamedTuple
 
 # ==============================
-# DATACLASSES
+# CLASSES
+# ==============================
+class ForgeCardFields(NamedTuple):
+    """
+    Parsed fields from a Forge deck entry.
+
+    Attributes:
+        quantity: The number of copies.
+        name: The card name.
+        edition_code: The forge edition code
+            used to locate the edition file
+            containing the card.
+        art_variant: The unique art variant.
+    """    
+    quantity: int
+    name: str
+    edition_code: str
+    art_variant: int
+
+# ==============================
+# PRIVATE CLASSES
 # ==============================
 @dataclass
 class _ForgeFormatData:

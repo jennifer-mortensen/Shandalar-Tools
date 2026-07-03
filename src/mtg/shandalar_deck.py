@@ -5,8 +5,8 @@ Provides helpers for parsing, validating, and writing
 Shandalar deck files, including deck titles, sideboard
 sections, and card entries.
 """
-from common import paths, parse_utils, string_utils
-from mtg import shandalar_const, shandalar_data
+from common import paths, string_utils
+from mtg import mtg_data, mtg_deck, shandalar_const, shandalar_data
 from mtg.mtg_types import Card, Color, Deck, DeckType
 from mtg.shandalar_types import ShandalarCardFields
 from pathlib import Path
@@ -94,10 +94,13 @@ def parse_shandalar_deck_card(raw_line: str) -> Card | None:
     if card_fields is None:
         return None
     
+    edition_code: str = mtg_data.shandalar_id_to_forge_edition_code(card_fields.shandalar_id)
+    
     return Card(
-        quantity=card_fields[shandalar_const.SHANDALAR_CARD_FIELD_QUANTITY],
-        shandalar_id=card_fields[shandalar_const.SHANDALAR_CARD_FIELD_ID],
-        name=card_fields[shandalar_const.SHANDALAR_CARD_FIELD_NAME]
+        quantity=card_fields.quantity,
+        shandalar_id=card_fields.shandalar_id,
+        name=card_fields.name,
+        edition_code=edition_code
     )
 
 def parse_shandalar_deck_title(line: str) -> str:
@@ -146,9 +149,8 @@ def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
         raw_line: A raw card line from a Shandalar deck file.
 
     Returns:
-        A tuple containing the normalized card ID, quantity,
-        and card name, or None if the line does not represent
-        a valid Shandalar card entry.
+        The parsed Shandalar card fields, or None if the line does
+        not represent a valid Shandalar card entry.
     """
     raw_fields: list[str] = raw_line.strip().split()
 
@@ -162,20 +164,20 @@ def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
         )
         return None    
 
-    # Parse card ID
-    card_id: str = raw_fields[shandalar_const.SHANDALAR_CARD_FIELD_ID] 
-    if not shandalar_data.looks_like_shandalar_card_id(card_id):
+    # Parse Shandalar card ID
+    shandalar_id: str = raw_fields[shandalar_const.SHANDALAR_CARD_FIELD_ID] 
+    if not shandalar_data.looks_like_shandalar_card_id(shandalar_id):
         return None
-    if not shandalar_data.validate_shandalar_card_id(card_id):
+    if not shandalar_data.validate_shandalar_card_id(shandalar_id):
         logger.warning(
             "Attempted to parse invalid Shandalar ID '%s' (normalized: '%s')",
-            card_id,
-            shandalar_data.normalize_shandalar_card_id(card_id)
+            shandalar_id,
+            shandalar_data.normalize_shandalar_card_id(shandalar_id)
         )        
         return None
     
     # Parse card quantity
-    if not _validate_shandalar_card_quantity(quantity_field=raw_fields[shandalar_const.SHANDALAR_CARD_FIELD_QUANTITY], raw_line=raw_line):
+    if not mtg_deck.validate_card_quantity(quantity_field=raw_fields[shandalar_const.SHANDALAR_CARD_FIELD_QUANTITY], raw_line=raw_line):
         return None 
     quantity: int = int(raw_fields[shandalar_const.SHANDALAR_CARD_FIELD_QUANTITY]) # assign after validation to avoid conversion value error
     
@@ -183,38 +185,4 @@ def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
     contains_name: bool = len(raw_fields) > shandalar_const.SHANDALAR_CARD_FIELD_NAME # offset by 1 due to list index 0
     name: str = " ".join(raw_fields[shandalar_const.SHANDALAR_CARD_FIELD_NAME:]) if contains_name else ""
 
-    return (card_id, quantity, name)
-
-def _validate_shandalar_card_quantity(quantity_field: str, raw_line: str) -> bool:
-    """
-    Validate a Shandalar card quantity field.
-
-    Verifies that the quantity field can be parsed as an integer and
-    meets the minimum allowed card quantity.
-
-    Args:
-        quantity_field: The quantity field to validate.
-        raw_line: The source line being validated, used for logging.
-
-    Returns:
-        True if the quantity field is valid, otherwise False.
-    """   
-    quantity: int | None = parse_utils.parse_int(quantity_field)
-   
-    if quantity is None:
-        logger.warning(
-            "Shandalar card line has invalid quantity field ('%s'): '%s'",
-            quantity_field,
-            raw_line
-        )
-        return False   
-    if quantity < shandalar_const.SHANDALAR_CARD_MINIMUM_QUANTITY:
-        logger.warning(
-            "Shandalar card line has insufficient quantity (quantity: %d, minimum: %d): '%s'",
-            quantity,
-            shandalar_const.SHANDALAR_CARD_MINIMUM_QUANTITY,
-            raw_line
-        )
-        return False
-
-    return True  
+    return ShandalarCardFields(shandalar_id=shandalar_id, quantity=quantity, name=name)

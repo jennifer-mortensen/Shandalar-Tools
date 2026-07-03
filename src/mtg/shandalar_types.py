@@ -10,12 +10,13 @@ from dataclasses import dataclass
 from functools import cached_property
 from resources import data_map_loader
 from resources.data_map import DataMap
+from typing import NamedTuple
 import logging
 
 logger = logging.getLogger(__name__)
 
 # ==============================
-# DATACLASSES
+# CLASSES
 # ==============================
 @dataclass
 class ShandalarCard:
@@ -114,7 +115,15 @@ class ShandalarCard:
         """        
         return string_utils.normalize_string(self.name)
     
-# ==============================
-# TYPES
-# ==============================
-type ShandalarCardFields = tuple[str, int, str]
+class ShandalarCardFields(NamedTuple):
+    """
+    Parsed fields from a Shandalar deck entry.
+
+    Attributes:
+        shandalar_id: The Shandalar card identifier.
+        quantity: The number of copies.
+        name: The card name.
+    """    
+    shandalar_id: str
+    quantity: int
+    name: str
