@@ -34,3 +34,34 @@ FORGE_EDITION_CODE_PREFIX: str = "Code="
 # Card Fields
 FORGE_EDITION_CARD_NAME_TERMINATOR: str = "@"
 FORGE_EDITION_CARD_NAME_FIELD: int = 2
+
+# ==============================
+# FORMAT STRINGS
+# ==============================
+# Forge Format Output
+FORGE_FORMAT_BODY: str = """[format]
+Name:{name}
+Order:{order}
+Subtype:{subtype}
+Type:{type}
+Banned: {banned_cards}
+Additional: {additional_cards}
+Sets: {edition_codes}"""
+
+# Forge Deck Output
+FORGE_DECK_BODY: str = """[metadata]
+Name={name}
+[Main]
+{card_list}
+
+[Sideboard]
+[Avatar]
+[Schemes]
+[Conspiracy]
+[Dungeon]
+[Attractions]
+[Contraptions]
+"""
+
+# Forge Card Entry
+FORGE_CARD_ENTRY: str = "{quantity} {name}|{edition_code}|{art_variant}"

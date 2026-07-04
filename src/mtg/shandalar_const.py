@@ -56,3 +56,28 @@ SHANDALAR_CARD_MINIMUM_FIELDS: int = 2
 # IDENTIFIERS
 # ==============================
 SHANDALAR_ID_PREFIX: str = "."
+
+# ==============================
+# FORMAT STRINGS
+# ==============================
+# Shandalar Deck Output
+SHANDALAR_DECK_BODY: str = """{name} {color_identity}
+
+{card_list}
+
+.vNone
+{sideboard_vNone}
+.vBlack
+{sideboard_vBlack}
+.vBlue
+{sideboard_vBlue}
+.vGreen
+{sideboard_vGreen}
+.vRed
+{sideboard_vRed}
+.vWhite
+{sideboard_vWhite}
+"""
+
+# Forge Card Entry
+SHANDALAR_CARD_ENTRY = ".{shandalar_id}\t{quantity}\t{name}"

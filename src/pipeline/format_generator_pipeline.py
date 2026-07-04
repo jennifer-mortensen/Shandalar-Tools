@@ -8,7 +8,7 @@ card pool construction, ban list resolution, and rendering.
 from common import collection_utils, file_const, file_utils, log_utils, paths, settings, string_utils, toml_utils
 from resources import lookup_loader
 from resources.shandalar_card_lookup import ShandalarCardLookup
-from mtg import forge_data, shandalar_data
+from mtg import forge_const, forge_data, shandalar_data
 from pipeline import format_generator_const
 from pipeline.format_generator_types import ForgeFormatInput, ForgeFormatOutput
 from pathlib import Path
@@ -297,7 +297,7 @@ def _render_output_format(output_format: ForgeFormatOutput) -> str:
     Args:
         output_format: The fully resolved output format data to render.
     """
-    return format_generator_const.FORGE_FORMAT_BODY.format(
+    return forge_const.FORGE_FORMAT_BODY.format(
         name=output_format.format_name,
         order=output_format.order,
         subtype=output_format.subtype,
