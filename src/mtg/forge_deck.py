@@ -4,6 +4,7 @@ Forge deck parsing and serialization for Shandalar Tools.
 Provides helpers for detecting, reading, and writing Forge deck
 files and converting them to and from the shared Deck model.
 """
+from collections.abc import Iterable
 from common import file_utils, paths, parse_utils, string_utils
 from mtg import forge_const, mtg_deck
 from mtg.forge_types import ForgeCardFields
@@ -34,6 +35,7 @@ def build_deck_from_forge(raw_deck: str) -> Deck:
     logger.info("Building deck from Forge format...")    
     deck: Deck = Deck(type=DeckType.FORGE)
     deck.name = parse_deck_name(raw_deck)
+    logger.info("NAME = %s", deck.name)
     in_main: bool = False
 
     for line_number, line in enumerate(raw_deck.splitlines(), start=1):
@@ -143,7 +145,7 @@ def write_forge_deck(deck: Deck, file_name: str) -> None:
         file_name: Name of the deck file to write.
     """
     file_path: Path = paths.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.FORGE)
-    logger.info("Writing Forge deck to %s...", file_path)
+    file_utils.write_text(file_path=file_path, text=_render_forge_deck(deck), display_name="Forge deck")
 
 # ==============================
 # PRIVATE FUNCTIONS
@@ -226,3 +228,46 @@ def _validate_art_variant(art_variant_field: str, raw_line: str) -> bool:
     
     logger.warning("Card line has invalid art variant field ('%s'): '%s'", art_variant_field, raw_line)
     return False
+
+def _render_forge_deck(deck: Deck) -> str:
+    """
+    Render a deck as a Forge deck file.
+
+    Formats the deck metadata and main deck into the Forge
+    deck file format.
+
+    Args:
+        deck: The deck to render.
+
+    Returns:
+        The rendered Forge deck file contents.
+    """    
+    return forge_const.FORGE_DECK_BODY.format(
+        name=deck.name,
+        card_list=_render_forge_card_list(deck.cards)
+    )
+
+def _render_forge_card_list(cards: Iterable[Card]) -> str:
+    """
+    Render a list of cards as Forge deck entries.
+
+    Formats each card using the Forge deck card format and
+    joins the resulting entries into a newline-delimited card
+    list suitable for inclusion in a Forge deck file.
+
+    Args:
+        cards: The cards to render.
+
+    Returns:
+        The rendered Forge deck card list.
+    """    
+    card_entries: list[str] = [
+        forge_const.FORGE_CARD_ENTRY.format(
+            quantity=card.quantity,
+            name=card.name,
+            edition_code=card.edition_code,
+            art_variant=card.art_variant
+        )
+        for card in cards
+    ]
+    return "\n".join(card_entries)

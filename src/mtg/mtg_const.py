@@ -10,3 +10,4 @@ model and deck structures.
 # ==============================
 CARD_MINIMUM_QUANTITY: int = 1
 COLOR_SIDEBOARD_MAX_CARDS: int = 3
+COLOR_SHORT_NAME_THRESHOLD: int = 4

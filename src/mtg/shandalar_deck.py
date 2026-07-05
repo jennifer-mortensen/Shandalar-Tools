@@ -5,7 +5,8 @@ Provides helpers for parsing, validating, and writing
 Shandalar deck files, including deck titles, sideboard
 sections, and card entries.
 """
-from common import paths, string_utils
+from collections.abc import Iterable
+from common import file_utils, paths, string_utils
 from mtg import mtg_data, mtg_deck, shandalar_const, shandalar_data
 from mtg.mtg_types import Card, Color, Deck, DeckType
 from mtg.shandalar_types import ShandalarCardFields
@@ -130,8 +131,8 @@ def write_shandalar_deck(deck: Deck, file_name: str) -> None:
         deck: The deck to write.
         file_name: Name of the written deck file.
     """
-    file_path: Path = paths.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.SHANDALAR)    
-    logger.info("Writing Shandalar deck to %s...", file_path)            
+    file_path: Path = paths.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.SHANDALAR)
+    file_utils.write_text(file_path=file_path, text=_render_shandalar_deck(deck), display_name="Shandalar deck") 
 
 # ==============================
 # PRIVATE FUNCTIONS
@@ -186,3 +187,54 @@ def _parse_shandalar_card_fields(raw_line: str) -> ShandalarCardFields | None:
     name: str = " ".join(raw_fields[shandalar_const.SHANDALAR_CARD_FIELD_NAME:]) if contains_name else ""
 
     return ShandalarCardFields(shandalar_id=shandalar_id, quantity=quantity, name=name)
+
+def _render_shandalar_deck(deck: Deck) -> str:
+    """
+    Render a deck as a Shandalar deck file.
+
+    Formats the deck metadata, main deck, and color-specific
+    sideboards into the Shandalar deck file format.
+
+    Args:
+        deck: The deck to render.
+
+    Returns:
+        The rendered Shandalar deck file contents.
+    """    
+    color_display: str = deck.generate_color_display()
+    
+    return shandalar_const.SHANDALAR_DECK_BODY.format(
+        name=deck.name,
+        color_identity=f"({color_display})" if color_display else "",
+        card_list=_render_shandalar_card_list(deck.cards),
+        sideboard_vNone=_render_shandalar_card_list(deck.color_sideboards[Color.NONE]),
+        sideboard_vBlack=_render_shandalar_card_list(deck.color_sideboards[Color.BLACK]),
+        sideboard_vBlue=_render_shandalar_card_list(deck.color_sideboards[Color.BLUE]),
+        sideboard_vGreen=_render_shandalar_card_list(deck.color_sideboards[Color.GREEN]),
+        sideboard_vRed=_render_shandalar_card_list(deck.color_sideboards[Color.RED]),
+        sideboard_vWhite=_render_shandalar_card_list(deck.color_sideboards[Color.WHITE])
+    )
+
+def _render_shandalar_card_list(cards: Iterable[Card]) -> str:
+    """
+    Render a list of cards as Shandalar deck entries.
+
+    Formats each card using the Shandalar deck card format and
+    joins the resulting entries into a newline-delimited card
+    list suitable for inclusion in a Shandalar deck file.
+
+    Args:
+        cards: The cards to render.
+
+    Returns:
+        The rendered Shandalar deck card list.
+    """    
+    card_entries: list[str] = [
+        shandalar_const.SHANDALAR_CARD_ENTRY.format(
+            shandalar_id=card.shandalar_id,
+            quantity=card.quantity,
+            name=card.name
+        )
+        for card in cards
+    ]
+    return "\n".join(card_entries)

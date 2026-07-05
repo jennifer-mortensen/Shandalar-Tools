@@ -37,7 +37,7 @@ def main() -> None:
         config = config_loader.get_deck_converter_config()
         apply_cli_args(args=cli_args, config=config)
 
-        deck: Deck = deck_converter_pipeline.build_deck(deck_name="ForgeDeck")       # placeholder deck name
+        deck: Deck = deck_converter_pipeline.build_deck(deck_name="mydeck")       # placeholder deck name
         deck_converter_pipeline.write_translated_deck(deck=deck, file_name="mydeck") # placeholder file name
 
         logger.info("Finished execution without error.")

@@ -276,13 +276,7 @@ def write_output_format(output_format: ForgeFormatOutput) -> None:
         OSError: If the file cannot be written.
     """
     output_file_path: Path = paths.build_format_path(output_format.file_name)
-    
-    logger.info("Writing Forge format to %s...", output_file_path)
-    try:
-        with output_file_path.open("w", encoding=file_const.DEFAULT_ENCODING) as file:
-            file.write(_render_output_format(output_format))
-    except OSError as e:
-        raise OSError(f"Could not write to output file '{output_file_path}': {e}") from e
+    file_utils.write_text(file_path=output_file_path, text=_render_output_format(output_format), display_name="Forge format")
     
 # ==============================
 # HELPER FUNCTIONS

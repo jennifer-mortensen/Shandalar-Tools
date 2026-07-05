@@ -308,3 +308,36 @@ def read_text_field(file_path: Path, field_prefix: str, encoding_full_scan: bool
     )
 
     return line[len(field_prefix):] if line is not None else None
+
+def write_text(
+    file_path: Path,
+    text: str,
+    display_name: str = "file",
+    write_mode: str = "w",
+    encoding: str = file_const.DEFAULT_ENCODING
+) -> None:
+    """
+    Write text to a file.
+
+    Creates the file if it does not exist. Existing files are
+    overwritten by default.
+
+    Args:
+        file_path: Destination file path.
+        text: The text to write.
+        display_name: Human-readable file description.
+        write_mode: Supported write mode ("w", "a", or "x").
+        encoding: Text encoding.
+
+    Raises:
+        AssertionError: If an unsupported write mode is specified.
+        OSError: If the file could not be written.
+    """
+    assert write_mode in {"w", "a", "x"}, f"Unsupported write mode: '{write_mode}'."
+
+    logger.info("Writing %s to path: %s...", display_name, file_path)
+    try:
+        with file_path.open(write_mode, encoding=encoding) as file:
+            file.write(text)
+    except OSError as e:
+        raise OSError(f"Failed to write file '{file_path}': {e}") from e

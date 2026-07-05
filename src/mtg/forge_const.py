@@ -12,7 +12,7 @@ the Forge data formats.
 # Sections
 FORGE_DECK_MAIN_HEADER: str = "[Main]"
 # Fields
-FORGE_DECK_NAME_PREFIX: str = "Name="
+FORGE_DECK_NAME_PREFIX: str = "Name"
 # Cards
 FORGE_CARD_ATTRIBUTE_DELIMITER: str = "|"
 FORGE_CARD_MINIMUM_FIELDS: int = 4

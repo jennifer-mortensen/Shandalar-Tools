@@ -5,24 +5,72 @@ Defines common enums and dataclasses used to represent cards, decks,
 colors, and deck formats in a format-independent manner.
 """
 from __future__ import annotations
+from collections.abc import Iterator
 from dataclasses import dataclass, field
 from enum import Enum
 from mtg import mtg_const
 
 # ==============================
-# TYPES
+# ENUMS
 # ==============================
 class Color(Enum):
     """
     Supported MTG color identities.
     """
-    WHITE = "W"
-    BLUE = "U"    
-    BLACK = "B"
-    RED = "R"
-    GREEN = "G"
-    NONE = ""
+    WHITE = ("W", "White")
+    BLUE = ("U", "Blue")    
+    BLACK = ("B", "Black")
+    RED = ("R", "Red")
+    GREEN = ("G", "Green")
+    NONE = ("", "")
 
+    short: str
+    long: str
+
+    def __init__(self, short: str, long: str):
+        self.short = short
+        self.long = long
+
+"""
+Canonical ordering used for color identity sorting.
+"""
+COLOR_ORDER: dict[Color, int] = {
+    Color.WHITE: 0,
+    Color.BLUE: 1,
+    Color.BLACK: 2,
+    Color.RED: 3,
+    Color.GREEN: 4,
+    Color.NONE: 5
+}
+
+class DeckType(Enum):
+    """
+    Supported deck formats.
+    """
+    FORGE = "forge"
+    SHANDALAR = "shandalar"
+    NONE = "none" 
+
+    def inverse(self) -> "DeckType":
+        """
+        Return the opposite supported deck type.
+
+        Returns:
+            The opposite deck type.
+
+        Raises:
+            AssertionError: If the deck type is unsupported.
+        """        
+        if self is DeckType.FORGE:
+            return DeckType.SHANDALAR
+        if self is DeckType.SHANDALAR:
+            return DeckType.FORGE
+
+        raise AssertionError(f"Unhandled deck type: {self}")
+
+# ==============================
+# CLASSES
+# ==============================
 @dataclass
 class ColorSideboard:
     """
@@ -51,34 +99,31 @@ class ColorSideboard:
     def __post_init__(self) -> None:
         self.validate_card_count()
 
-class DeckType(Enum):
-    """
-    Supported deck formats.
-    """
-    FORGE = "forge"
-    SHANDALAR = "shandalar"
-    NONE = "none" 
-
-    def inverse(self) -> "DeckType":
+    # List Functions
+    def __iter__(self) -> Iterator[Card]:
         """
-        Return the opposite supported deck type.
+        Iterate over cards in the sideboard.
+        """
+        return iter(self.cards)
 
-        Returns:
-            The opposite deck type.
+    def __getitem__(self, index: int) -> Card:
+        """
+        Retrieve a card by index.
+        """
+        return self.cards[index]
 
-        Raises:
-            AssertionError: If the deck type is unsupported.
-        """        
-        if self is DeckType.FORGE:
-            return DeckType.SHANDALAR
-        if self is DeckType.SHANDALAR:
-            return DeckType.FORGE
+    def __len__(self) -> int:
+        """
+        Return the number of cards in the sideboard.
+        """
+        return len(self.cards)
 
-        raise AssertionError(f"Unhandled deck type: {self}")    
+    def __contains__(self, card: Card) -> bool:
+        """
+        Return whether the specified card exists in the sideboard.
+        """
+        return card in self.cards        
     
-# ==============================
-# DATACLASSES
-# ==============================
 @dataclass
 class Card:
     """
@@ -103,15 +148,6 @@ def _build_default_sideboards() -> dict[Color, ColorSideboard]:
     """   
     return { color: ColorSideboard(cards=[]) for color in Color}
 
-COLOR_ORDER: dict[Color, int] = {
-    Color.WHITE: 0,
-    Color.BLUE: 1,
-    Color.BLACK: 2,
-    Color.RED: 3,
-    Color.GREEN: 4,
-    Color.NONE: 5
-}
-
 @dataclass
 class Deck:
     """
@@ -135,3 +171,16 @@ class Deck:
             MTG color sequence: White, Blue, Black, Red, Green.
         """        
         return sorted(self.colors, key=COLOR_ORDER.get)
+    
+    def generate_color_display(self) -> str:
+        """
+        Generate a display string for the deck's color identity.
+        """
+        colors: list[Color] = [
+            color
+            for color in self.sorted_colors()
+            if color is not Color.NONE
+        ]
+        use_short_names: bool = len(colors) >= mtg_const.COLOR_SHORT_NAME_THRESHOLD
+
+        return "/".join(color.short for color in colors) if use_short_names else "/".join(color.long for color in colors)

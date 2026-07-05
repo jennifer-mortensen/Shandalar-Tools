@@ -80,4 +80,4 @@ SHANDALAR_DECK_BODY: str = """{name} {color_identity}
 """
 
 # Forge Card Entry
-SHANDALAR_CARD_ENTRY = ".{shandalar_id}\t{quantity}\t{name}"
+SHANDALAR_CARD_ENTRY = "{shandalar_id}\t{quantity}\t{name}"
