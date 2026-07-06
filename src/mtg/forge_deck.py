@@ -54,6 +54,7 @@ def build_deck_from_forge(raw_deck: str) -> Deck:
             logger.warning("Unable to parse card at line %d: '%s'", line_number, line)
             continue
         deck.cards.append(card)
+        mtg_deck.update_deck_colors(deck=deck, card=card)
 
     logger.info(
         "Generated deck with %s entries and %s cards.",

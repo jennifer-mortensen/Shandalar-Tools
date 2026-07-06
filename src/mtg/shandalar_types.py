@@ -8,6 +8,8 @@ or deck format handling.
 from common import settings, string_utils
 from dataclasses import dataclass
 from functools import cached_property
+from mtg import mtg_types
+from mtg.mtg_types import Color
 from resources import data_map_loader
 from resources.data_map import DataMap
 from typing import NamedTuple
@@ -32,6 +34,24 @@ class ShandalarCard:
     edition: str 
 
     # Public Functions
+    def get_colors(self) -> set[Color]:
+        """
+        Return the colors represented by this card's casting cost.
+
+        Scans the card's casting cost for colored mana symbols and
+        returns the corresponding set of MTG colors.
+
+        Returns:
+            The colors represented by the card's casting cost.
+        """        
+        colors: set[Color] = set()
+
+        for key, value in mtg_types.CASTING_COST_TO_COLOR.items():
+            if key in self.cost:
+                colors.add(value)
+
+        return colors
+
     def get_forge_edition(self, shandalar_dataset: str | None = None) -> str:
         """
         Resolve the card's edition to a Forge edition.

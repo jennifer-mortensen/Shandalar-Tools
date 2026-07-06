@@ -52,6 +52,7 @@ def build_deck_from_shandalar(raw_deck: str) -> Deck:
             continue
 
         current_deck_section.append(card)
+        mtg_deck.update_deck_colors(deck=deck, card=card)
 
     return deck
 

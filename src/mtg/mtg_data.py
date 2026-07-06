@@ -6,6 +6,7 @@ across shared resources. These functions expose normalized
 MTG concepts without depending on format-specific parsing
 or workflow orchestration.
 """
+from mtg.mtg_types import Card, Color, Deck
 from mtg.shandalar_types import ShandalarCard
 from resources import lookup_loader
 from resources.shandalar_card_lookup import ShandalarCardLookup
@@ -16,6 +17,16 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
+def update_deck_colors(deck: Deck, card: Card, dataset: str | None = None) -> set[Color]:
+    lookup: ShandalarCardLookup = lookup_loader.get_shandalar_card_lookup(dataset)
+    shandalar_card: ShandalarCard = lookup.get(card.shandalar_id)
+
+    if not shandalar_card:
+        raise ValueError("Could not find card with id '%s' in dataset '%s'.", card.shandalar_id, lookup.dataset)
+    colors: set[Color] = shandalar_card.get_colors()
+    for color in colors:
+        deck.colors.add(color)
+
 def shandalar_id_to_forge_edition_code(shandalar_id: str, dataset: str | None = None) -> str:
     """
     Resolve a Shandalar card ID to its corresponding Forge edition code.

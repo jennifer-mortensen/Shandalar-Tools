@@ -28,7 +28,7 @@ def build_deck(deck_name: str) -> Deck:
     """
     logger.info("Preparing to build deck '%s'...", deck_name)    
     raw_deck: str = mtg_deck.load_raw_deck(deck_name)
-    deck_type: DeckType = mtg_deck.get_deck_type(raw_deck)
+    deck_type: DeckType = get_deck_type(raw_deck)
 
     if deck_type is DeckType.FORGE:
         return forge_deck.build_deck_from_forge(raw_deck)

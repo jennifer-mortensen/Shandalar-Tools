@@ -4,7 +4,6 @@ Shared MTG-related constants.
 Defines format-independent constants used by the core MTG data
 model and deck structures.
 """
-
 # ==============================
 # DECK STRUCTURE
 # ==============================

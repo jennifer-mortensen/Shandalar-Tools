@@ -43,6 +43,17 @@ COLOR_ORDER: dict[Color, int] = {
     Color.NONE: 5
 }
 
+"""
+Maps colored mana symbols to their corresponding MTG colors.
+"""
+CASTING_COST_TO_COLOR: dict[str, Color] = {
+    "{W}": Color.WHITE,
+    "{U}": Color.BLUE,
+    "{B}": Color.BLACK,
+    "{R}": Color.RED,
+    "{G}": Color.GREEN    
+}
+
 class DeckType(Enum):
     """
     Supported deck formats.
