@@ -38,8 +38,6 @@ def build_deck_from_forge(raw_deck: str, deck_path: Path) -> Deck:
     logger.info("Building deck from Forge format...")    
     deck: Deck = Deck(type=DeckType.FORGE)
     deck.name = parse_deck_name(raw_deck)
-    logger.info("NAME = %s", deck.name)
-    in_main: bool = False
 
     sideboard_paths: dict[Color, Path] = _build_sideboard_paths(deck_path)
     _validate_sideboard_paths(sideboard_paths)
