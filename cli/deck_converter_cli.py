@@ -12,7 +12,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from common import args_defs, log_utils, runtime
 from resources import config_loader
 from resources.deck_converter_config import DeckConverterConfig
-from mtg.mtg_types import Deck
+from mtg.deck import Deck
 from pipeline import deck_converter_const, deck_converter_pipeline
 import argparse
 import logging

@@ -1,3 +1,4 @@
+from mtg.mtg_types import Color
 """
 Forge-specific constants for Shandalar Tools.
 
@@ -34,6 +35,21 @@ FORGE_EDITION_CODE_PREFIX: str = "Code="
 # Card Fields
 FORGE_EDITION_CARD_NAME_TERMINATOR: str = "@"
 FORGE_EDITION_CARD_NAME_FIELD: int = 2
+
+# ==============================
+# FILES
+# ==============================
+"""
+Maps sideboard colors to their Forge sideboard file suffixes.
+"""
+FORGE_SIDEBOARD_SUFFIXES: dict[Color, str] = {
+    Color.NONE: "_vNone",
+    Color.WHITE: "_vWhite",
+    Color.BLUE: "_vBlue",
+    Color.BLACK: "_vBlack",
+    Color.RED: "_vRed",
+    Color.GREEN: "_vGreen"
+}
 
 # ==============================
 # FORMAT STRINGS

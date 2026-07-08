@@ -7,8 +7,9 @@ files and converting them to and from the shared Deck model.
 from collections.abc import Iterable
 from common import file_utils, paths, parse_utils, string_utils
 from mtg import forge_const, mtg_deck
+from mtg.deck import Deck, DeckType
 from mtg.forge_types import ForgeCardFields
-from mtg.mtg_types import Card, Deck, DeckType
+from mtg.mtg_types import Card, Color
 from pathlib import Path
 from resources import lookup_loader
 from resources.shandalar_card_lookup import ShandalarCardLookup
@@ -19,15 +20,17 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def build_deck_from_forge(raw_deck: str) -> Deck:
+def build_deck_from_forge(raw_deck: str, deck_path: Path) -> Deck:
     """
     Build a normalized deck object from a Forge deck file.
 
-    Parses the raw Forge deck contents and converts them into the
+    Parses the raw Forge deck contents, loads any associated
+    sideboard deck files, and converts the combined data into the
     shared Deck representation.
 
     Args:
-        raw_deck: The raw contents of the Forge deck file.
+        raw_deck: The raw contents of the main Forge deck file.
+        deck_path: Path to the main Forge deck file.
 
     Returns:
         A normalized deck object.
@@ -38,23 +41,11 @@ def build_deck_from_forge(raw_deck: str) -> Deck:
     logger.info("NAME = %s", deck.name)
     in_main: bool = False
 
-    for line_number, line in enumerate(raw_deck.splitlines(), start=1):
-        line = line.strip()
-        
-        if not in_main:
-            if string_utils.sanitized_starts_with(text=line, prefix=forge_const.FORGE_DECK_MAIN_HEADER):
-                in_main = True
-            continue
-        if file_utils.is_section_header(line):
-            break
+    sideboard_paths: dict[Color, Path] = _build_sideboard_paths(deck_path)
+    _validate_sideboard_paths(sideboard_paths)
 
-        # Parse Cards
-        card: Card | None = parse_forge_deck_card(line)
-        if not card:
-            logger.warning("Unable to parse card at line %d: '%s'", line_number, line)
-            continue
-        deck.cards.append(card)
-        mtg_deck.update_deck_colors(deck=deck, card=card)
+    main_deck: list[Card] = _parse_forge_main_deck(raw_deck)
+    deck.set_cards(main_deck)
 
     logger.info(
         "Generated deck with %s entries and %s cards.",
@@ -151,6 +142,29 @@ def write_forge_deck(deck: Deck, file_name: str) -> None:
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
+def _build_sideboard_paths(deck_path: Path) -> dict[Color, Path]:
+    """
+    Build the available Forge sideboard file paths.
+
+    Constructs the conventional sideboard file paths associated
+    with a Forge deck and returns those that exist.
+
+    Args:
+        deck_path: Path to the main Forge deck file.
+
+    Returns:
+        A mapping of sideboard colors to their corresponding file
+        paths for all sideboard files that exist.
+    """
+    sideboard_paths: dict[Color, Path] = {}
+
+    for color, suffix in forge_const.FORGE_SIDEBOARD_SUFFIXES.items():
+        path: Path = deck_path.with_name(deck_path.stem + suffix + deck_path.suffix)
+        if path.exists():
+            sideboard_paths[color] = path
+
+    return sideboard_paths
+
 def _parse_forge_card_fields(raw_line: str) -> ForgeCardFields | None:
     """
     Parse a raw Forge card line into normalized card fields.
@@ -207,46 +221,39 @@ def _parse_forge_card_fields(raw_line: str) -> ForgeCardFields | None:
 
     return ForgeCardFields(quantity=quantity, name=name, edition_code=edition_code, art_variant=art_variant)
 
-def _validate_art_variant(art_variant_field: str, raw_line: str) -> bool:
+def _parse_forge_main_deck(raw_deck: str) -> list[Card]:
     """
-    Validate a Forge card art variant field.
+    Parse the main deck card list from a Forge deck.
 
-    Parses the supplied art variant field as an integer and
-    verifies that it meets the minimum supported art variant
-    value.
+    Extracts the cards contained in the Forge '[Main]' section
+    and returns them as normalized Card objects.
 
     Args:
-        art_variant_field: The raw art variant field to validate.
-        raw_line: The original card line, used for logging.
+        raw_deck: The raw contents of the Forge deck file.
 
     Returns:
-        True if the art variant field is valid; otherwise False.
+        The parsed cards from the Forge main deck.
     """    
-    art_variant: int | None = parse_utils.parse_int(art_variant_field)
-
-    if art_variant is not None and art_variant >= forge_const.ART_VARIANT_MINIMUM_VALUE:
-        return True
+    in_main: bool = False
+    cards: list[Card] = []
     
-    logger.warning("Card line has invalid art variant field ('%s'): '%s'", art_variant_field, raw_line)
-    return False
+    for line_number, line in enumerate(raw_deck.splitlines(), start=1):
+        line = line.strip()
+        
+        if not in_main:
+            if string_utils.sanitized_starts_with(text=line, prefix=forge_const.FORGE_DECK_MAIN_HEADER):
+                in_main = True
+            continue
+        if file_utils.is_section_header(line):
+            break
 
-def _render_forge_deck(deck: Deck) -> str:
-    """
-    Render a deck as a Forge deck file.
+        card: Card | None = parse_forge_deck_card(line)
+        if not card:
+            logger.warning("Unable to parse card at line %d: '%s'", line_number, line)
+            continue
+        cards.append(card)
 
-    Formats the deck metadata and main deck into the Forge
-    deck file format.
-
-    Args:
-        deck: The deck to render.
-
-    Returns:
-        The rendered Forge deck file contents.
-    """    
-    return forge_const.FORGE_DECK_BODY.format(
-        name=deck.name,
-        card_list=_render_forge_card_list(deck.cards)
-    )
+    return cards
 
 def _render_forge_card_list(cards: Iterable[Card]) -> str:
     """
@@ -272,3 +279,62 @@ def _render_forge_card_list(cards: Iterable[Card]) -> str:
         for card in cards
     ]
     return "\n".join(card_entries)
+
+def _render_forge_deck(deck: Deck) -> str:
+    """
+    Render a deck as a Forge deck file.
+
+    Formats the deck metadata and main deck into the Forge
+    deck file format.
+
+    Args:
+        deck: The deck to render.
+
+    Returns:
+        The rendered Forge deck file contents.
+    """    
+    return forge_const.FORGE_DECK_BODY.format(
+        name=deck.name,
+        card_list=_render_forge_card_list(deck.cards)
+    )
+
+def _validate_art_variant(art_variant_field: str, raw_line: str) -> bool:
+    """
+    Validate a Forge card art variant field.
+
+    Parses the supplied art variant field as an integer and
+    verifies that it meets the minimum supported art variant
+    value.
+
+    Args:
+        art_variant_field: The raw art variant field to validate.
+        raw_line: The original card line, used for logging.
+
+    Returns:
+        True if the art variant field is valid; otherwise False.
+    """    
+    art_variant: int | None = parse_utils.parse_int(art_variant_field)
+
+    if art_variant is not None and art_variant >= forge_const.ART_VARIANT_MINIMUM_VALUE:
+        return True
+    
+    logger.warning("Card line has invalid art variant field ('%s'): '%s'", art_variant_field, raw_line)
+    return False
+
+def _validate_sideboard_paths(sideboard_paths: dict[Color, Path]) -> None:
+    """
+    Validate the discovered Forge sideboard file paths.
+
+    Ensures that colored sideboard files are not present unless
+    the default 'none' sideboard file also exists.
+
+    Args:
+        sideboard_paths: Mapping of discovered sideboard colors to
+            their corresponding file paths.
+
+    Raises:
+        ValueError: If colored sideboard files are present without
+            a default 'none' sideboard file.
+    """
+    if Color.NONE not in sideboard_paths and sideboard_paths:
+        raise ValueError("Cannot process colored sideboards for a Forge deck without a default 'none' sideboard.")

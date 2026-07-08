@@ -6,7 +6,7 @@ application paths, including configuration files, logs,
 data resources, decks, and generated output.
 """
 from common import file_utils, path_const, settings
-from mtg.mtg_types import DeckType
+from mtg.deck import DeckType
 from pathlib import Path
 import logging
 

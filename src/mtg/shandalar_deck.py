@@ -8,7 +8,8 @@ sections, and card entries.
 from collections.abc import Iterable
 from common import file_utils, paths, string_utils
 from mtg import mtg_data, mtg_deck, shandalar_const, shandalar_data
-from mtg.mtg_types import Card, Color, Deck, DeckType
+from mtg.deck import Deck, DeckType
+from mtg.mtg_types import Card, Color
 from mtg.shandalar_types import ShandalarCardFields
 from pathlib import Path
 import logging

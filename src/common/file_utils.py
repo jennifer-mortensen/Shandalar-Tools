@@ -131,7 +131,8 @@ def load_raw_file(file_path: Path, encoding_full_scan: bool = False) -> str:
 
     Raises:
         OSError: If the file cannot be opened or read.
-    """    
+    """
+    logger.info("Loading '%s'...", file_path) 
     with open_file(file_path, encoding_full_scan=encoding_full_scan) as file:
         return file.read()
 

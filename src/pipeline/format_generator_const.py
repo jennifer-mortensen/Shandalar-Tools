@@ -35,11 +35,3 @@ INPUT_FORMAT_KEY_ADDITIONAL_CARDS = "additional_cards"
 # ==============================
 # STRING CONSTRUCTORS
 # ==============================
-FORGE_FORMAT_BODY = """[format]
-Name:{name}
-Order:{order}
-Subtype:{subtype}
-Type:{type}
-Banned: {banned_cards}
-Additional: {additional_cards}
-Sets: {edition_codes}"""
