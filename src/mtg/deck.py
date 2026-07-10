@@ -7,8 +7,10 @@ identity, and color-specific sideboards.
 """
 from dataclasses import dataclass, field
 from enum import Enum
-from mtg import mtg_const
-from mtg.mtg_types import Card, Color, COLOR_ORDER, ColorSideboard
+from mtg import mtg_const, mtg_types
+from mtg.card_list import CardList
+from mtg.mtg_types import Card, Color
+from mtg.sideboard import ColorSideboard
 from resources import lookup_loader
 from resources.shandalar_card_lookup import ShandalarCardLookup
 from mtg.shandalar_types import ShandalarCard
@@ -57,7 +59,7 @@ class DeckType(Enum):
 # CLASSES
 # ==============================
 @dataclass
-class Deck:
+class Deck(CardList):
     """
     Represents a normalized deck structure.
 
@@ -67,7 +69,6 @@ class Deck:
     type: DeckType = DeckType.NONE
     name: str = ""
     dataset: str | None = None
-    cards: list[Card] = field(default_factory=list)
     colors: set[Color] = field(default_factory=set)
     color_sideboards: dict[Color, ColorSideboard] = field(default_factory=_build_default_sideboards)
 
@@ -81,14 +82,9 @@ class Deck:
 
         Args:
             card: The card to add.
-        """        
-        existing_card: Card | None = self.find_card(card.shandalar_id)
-        
-        if existing_card:
-            existing_card.quantity = existing_card.quantity + card.quantity
-        else:
-            self.cards.append(card)
-            self.update_colors(card)
+        """
+        if super().add_card(card):
+            self.update_colors(card)        
 
     def remove_card(self, card: Card) -> None:
         """
@@ -104,41 +100,9 @@ class Deck:
         Raises:
             ValueError: If the deck does not contain the card or
                 contains fewer copies than requested.
-        """        
-        existing_card: Card | None = self.find_card(card.shandalar_id)
-
-        if not existing_card:
-            raise ValueError(f"Deck does not contain card '{card.name}' with Shandalar ID '{card.shandalar_id}'.")
-        if card.quantity > existing_card.quantity:
-            raise ValueError(
-                f"Deck contains insufficient quantity of card '{card.name}' with Shandalar ID '{card.shandalar_id}'.\n"
-                f"  Existing Quantity: {existing_card.quantity}\n"
-                f"  Attempted to Remove: {card.quantity}"
-            )
-        
-        existing_card.quantity = existing_card.quantity - card.quantity
-        
-        if existing_card.quantity == 0: # Must be 0 or greater. Otherwise, we would have raised a value error above.
-            self.cards.remove(existing_card)
-            self.rebuild_colors()
-
-    def find_card(self, shandalar_id: str) -> Card | None:
         """
-        Return the card with the specified Shandalar ID.
-
-        Searches the deck for a card matching the supplied Shandalar
-        card ID.
-
-        Args:
-            shandalar_id: The Shandalar card ID to locate.
-
-        Returns:
-            The matching card if found; otherwise None.
-        """        
-        for card in self.cards:
-            if card.shandalar_id == shandalar_id:
-                return card
-        return None
+        if super().remove_card(card):
+            self.rebuild_colors()        
 
     def set_cards(self, cards: list[Card]) -> None:
         """
@@ -147,7 +111,7 @@ class Deck:
         Args:
             cards: The cards to assign to the deck.
         """        
-        self.cards = cards
+        super().set_cards(cards)
         self.rebuild_colors()
 
     def generate_color_display(self) -> str:
@@ -171,7 +135,7 @@ class Deck:
             The deck's colors sorted according to the standard
             MTG color sequence: White, Blue, Black, Red, Green.
         """        
-        return sorted(self.colors, key=COLOR_ORDER.get)
+        return sorted(self.colors, key=mtg_types.COLOR_ORDER.get)
     
     def update_colors(self, card: Card) -> None:
         """
@@ -207,5 +171,5 @@ class Deck:
                 deck's configured dataset.
         """            
         self.colors.clear()
-        for card in self.cards:
+        for card in self:
             self.update_colors(card)

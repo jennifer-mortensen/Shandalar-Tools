@@ -8,6 +8,7 @@ sections, and card entries.
 from collections.abc import Iterable
 from common import file_utils, paths, string_utils
 from mtg import mtg_data, mtg_deck, shandalar_const, shandalar_data
+from mtg.card_list import CardList
 from mtg.deck import Deck, DeckType
 from mtg.mtg_types import Card, Color
 from mtg.shandalar_types import ShandalarCardFields
@@ -28,11 +29,11 @@ def build_deck_from_shandalar(raw_deck: str) -> Deck:
 
     Returns:
         A normalized deck object.
-    """ 
-    logger.info("Building deck from Shandalar format...")   
+    """
+    logger.info("Building deck from Shandalar format...")
 
     deck: Deck = Deck(type=DeckType.SHANDALAR)
-    current_deck_section: list[Card] = deck.cards
+    current_deck_section: CardList = deck
 
     for line_number, line in enumerate(raw_deck.splitlines(), start=1):
         line = line.strip()
@@ -41,7 +42,7 @@ def build_deck_from_shandalar(raw_deck: str) -> Deck:
 
         sideboard_color: Color | None = get_sideboard_color(line)
         if sideboard_color is not None:
-            current_deck_section = deck.color_sideboards[sideboard_color].cards
+            current_deck_section = deck.color_sideboards[sideboard_color]
             continue
 
         card: Card | None = parse_shandalar_deck_card(line)
@@ -52,8 +53,7 @@ def build_deck_from_shandalar(raw_deck: str) -> Deck:
                 logger.warning("Unable to parse card at line %d: '%s'", line_number, line)
             continue
 
-        current_deck_section.append(card)
-        mtg_deck.update_deck_colors(deck=deck, card=card)
+        current_deck_section.add_card(card)
 
     return deck
 
@@ -208,7 +208,7 @@ def _render_shandalar_deck(deck: Deck) -> str:
     return shandalar_const.SHANDALAR_DECK_BODY.format(
         name=deck.name,
         color_identity=f"({color_display})" if color_display else "",
-        card_list=_render_shandalar_card_list(deck.cards),
+        card_list=_render_shandalar_card_list(deck),
         sideboard_vNone=_render_shandalar_card_list(deck.color_sideboards[Color.NONE]),
         sideboard_vBlack=_render_shandalar_card_list(deck.color_sideboards[Color.BLACK]),
         sideboard_vBlue=_render_shandalar_card_list(deck.color_sideboards[Color.BLUE]),
