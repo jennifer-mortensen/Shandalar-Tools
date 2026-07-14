@@ -16,7 +16,7 @@ DATA_SHANDALAR_DATASET_DEFAULT: str = "shandalar_2016"
 IO_ENCODING_SCAN_MODE_DEFAULT: EncodingScanMode = EncodingScanMode.AUTO
 LOG_PREVIEW_LIMIT_DEFAULT: int = 5
 LOG_OVERWRITE_DEFAULT: bool = True
-# Format Generator
+# Format Builder
 FORMAT_CONFIG_FILE_NAME_DEFAULT = "custom_format"
 OUTPUT_FORMAT_TYPE_DEFAULT = ForgeFormat.EXTENDED
 
@@ -25,7 +25,7 @@ OUTPUT_FORMAT_TYPE_DEFAULT = ForgeFormat.EXTENDED
 # ==============================
 COMMON_CONFIG_DISPLAY_NAME: str = "common"
 DECK_CONVERTER_CONFIG_DISPLAY_NAME: str = "deck converter"
-FORMAT_GENERATOR_CONFIG_DISPLAY_NAME: str = "format generator"
+FORMAT_BUILDER_CONFIG_DISPLAY_NAME: str = "format builder"
 
 # ==============================
 # TOML CONSTANTS
@@ -40,8 +40,8 @@ CONFIG_KEY_ENCODING_SCAN_MODE: str = "encoding_scan_mode"
 CONFIG_SECTION_LOGGING: str = "logging"
 CONFIG_KEY_PREVIEW_LIMIT: str = "preview_limit"
 CONFIG_KEY_OVERWRITE: str = "overwrite"
-# [format_generator]
-CONFIG_SECTION_FORMAT_GENERATOR: str = "format_generator"
+# [format_builder]
+CONFIG_SECTION_FORMAT_BUILDER: str = "format_builder"
 CONFIG_KEY_FORMAT_CONFIG_FILE_NAME: str = "format_config_file_name"
 CONFIG_KEY_OUTPUT_FORMAT_TYPE: str = "output_format_type"
 # [deck_converter]
@@ -60,7 +60,7 @@ DEFAULT_CONFIG_TEMPLATE: str = """[{section_data}]
 {key_preview_limit} = {preview_limit}
 {key_overwrite} = {overwrite}
 
-[{section_format_generator}]
+[{section_format_builder}]
 {key_format_config_file_name} = "{format_config_file_name}"
 {key_output_format_type} = "{output_format_type}"
 

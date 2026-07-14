@@ -56,7 +56,7 @@ format-generator.exe
 ### Python Source
 
 ```bash
-python cli/run_format_generator.py
+python cli/run_format_builder.py
 ```
 
 This will:
@@ -95,10 +95,10 @@ format-generator.exe -s full
 When running from source:
 
 ```bash
-python cli/run_format_generator.py
-python cli/run_format_generator.py -o modern
-python cli/run_format_generator.py -i custom_format.toml
-python cli/run_format_generator.py -s full
+python cli/run_format_builder.py
+python cli/run_format_builder.py -o modern
+python cli/run_format_builder.py -i custom_format.toml
+python cli/run_format_builder.py -s full
 ```
 
 ---
@@ -179,7 +179,7 @@ Shandalar-Tools/
     │   └── config.toml
     ├── formats/
     ├── output_deck_translator/
-    └── output_format_generator/
+    └── output_format_builder/
 ```
 
 All directories should remain relative to the executable.
@@ -211,7 +211,7 @@ Full details written to the log file (default: C:\Users\jpers\Documents\My Hub\D
 INFO: Finalizing ban list...
 INFO: Finalizing output format for MTG: Forge...
 INFO: Generating Scryfall edition codes...
-INFO: Writing MTG: Forge format to C:\Users\jpers\Documents\My Hub\Development\Shandalar-Tools\user\output_format_generator\Extended.txt...
+INFO: Writing MTG: Forge format to C:\Users\jpers\Documents\My Hub\Development\Shandalar-Tools\user\output_format_builder\Extended.txt...
 INFO: Compilation completed successfully!
 ```
 
@@ -223,7 +223,7 @@ INFO: Compilation completed successfully!
 Shandalar-Tools/
 ├── cli/
 │   ├── run_deck_translator.py
-│   └── run_format_generator.py
+│   └── run_format_builder.py
 ├── data/
 │   ├── editions/
 │   └── shandalar_2016.csv
@@ -239,10 +239,10 @@ Shandalar-Tools/
 │   │   ├── common_config.py
 │   │   ├── config_io.py
 │   │   ├── deck_translator_config.py
-│   │   └── format_generator_config.py
+│   │   └── format_builder_config.py
 │   ├── deck_translator/
 │   │   └── translator_const.py
-│   └── format_generator/
+│   └── format_builder/
 │       ├── card_loader.py
 │       ├── card_processor.py
 │       ├── format_const.py
@@ -252,7 +252,7 @@ Shandalar-Tools/
     │   └── config.toml
     ├── formats/
     ├── output_deck_translator/
-    └── output_format_generator/
+    └── output_format_builder/
 ```
 
 ---

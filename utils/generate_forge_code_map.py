@@ -6,7 +6,7 @@ Forge edition names. The generated map is used to resolve edition
 identifiers across data sources and is written to the Forge data
 directory as JSON.
 """
-from common import args_defs, file_utils, log_utils, paths, path_const, runtime, settings
+from common import args, file_utils, log_utils, paths, path_const, runtime, settings
 from common.file_types import EncodingScanMode
 from mtg import forge_const
 from pathlib import Path
@@ -87,7 +87,7 @@ def parse_cli_args() -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    args_defs.add_encoding_scan_mode_argument(parser)
+    args.add_encoding_scan_mode_argument(parser)
 
     return parser.parse_args()
 

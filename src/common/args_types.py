@@ -4,18 +4,21 @@ Argument-related type definitions for Shandalar Tools.
 Defines dataclasses and other shared types used by CLI
 argument definitions and parsing helpers.
 """
-from argparse import Namespace
 from collections.abc import Callable, Sequence
 from common import parse_utils, paths, settings
 from common.file_types import EncodingScanMode
 from dataclasses import dataclass
+from functools import cached_property
 from mtg import forge_types
 from pathlib import Path
 from typing import Any
+import argparse
 
 # ==============================
 # DATACLASSES
 # ==============================
+
+
 @dataclass(frozen=True)
 class CliArgument:
     """
@@ -32,7 +35,7 @@ class CliArgument:
     action: str | None = None
     nargs: str | int | None = None
     const: Any = None
-    default: Any = None
+    default: Any = argparse.SUPPRESS
     type: type | Callable[[str], Any] | None = None
     choices: Sequence[Any] | None = None
     required: bool = False
@@ -48,6 +51,10 @@ class CliArgument:
         if self.short_name:
             return (self.short_name, self.long_name)
         return (self.long_name,)
+    
+    @cached_property
+    def attribute_name(self) -> str:
+        return self.long_name.removeprefix("--").replace("-", "_")
 
 # ==============================
 # ARGUMENT SETTERS
@@ -101,7 +108,7 @@ def _set_shandalar_dataset(dataset: str) -> None:
 # Deck Converter
 # TODO: Flesh out this section.
 
-# Format Generator
+# Format Builder
 def _set_output_format(output_format: str) -> None:
     """
     Set the configured Forge output format.
@@ -169,15 +176,7 @@ ARGUMENT_SHANDALAR_DATASET = CliArgument(
 # Deck Converter
 # TODO: Flesh out this section.
 
-# Format Generator
-ARGUMENT_OUTPUT_FORMAT = CliArgument(
-    short_name="-o",
-    long_name="--output-format",
-    choices=forge_types.FORGE_FORMAT_VALID_VALUES,
-    help_text="Forge format type to be generated.",
-    apply=_set_output_format,
-)
-
+# Format Builder
 ARGUMENT_FORMAT_CONFIG = CliArgument(
     short_name="-i",
     long_name="--format-config",
@@ -186,7 +185,15 @@ ARGUMENT_FORMAT_CONFIG = CliArgument(
     apply=_set_format_config,
 )
 
-# Format Generator (Deprecated)
+ARGUMENT_OUTPUT_FORMAT = CliArgument(
+    short_name="-o",
+    long_name="--output-format",
+    choices=forge_types.FORGE_FORMAT_VALID_VALUES,
+    help_text="Forge format type to be generated.",
+    apply=_set_output_format,
+)
+
+# Format Builder (Deprecated)
 ARGUMENT_EDITIONS = CliArgument(
     short_name="-e",
     long_name="--editions",

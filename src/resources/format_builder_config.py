@@ -1,11 +1,11 @@
 """
-Configuration for the format generator tool.
+Configuration for the format builder tool.
 
-Stores settings specific to the format generator,
+Stores settings specific to the format builder,
 including the input format file and output format.
 
 Most callers should access configuration values through
-settings.py rather than interacting with FormatGeneratorConfig
+settings.py rather than interacting with FormatBuilderConfig
 directly.
 """
 from common import paths, toml_utils
@@ -20,11 +20,11 @@ from resources.managed_resource import ManagedResource
 # DATA CLASSES
 # ==============================
 @dataclass
-class FormatGeneratorConfig(ManagedResource):
+class FormatBuilderConfig(ManagedResource):
     """
-    Configuration for the format generator tool.
+    Configuration for the format builder tool.
 
-    Includes format generator specific settings
+    Includes format builder specific settings
     for input and output format selection.
     """
     format_config_file_name: str = config_const.FORMAT_CONFIG_FILE_NAME_DEFAULT
@@ -50,9 +50,9 @@ class FormatGeneratorConfig(ManagedResource):
 
     def _load(self) -> None:  
         """
-        Load and validate the format generator configuration.
+        Load and validate the format builder configuration.
 
-        Reads the format generator configuration section and
+        Reads the format builder configuration section and
         applies the loaded values to this instance.
 
         Raises:
@@ -63,12 +63,12 @@ class FormatGeneratorConfig(ManagedResource):
                 validation.
         """        
         path: Path = paths.build_config_file_path()
-        data: dict = config_io.open_config(path, config_const.FORMAT_GENERATOR_CONFIG_DISPLAY_NAME)
+        data: dict = config_io.open_config(path, config_const.FORMAT_BUILDER_CONFIG_DISPLAY_NAME)
 
-        # [format_generator]
+        # [format_builder]
         section = toml_utils.verify_section(
             data=data,
-            section_name=config_const.CONFIG_SECTION_FORMAT_GENERATOR,
+            section_name=config_const.CONFIG_SECTION_FORMAT_BUILDER,
             error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
         )
         toml_utils.verify_and_set(

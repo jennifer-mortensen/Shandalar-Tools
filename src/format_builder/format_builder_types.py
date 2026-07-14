@@ -1,8 +1,8 @@
 """
-Dataclasses and enums for the Shandalar Tools format generator.
+Dataclasses and enums for the Shandalar Tools format builder.
 
 Defines the data structures and reference values used throughout the
-format generator pipeline, including Forge format metadata, pipeline
+format builder pipeline, including Forge format metadata, pipeline
 input/output models, and format parsing helpers.
 """
 from dataclasses import dataclass, field

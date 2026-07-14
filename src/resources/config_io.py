@@ -71,11 +71,11 @@ def _write_default_config(file_path: Path) -> None:
         OSError: If the configuration file cannot be written.
     """ 
     from resources.common_config import CommonConfig
-    from resources.format_generator_config import FormatGeneratorConfig
+    from resources.format_builder_config import FormatBuilderConfig
     from resources.deck_converter_config import DeckConverterConfig    
 
     common_config = CommonConfig(load_from_disk=False)
-    format_generator_config: FormatGeneratorConfig = FormatGeneratorConfig(load_from_disk=False)
+    format_builder_config: FormatBuilderConfig = FormatBuilderConfig(load_from_disk=False)
     deck_converter_config: DeckConverterConfig = DeckConverterConfig(load_from_disk=False)
 
     config_data: str = config_const.DEFAULT_CONFIG_TEMPLATE.format(
@@ -93,11 +93,11 @@ def _write_default_config(file_path: Path) -> None:
         key_overwrite=config_const.CONFIG_KEY_OVERWRITE,
         overwrite=str(common_config.log_overwrite).lower(),
 
-        section_format_generator=config_const.CONFIG_SECTION_FORMAT_GENERATOR,
+        section_format_builder=config_const.CONFIG_SECTION_FORMAT_BUILDER,
         key_format_config_file_name=config_const.CONFIG_KEY_FORMAT_CONFIG_FILE_NAME,
-        format_config_file_name=format_generator_config.format_config_file,
+        format_config_file_name=format_builder_config.format_config_file,
         key_output_format_type=config_const.CONFIG_KEY_OUTPUT_FORMAT_TYPE,
-        output_format_type=format_generator_config.output_format_type.name.lower(),
+        output_format_type=format_builder_config.output_format_type.name.lower(),
 
         section_deck_converter=config_const.CONFIG_SECTION_DECK_CONVERTER
     )

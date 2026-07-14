@@ -236,7 +236,7 @@ def resolve_shandalar_edition_map_file_path(dataset_name: str | None) -> Path:
     return build_shandalar_to_forge_edition_map_file_path()
 
 # ==============================
-# FORMAT GENERATOR FILES
+# FORMAT BUILDER FILES
 # ==============================
 def build_format_config_path(format_name: str) -> Path:
     """

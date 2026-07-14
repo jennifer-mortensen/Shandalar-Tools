@@ -8,7 +8,7 @@ directly.
 """
 from resources.common_config import CommonConfig
 from resources.deck_converter_config import DeckConverterConfig
-from resources.format_generator_config import FormatGeneratorConfig
+from resources.format_builder_config import FormatBuilderConfig
 from resources.managed_resource import ManagedResource, ResourceKey
 from common import runtime
 from typing import cast
@@ -42,18 +42,18 @@ def get_deck_converter_config() -> DeckConverterConfig:
     """ 
     return _get_config(ResourceKey(DeckConverterConfig))
 
-def get_format_generator_config() -> FormatGeneratorConfig:
+def get_format_builder_config() -> FormatBuilderConfig:
     """
-    Retrieve the format generator configuration.
+    Retrieve the format builder configuration.
 
     Returns the registered configuration when available.
     Otherwise, creates, registers, and returns a new
     configuration instance.
 
     Returns:
-        The format generator configuration.
+        The format builder configuration.
     """   
-    return _get_config(ResourceKey(FormatGeneratorConfig))
+    return _get_config(ResourceKey(FormatBuilderConfig))
 
 # ==============================
 # PRIVATE FUNCTIONS

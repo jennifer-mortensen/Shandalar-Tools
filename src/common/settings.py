@@ -11,7 +11,7 @@ from mtg.forge_types import ForgeFormat
 from pathlib import Path
 from resources import config_loader
 from resources.common_config import CommonConfig
-from resources.format_generator_config import FormatGeneratorConfig
+from resources.format_builder_config import FormatBuilderConfig
 
 # ==============================
 # RUNTIME SETTINGS
@@ -105,32 +105,32 @@ def set_shandalar_dataset(dataset: str) -> None:
     config.data_shandalar_dataset = dataset
 
 # ==============================
-# FORMAT GENERATOR SETTINGS
+# FORMAT BUILDER SETTINGS
 # ==============================
 def get_format_config_file_name() -> str:
     """
     Retrieve the configured format definition file name.
     """        
-    config: FormatGeneratorConfig = config_loader.get_format_generator_config()
+    config: FormatBuilderConfig = config_loader.get_format_builder_config()
     return config.format_config_file_name
 
 def set_format_config_file_name(file_name: str) -> None:
     """
     Set the configured format definition file name.
     """        
-    config: FormatGeneratorConfig = config_loader.get_format_generator_config()
+    config: FormatBuilderConfig = config_loader.get_format_builder_config()
     config.format_config_file_name = file_name
 
 def get_output_format_type() -> ForgeFormat:
     """
     Retrieve the configured output format.
     """        
-    config: FormatGeneratorConfig = config_loader.get_format_generator_config()
+    config: FormatBuilderConfig = config_loader.get_format_builder_config()
     return config.output_format_type
 
 def set_output_format_type(format_type: ForgeFormat) -> None:
     """
     Set the configured output format.
     """        
-    config: FormatGeneratorConfig = config_loader.get_format_generator_config()
-    config.output_format_type = format_type
+    config: FormatBuilderConfig = config_loader.get_format_builder_config()
+    config.FormatBuilderConfig = format_type

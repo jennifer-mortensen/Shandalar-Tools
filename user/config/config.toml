@@ -8,7 +8,7 @@ encoding_scan_mode = "auto"
 preview_limit = 5
 overwrite = true
 
-[format_generator]
+[format_builder]
 format_config_file_name = "custom_format"
 output_format_type = "extended"
 

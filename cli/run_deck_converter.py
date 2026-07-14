@@ -7,13 +7,15 @@ supported deck formats.
 """
 import sys
 from pathlib import Path
+
+from deck_converter import deck_converter_const
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from common import args_defs, log_utils, runtime
+from common import args, log_utils, runtime
 from resources import config_loader
 from resources.deck_converter_config import DeckConverterConfig
 from mtg.deck import Deck
-from pipeline import deck_converter_const, deck_converter_pipeline
+from deck_converter import deck_converter_pipeline
 import argparse
 import logging
 
@@ -61,7 +63,7 @@ def parse_cli_args() -> argparse.Namespace:
         epilog=deck_converter_const.CLI_EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    args_defs.add_encoding_scan_mode_argument(parser)
+    args.add_encoding_scan_mode_argument(parser)
 
     return parser.parse_args()
 

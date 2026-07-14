@@ -38,7 +38,7 @@ LOG_DIR: Path = BASE_DIR / "logs"
 # user
 USER_DIR: Path = BASE_DIR / "user"
 CONFIG_DIR: Path = USER_DIR / "config"
-# format generator
+# format builder
 FORMAT_CONFIG_DIR: Path = USER_DIR / "input_formats"
 FORMAT_DIR: Path = USER_DIR / "output_formats"
 # deck converter

@@ -9,8 +9,8 @@ from common import collection_utils, file_utils, log_utils, paths, settings, str
 from resources import lookup_loader
 from resources.shandalar_card_lookup import ShandalarCardLookup
 from mtg import forge_const, forge_data, shandalar_data
-from pipeline import format_generator_const
-from pipeline.format_generator_types import ForgeFormatInput, ForgeFormatOutput
+from format_builder import format_builder_const
+from format_builder.format_builder_types import ForgeFormatInput, ForgeFormatOutput
 from pathlib import Path
 import logging, tomllib
 
@@ -45,7 +45,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="editions",
         section=data,
-        key=format_generator_const.INPUT_FORMAT_KEY_EDITIONS,
+        key=format_builder_const.INPUT_FORMAT_KEY_EDITIONS,
         expected_type=list,
         item_type=str
     )
@@ -54,7 +54,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="additional_bans",
         section=data,
-        key=format_generator_const.INPUT_FORMAT_KEY_ADDITIONAL_BANS,
+        key=format_builder_const.INPUT_FORMAT_KEY_ADDITIONAL_BANS,
         expected_type=list,
         item_type=str
     )
@@ -63,7 +63,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
         target=input_format,
         field="additional_cards",
         section=data,
-        key=format_generator_const.INPUT_FORMAT_KEY_ADDITIONAL_CARDS,
+        key=format_builder_const.INPUT_FORMAT_KEY_ADDITIONAL_CARDS,
         expected_type=list,
         item_type=str
     )
