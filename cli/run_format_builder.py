@@ -14,7 +14,6 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 from common import args, log_utils, paths, runtime, settings
 from format_builder import format_builder_pipeline
 from format_builder.format_builder_types import ForgeFormatInput, ForgeFormatOutput
-import argparse
 import logging
 
 logger = logging.getLogger(__name__)
