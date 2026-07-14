@@ -7,7 +7,7 @@ consistent CLI behavior, validation, and help text across tools.
 """
 from collections.abc import Sequence
 from common.file_types import EncodingScanMode
-from common.args_types import CliArgument
+from common.args_types import CliArgument, CliDefinition
 import argparse
 
 # ==============================
@@ -35,19 +35,24 @@ def add_encoding_scan_mode_argument(parser: argparse.ArgumentParser) -> None:
         )
     )
 
-def process_args(parser: argparse.ArgumentParser, cli_arguments: Sequence[CliArgument]) -> None:
+def process_cli_args(cli: CliDefinition) -> None:
     """
-    Parse and apply command-line arguments.
+    Parse and apply command-line arguments for a CLI.
 
-    Registers the supplied argument definitions with the parser,
-    parses the command line, and applies any arguments provided
-    by the user.
+    Constructs an argument parser from the supplied CLI
+    definition, parses the command line, and applies any
+    arguments provided by the user.
 
     Args:
-        parser: The argument parser to configure.
-        cli_arguments: The CLI arguments to register and apply.
+        cli: The command-line interface definition to process.
     """    
-    _apply_args(cli_arguments=cli_arguments, parsed_args=_build_args(parser=parser, cli_arguments=cli_arguments))
+    parser = argparse.ArgumentParser(
+        prog=cli.prog,
+        description=cli.description,
+        epilog=cli.epilog,
+        formatter_class=cli.formatter_class,
+    )
+    _apply_args(cli_arguments=cli.arguments, parsed_args=_build_args(parser=parser, cli_arguments=cli.arguments))
 
 # ==============================
 # PRIVATE FUNCTIONS

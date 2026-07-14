@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 def main() -> None:
     try:
         runtime.initialize_runtime(format_builder_const.LOG_NAME)
-        process_cli_args()
+        args.process_cli_args(format_builder_const.CLI_DEFINITION)
 
         input_format: ForgeFormatInput = format_builder_pipeline.build_input_format(
             paths.build_format_config_path(settings.get_format_config_file_name())
@@ -39,18 +39,6 @@ def main() -> None:
         sys.exit(1)
     except Exception:
         log_utils.log_unexpected_and_exit()
-
-# ==============================
-# HIGH LEVEL FUNCTIONS
-# ==============================
-def process_cli_args() -> None:
-    parser = argparse.ArgumentParser(
-        prog=format_builder_const.CLI_PROG,
-        description=format_builder_const.CLI_DESCRIPTION,
-        epilog=format_builder_const.CLI_EPILOG,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    args.process_args(parser=parser, cli_arguments=format_builder_const.CLI_ARGUMENTS)    
 
 if __name__ == "__main__":
     main()

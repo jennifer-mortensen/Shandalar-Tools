@@ -17,8 +17,6 @@ import argparse
 # ==============================
 # DATACLASSES
 # ==============================
-
-
 @dataclass(frozen=True)
 class CliArgument:
     """
@@ -55,6 +53,21 @@ class CliArgument:
     @cached_property
     def attribute_name(self) -> str:
         return self.long_name.removeprefix("--").replace("-", "_")
+    
+@dataclass(frozen=True)
+class CliDefinition:
+    """
+    Definition of a command-line interface.
+
+    Stores the metadata required to construct an argument
+    parser along with the CLI arguments supported by the
+    application.
+    """    
+    prog: str
+    description: str
+    epilog: str
+    arguments: Sequence[CliArgument]    
+    formatter_class: type[argparse.HelpFormatter] = argparse.HelpFormatter
 
 # ==============================
 # ARGUMENT SETTERS
