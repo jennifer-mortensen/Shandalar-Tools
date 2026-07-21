@@ -5,7 +5,7 @@ Defines dataclasses and other shared types used by CLI
 argument definitions and parsing helpers.
 """
 from collections.abc import Callable, Sequence
-from common import parse_utils, paths, settings
+from common import file_utils, parse_utils, path_const, path_utils, settings
 from common.file_types import EncodingScanMode
 from dataclasses import dataclass
 from functools import cached_property
@@ -119,7 +119,33 @@ def _set_shandalar_dataset(dataset: str) -> None:
     settings.set_shandalar_dataset(dataset)
 
 # Deck Converter
-# TODO: Flesh out this section.
+def _set_input_deck_path(path_string: str) -> None:
+    """
+    Set the configured input deck file path.
+
+    Args:
+        path_string: Path to the input deck file.
+    """
+    path: Path = file_utils.ensure_extension(file_path=Path(path_string), extension=path_const.FILE_EXTENSION_DECK)
+    path = path_utils.absolute_path(path)
+
+    settings.set_input_deck_dir(path.parent)
+    settings.set_input_deck_file_name(path.name)
+
+def _set_output_deck_path(path_string: str) -> None:
+    """
+    Set the configured output deck file path.
+
+    Args:
+        path_string: Path to the output deck file.
+    """    
+    path: Path = file_utils.ensure_extension(file_path=Path(path_string), extension=path_const.FILE_EXTENSION_DECK)
+    path = path_utils.absolute_path(path)
+
+    settings.set_output_forge_deck_dir(path.parent)
+    settings.set_output_forge_deck_file_name(path.name)    
+    settings.set_output_shandalar_deck_dir(path.parent)
+    settings.set_output_shandalar_deck_file_name(path.name)
 
 # Format Builder
 def _set_output_format(output_format: str) -> None:
@@ -131,15 +157,29 @@ def _set_output_format(output_format: str) -> None:
     """    
     settings.set_output_format_type(output_format)
 
-def _set_format_config(format_config_file: Path) -> None:
+def _set_output_format_dir(output_dir: Path) -> None:
+    """
+    Set the configured output format directory.
+
+    Args:
+        output_dir: Directory where generated format files
+            will be written.
+    """
+    settings.set_output_format_dir(path_utils.absolute_path(output_dir))
+                                   
+def _set_format_config(path_string: str) -> None:
     """
     Set the configured format specification.
 
     Args:
-        format_config_file: Path to the format configuration file.
+        path_string: Path to the format configuration file.
     """    
-    # TODO: Update settings to take a path, not a file name.
-    settings.set_format_config_file_name(format_config_file)
+    path: Path = file_utils.ensure_extension(file_path=Path(path_string), extension=path_const.FILE_EXTENSION_FORMAT_CONFIG)
+
+    parent: Path = path.parent
+    if parent != Path():
+        settings.set_format_config_file_dir(parent)
+    settings.set_format_config_file_name(path.name)
 
 # ==============================
 # ARGUMENT DEFINITIONS
@@ -187,13 +227,24 @@ ARGUMENT_SHANDALAR_DATASET = CliArgument(
 )
 
 # Deck Converter
-# TODO: Flesh out this section.
+ARGUMENT_INPUT_DECK = CliArgument(
+    short_name="-i",
+    long_name="--input-deck",
+    help_text="",
+    apply=_set_input_deck_path,
+)
+
+ARGUMENT_OUTPUT_DECK = CliArgument(
+    short_name="-o",
+    long_name="--output-deck",
+    help_text="",
+    apply=_set_output_deck_path
+)
 
 # Format Builder
 ARGUMENT_FORMAT_CONFIG = CliArgument(
     short_name="-i",
     long_name="--format-config",
-    type=paths.build_format_config_path,
     help_text="TOML file describing the format to be generated.",
     apply=_set_format_config,
 )
@@ -204,6 +255,13 @@ ARGUMENT_OUTPUT_FORMAT = CliArgument(
     choices=forge_types.FORGE_FORMAT_VALID_VALUES,
     help_text="Forge format type to be generated.",
     apply=_set_output_format,
+)
+
+ARGUMENT_OUTPUT_FORMAT_DIR = CliArgument(
+    long_name="--output-dir",
+    help_text="Output directory for the generated Forge format.",
+    type=Path,
+    apply=_set_output_format_dir
 )
 
 # Format Builder (Deprecated)

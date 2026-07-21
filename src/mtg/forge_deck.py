@@ -132,7 +132,7 @@ def write_forge_deck(deck: Deck, file_name: str) -> None:
     """
     export_deck: Deck = _duplicate_default_sideboard(deck)
     
-    file_path: Path = paths.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.FORGE)
+    file_path: Path = paths.build_output_deck_file_path(path_string=file_name, deck_type=DeckType.FORGE)
     _write_sideboards(deck=export_deck, deck_path=file_path) # Write sideboards first to avoid partially exporting an invalid deck.
     file_utils.write_text(file_path=file_path, text=_render_forge_deck(cards=export_deck, name=export_deck.name), display_name="Forge deck")
 

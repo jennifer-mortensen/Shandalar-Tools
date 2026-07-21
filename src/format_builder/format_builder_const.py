@@ -28,6 +28,7 @@ CLI_DEFINITION: CliDefinition = CliDefinition(
         # Format Builder
         args_types.ARGUMENT_FORMAT_CONFIG,    
         args_types.ARGUMENT_OUTPUT_FORMAT,
+        args_types.ARGUMENT_OUTPUT_FORMAT_DIR,
         # Format Builder (Deprecated)
         args_types.ARGUMENT_EDITIONS,
         args_types.ARGUMENT_USED_BANNED

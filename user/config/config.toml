@@ -9,7 +9,15 @@ preview_limit = 5
 overwrite = true
 
 [format_builder]
-format_config_file_name = "custom_format"
+format_config_dir = "user/input_formats"
+format_config_name = "custom_format"
+output_format_dir = "user/output_formats"
 output_format_type = "extended"
 
 [deck_converter]
+input_deck_dir = "user/input_decks"
+input_deck_name = "mtg_deck"
+output_forge_deck_dir = "user/output_decks_forge"
+output_forge_deck_name = ""
+output_shandalar_deck_dir = "user/output_decks_shandalar"
+output_shandalar_deck_name = ""

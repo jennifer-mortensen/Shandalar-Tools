@@ -315,13 +315,14 @@ def write_text(
     text: str,
     display_name: str = "file",
     write_mode: str = "w",
-    encoding: str = file_const.DEFAULT_ENCODING
+    encoding: str = file_const.DEFAULT_ENCODING,
+    archive_existing: bool = True
 ) -> None:
     """
     Write text to a file.
 
     Creates the file if it does not exist. Existing files are
-    overwritten by default.
+    overwritten by default and may be archived beforehand.
 
     Args:
         file_path: Destination file path.
@@ -329,6 +330,8 @@ def write_text(
         display_name: Human-readable file description.
         write_mode: Supported write mode ("w", "a", or "x").
         encoding: Text encoding.
+        archive_existing: Whether to archive an existing file
+            before overwriting it.
 
     Raises:
         AssertionError: If an unsupported write mode is specified.
@@ -338,6 +341,8 @@ def write_text(
 
     logger.info("Writing %s to path: %s...", display_name, file_path)
     try:
+        if write_mode == "w" and archive_existing and file_path.exists():
+            archive(file_path)    
         with file_path.open(write_mode, encoding=encoding) as file:
             file.write(text)
     except OSError as e:

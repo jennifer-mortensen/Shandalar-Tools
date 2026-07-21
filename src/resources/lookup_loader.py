@@ -5,7 +5,7 @@ Provides lazy-loading accessors for cached lookup resources.
 Resources are created on demand, registered with the runtime,
 and reused for subsequent requests.
 """
-from common import paths, runtime
+from common import paths, runtime, settings
 from pathlib import Path
 from resources.forge_card_lookup import ForgeCardLookup
 from resources.managed_resource import ResourceKey
@@ -50,6 +50,8 @@ def get_shandalar_card_lookup(dataset: str | None = None) -> ShandalarCardLookup
     Returns:
         The requested Shandalar card lookup resource.
     """
+    if dataset is None:
+        dataset = settings.get_shandalar_dataset()
     file_path: Path = paths.build_shandalar_dataset_file_path(dataset)
     key: ResourceKey = ResourceKey(resource_type=ShandalarCardLookup, path=file_path)
     lookup: ShandalarCardLookup | None = runtime.get_resource(key)

@@ -133,7 +133,7 @@ def write_shandalar_deck(deck: Deck, file_name: str) -> None:
         deck: The deck to write.
         file_name: Name of the written deck file.
     """
-    file_path: Path = paths.build_output_deck_file_path(deck_name=file_name, deck_type=DeckType.SHANDALAR)
+    file_path: Path = paths.build_output_deck_file_path(path_string=file_name, deck_type=DeckType.SHANDALAR)
     file_utils.write_text(file_path=file_path, text=_render_shandalar_deck(deck), display_name="Shandalar deck") 
 
 # ==============================

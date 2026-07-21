@@ -8,7 +8,7 @@ Most callers should access configuration values through
 settings.py rather than interacting with FormatBuilderConfig
 directly.
 """
-from common import paths, toml_utils
+from common import file_utils, path_const, paths, path_utils, toml_utils
 from dataclasses import dataclass
 from mtg import forge_types
 from mtg.forge_types import ForgeFormat
@@ -27,7 +27,9 @@ class FormatBuilderConfig(ManagedResource):
     Includes format builder specific settings
     for input and output format selection.
     """
+    format_config_dir: Path = config_const.FORMAT_CONFIG_DIR_DEFAULT
     format_config_file_name: str = config_const.FORMAT_CONFIG_FILE_NAME_DEFAULT
+    output_format_dir: Path = config_const.OUTPUT_FORMAT_DIR_DEFAULT
     output_format_type: ForgeFormat = config_const.OUTPUT_FORMAT_TYPE_DEFAULT
     load_from_disk: bool = True
 
@@ -47,6 +49,24 @@ class FormatBuilderConfig(ManagedResource):
         """        
         if self.load_from_disk:
             self._load()
+
+    @staticmethod
+    def _ensure_format_config_extension(file_name: str) -> str:
+        """
+        Ensure that a format configuration file name has the
+        expected file extension.
+
+        Appends the default format configuration file extension
+        when one is not already present.
+
+        Args:
+            file_name: The format configuration file name, with
+                or without extension.
+
+        Returns:
+            The normalized format configuration file name.
+        """        
+        return str(file_utils.ensure_extension(Path(file_name), path_const.FILE_EXTENSION_FORMAT_CONFIG))
 
     def _load(self) -> None:  
         """
@@ -73,10 +93,29 @@ class FormatBuilderConfig(ManagedResource):
         )
         toml_utils.verify_and_set(
             target=self,
+            field="format_config_dir",
+            section=section,
+            key=config_const.CONFIG_KEY_FORMAT_CONFIG_DIR,
+            expected_type=str,
+            transform=path_utils.absolute_path,
+            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+        )
+        toml_utils.verify_and_set(
+            target=self,
             field="format_config_file_name",
             section=section,
             key=config_const.CONFIG_KEY_FORMAT_CONFIG_FILE_NAME,
             expected_type=str,
+            transform=self._ensure_format_config_extension,
+            error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
+        )        
+        toml_utils.verify_and_set(
+            target=self,
+            field="output_format_dir",
+            section=section,
+            key=config_const.CONFIG_KEY_OUTPUT_FORMAT_DIR,
+            expected_type=str,
+            transform=path_utils.absolute_path,
             error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
         )
         toml_utils.verify_and_set(
@@ -87,4 +126,4 @@ class FormatBuilderConfig(ManagedResource):
             expected_type=str,
             transform=forge_types.parse_forge_format,
             error_suffix=config_const.CONFIG_PARSE_ERROR_SUFFIX
-        ) 
+        )

@@ -5,7 +5,7 @@ Provides centralized helpers for constructing normalized
 application paths, including configuration files, logs,
 data resources, decks, and generated output.
 """
-from common import file_utils, path_const, settings
+from common import file_utils, path_const
 from mtg.deck import DeckType
 from pathlib import Path
 import logging
@@ -103,24 +103,21 @@ def build_edition_file_path(edition_name: str) -> Path:
 # ==============================
 # SHANDALAR DATA FILES
 # ==============================
-def build_shandalar_dataset_file_path(dataset: str | None = None) -> Path:
+def build_shandalar_dataset_file_path(dataset: str) -> Path:
     """
-    Build the path to a Shandalar dataset file.
+    Build the normalized path for a Shandalar dataset file.
 
-    Uses the supplied dataset when provided. Otherwise, the
-    currently configured card pool from runtime is used.
-
-    Ensures the expected file extension is present.
+    Resolves the supplied dataset name into the configured
+    datasets directory and automatically applies the expected
+    file extension if missing.
 
     Args:
-        dataset: Optional dataset name.
+        dataset: The dataset file name or path, with or without
+            the expected file extension.
 
     Returns:
-        Path to the requested Shandalar dataset file.
+        The normalized Shandalar dataset file path.
     """
-    if dataset is None:
-        dataset = settings.get_shandalar_dataset()
-
     return _resolve_path_from_string(
         path_string=dataset,
         extension=path_const.FILE_EXTENSION_SHANDALAR_DATA,
@@ -157,22 +154,23 @@ def build_name_to_normalized_name_map_path() -> Path:
         field_name="Name normalization map"
     )
 
-def build_shandalar_card_to_forge_edition_map_file_path() -> Path:
+def build_shandalar_card_to_forge_edition_map_file_path(dataset: str) -> Path:
     """
-    Build the path to the active Shandalar card map.
+    Build the normalized path for a Shandalar card map.
 
-    Constructs the card map path for the currently active
-    Shandalar card pool registered with the runtime.
+    Resolves the supplied dataset name into the corresponding
+    Shandalar card-to-Forge edition map file and automatically
+    applies the expected file extension if missing.
+
+    Args:
+        dataset: The dataset name used to construct the card
+            map file name.
 
     Returns:
-        The resolved path to the active Shandalar card map.
-
-    Raises:
-        AssertionError: If no active Shandalar card pool has
-            been registered with the runtime.
-    """     
+        The normalized Shandalar card map file path.
+    """  
     return _resolve_path_from_string(
-        path_string=f"{settings.get_shandalar_dataset()}{path_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_FILE_NAME_SUFFIX}",
+        path_string=f"{dataset}{path_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_FILE_NAME_SUFFIX}",
         extension=path_const.FILE_EXTENSION_DATA_MAP,
         target_dir=path_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_DIR,
         field_name="Shandalar card map path")
@@ -238,7 +236,7 @@ def resolve_shandalar_edition_map_file_path(dataset_name: str | None) -> Path:
 # ==============================
 # FORMAT BUILDER FILES
 # ==============================
-def build_format_config_path(format_name: str) -> Path:
+def build_format_config_path(path_string: str) -> Path:
     """
     Build the normalized path for an input format configuration file.
 
@@ -246,19 +244,19 @@ def build_format_config_path(format_name: str) -> Path:
     automatically applies the expected file extension if missing.
 
     Args:
-        format_name: The name of the format file, with or without
-            extension.
+        path_string: The format configuration file name or path,
+            with or without the expected file extension.
 
     Returns:
         The normalized format configuration file path.
     """
     return _resolve_path_from_string(
-        path_string=format_name,
+        path_string=path_string,
         extension=path_const.FILE_EXTENSION_FORMAT_CONFIG,
         target_dir=path_const.FORMAT_CONFIG_DIR,
         field_name="Format config file path")
 
-def build_format_path(format_name: str) -> Path:
+def build_format_path(path_string: str) -> Path:
     """
     Build the canonical path to a Forge format file.
 
@@ -267,7 +265,7 @@ def build_format_path(format_name: str) -> Path:
     extension if needed.
 
     Args:
-        format_name: The format file name or path fragment to resolve.
+        path_string: The format file name or path fragment to resolve.
 
     Returns:
         The resolved path to the Forge format file.
@@ -276,7 +274,7 @@ def build_format_path(format_name: str) -> Path:
         ValueError: If the format name is empty or otherwise invalid.
     """    
     return _resolve_path_from_string(
-        path_string=format_name,
+        path_string=path_string,
         extension=path_const.FILE_EXTENSION_FORGE_FORMAT,
         target_dir=path_const.FORMAT_DIR,
         field_name="Format file name")
@@ -284,43 +282,48 @@ def build_format_path(format_name: str) -> Path:
 # ==============================
 # DECK CONVERTER FILES
 # ==============================
-def build_input_deck_file_path(deck_name: str) -> Path:
+def build_input_deck_file_path(path_string: str) -> Path:
     """
     Build the normalized path for an input deck file.
 
-    Resolves the deck path within the configured input deck directory and
-    automatically applies the default deck file extension if missing.
+    Resolves the supplied deck file path, automatically applying
+    the default deck file extension if missing and using the
+    configured input deck directory when no directory is specified.
 
     Args:
-        deck_name: The name of the deck file, with or without extension.
+        path_string: The input deck file name or path, with or
+            without extension.
 
     Returns:
         The normalized input deck file path.
     """
     return _resolve_path_from_string(
-        path_string=deck_name,
+        path_string=path_string,
         extension=path_const.FILE_EXTENSION_DECK,
         target_dir=path_const.INPUT_DECK_DIR,
         field_name="Input deck name")        
 
-def build_output_deck_file_path(deck_name: str, deck_type: DeckType) -> Path:
+def build_output_deck_file_path(path_string: str, deck_type: DeckType) -> Path:
     """
     Build the normalized path for an output deck file.
 
-    Selects the appropriate output directory based on the target deck type
-    and automatically applies the default deck file extension if missing.
+    Resolves the supplied deck file path, automatically applying
+    the default deck file extension if missing and using the
+    appropriate output directory for the target deck type when
+    no directory is specified.
 
     Args:
-        deck_name: The name of the deck file, with or without extension.
+        path_string: The output deck file name or path, with or
+            without extension.
         deck_type: The target deck format type.
 
     Returns:
         The normalized output deck file path.
-    """    
+    """
     output_dir = path_const.OUTPUT_FORGE_DECK_DIR if deck_type is DeckType.FORGE else path_const.OUTPUT_SHANDALAR_DECK_DIR
     
     return _resolve_path_from_string(
-        path_string=deck_name,
+        path_string=path_string,
         extension=path_const.FILE_EXTENSION_DECK,
         target_dir=output_dir,
         field_name="Output deck name")     
@@ -354,7 +357,7 @@ def _resolve_path_from_string(path_string: str, extension: str, target_dir: Path
     
     normalized_path: Path = file_utils.ensure_extension(Path(path_string), extension)
 
-    if len(normalized_path.parts) == 1:
+    if normalized_path.parent == Path():
         normalized_path = target_dir / normalized_path
 
     return normalized_path

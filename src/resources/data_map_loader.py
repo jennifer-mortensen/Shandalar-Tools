@@ -167,7 +167,7 @@ def get_shandalar_card_to_forge_edition_map(dataset: str) -> DataMap | None:
     if dataset in _missing_shandalar_card_to_forge_edition_map_cache:
         return None
 
-    file_path: Path = paths.build_shandalar_card_to_forge_edition_map_file_path()
+    file_path: Path = paths.build_shandalar_card_to_forge_edition_map_file_path(dataset)
     try:
         return _get_data_map(
             display_name=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_DISPLAY_NAME,
