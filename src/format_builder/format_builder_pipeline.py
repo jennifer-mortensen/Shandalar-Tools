@@ -17,22 +17,35 @@ import logging, tomllib
 logger = logging.getLogger(__name__)
 
 # ==============================
-# DATACLASS CONSTRUCTORS
+# PUBLIC FUNCTIONS
 # ==============================
-def build_input_format(source: Path) -> ForgeFormatInput:
+def run_pipeline() -> None:
+    """
+    Execute the format builder pipeline.
+
+    Parses the configured format definition, constructs the
+    corresponding Forge format, and writes the generated
+    format file to the configured output location.
+    """    
+    input_format: ForgeFormatInput = _build_input_format()
+    output_format: ForgeFormatOutput = _build_output_format(input_format)
+    _write_output_format(output_format)
+
+# ==============================
+# PRIVATE FUNCTIONS
+# ==============================
+def _build_input_format() -> ForgeFormatInput:
     """
     Parse a TOML input format file into a ForgeFormatInput dataclass.
 
     Reads the specified file, validates and extracts the editions, additional
     bans, and additional cards fields.
 
-    Args:
-        source: Path to the TOML input format file.
-
     Raises:
         OSError: If the file cannot be opened.
         ValueError: If required fields are missing or invalid.
     """
+    source: Path = settings.get_format_config_file_path()
     input_format: ForgeFormatInput = ForgeFormatInput()
     data: dict
 
@@ -70,7 +83,7 @@ def build_input_format(source: Path) -> ForgeFormatInput:
 
     return input_format
 
-def build_output_format(input_format: ForgeFormatInput) -> ForgeFormatOutput:
+def _build_output_format(input_format: ForgeFormatInput) -> ForgeFormatOutput:
     """
     Build a ForgeFormatOutput from a parsed input format and configuration.
 
@@ -86,24 +99,24 @@ def build_output_format(input_format: ForgeFormatInput) -> ForgeFormatOutput:
     logger.info("Preparing output format for Forge...")
     
     # Ensure no conflicts between additional bans and additional cards, which would make it impossible to resolve user intent.
-    if not validate_additional_cards(input_format):
+    if not _validate_additional_cards(input_format):
         raise ValueError("Unable to resolve output format.")
 
     # Find cards within the custom format that are not supported by Shandalar.
     format_card_pool: set[str] = forge_data.build_format_card_pool(input_format.editions)
     format_card_pool_lookup: set[str] = string_utils.set_to_lookup(format_card_pool)
-    unsupported_in_format: list[str] = resolve_unsupported_cards(format_card_pool)
+    unsupported_in_format: list[str] = _resolve_unsupported_cards(format_card_pool)
     supported_cards_lookup: set[str] = format_card_pool_lookup & lookup_loader.get_shandalar_card_lookup().names_normalized
 
     # User additions that are not supported should be logged and removed.
     additional_cards: list[str] = input_format.additional_cards
-    additional_cards = filter_unsupported_additions(additional_cards)
+    additional_cards = _filter_unsupported_additions(additional_cards)
 
     # User additions that were already included should be logged and removed. 
-    additional_cards = filter_redundant_additions(additional_cards=additional_cards, format_card_pool=format_card_pool)
+    additional_cards = _filter_redundant_additions(additional_cards=additional_cards, format_card_pool=format_card_pool)
 
     # Create the final ban list.
-    banned_cards: list[str] = create_ban_list(
+    banned_cards: list[str] = _create_ban_list(
         additional_bans = input_format.additional_bans,
         unsupported_in_format=unsupported_in_format,
         supported_cards_lookup=supported_cards_lookup)
@@ -118,7 +131,7 @@ def build_output_format(input_format: ForgeFormatInput) -> ForgeFormatOutput:
 # ==============================
 # HIGH LEVEL FUNCTIONS
 # ==============================
-def validate_additional_cards(input_format: ForgeFormatInput) -> bool:
+def _validate_additional_cards(input_format: ForgeFormatInput) -> bool:
     """
     Check for conflicts between additional bans and additional cards.
 
@@ -146,7 +159,7 @@ def validate_additional_cards(input_format: ForgeFormatInput) -> bool:
         entry_type_plural="card entries")
     return False
 
-def filter_unsupported_additions(additional_cards: list[str]) -> list[str]:
+def _filter_unsupported_additions(additional_cards: list[str]) -> list[str]:
     """
     Remove additional cards that are not supported in the Shandalar data set.
 
@@ -176,7 +189,7 @@ def filter_unsupported_additions(additional_cards: list[str]) -> list[str]:
     logger.info("No unsupported additions found!")
     return additional_cards
 
-def filter_redundant_additions(additional_cards: list[str], format_card_pool: set[str]) -> list[str]:
+def _filter_redundant_additions(additional_cards: list[str], format_card_pool: set[str]) -> list[str]:
     """
     Remove additional cards that are already present in the format card pool.
 
@@ -205,7 +218,7 @@ def filter_redundant_additions(additional_cards: list[str], format_card_pool: se
     logger.info("No redundant additions found!")
     return additional_cards
 
-def create_ban_list(additional_bans: list[str], unsupported_in_format: list[str], supported_cards_lookup: set[str]) -> list[str]:
+def _create_ban_list(additional_bans: list[str], unsupported_in_format: list[str], supported_cards_lookup: set[str]) -> list[str]:
     """
     Merge unsupported cards and relevant additional bans into a final
     deduplicated ban list.
@@ -240,7 +253,7 @@ def create_ban_list(additional_bans: list[str], unsupported_in_format: list[str]
     logger.info("Finalizing ban list...")
     return collection_utils.merge_and_dedupe_sequences(seq_1=unsupported_in_format, seq_2=relevant_additional_bans)
 
-def resolve_unsupported_cards(format_card_pool: set[str]) -> list[str]:
+def _resolve_unsupported_cards(format_card_pool: set[str]) -> list[str]:
     """
     Identify cards in the format pool that are not supported by Shandalar.
 
@@ -262,7 +275,7 @@ def resolve_unsupported_cards(format_card_pool: set[str]) -> list[str]:
 
     return sorted(unsupported_cards)
 
-def write_output_format(output_format: ForgeFormatOutput) -> None:
+def _write_output_format(output_format: ForgeFormatOutput) -> None:
     """
     Render and write a ForgeFormatOutput to disk.
 
@@ -278,9 +291,6 @@ def write_output_format(output_format: ForgeFormatOutput) -> None:
     output_file_path: Path = paths.build_format_path(output_format.file_name)
     file_utils.write_text(file_path=output_file_path, text=_render_output_format(output_format), display_name="Forge format")
     
-# ==============================
-# HELPER FUNCTIONS
-# ==============================    
 def _render_output_format(output_format: ForgeFormatOutput) -> str:
     """
     Render a ForgeFormatOutput into a Forge-compatible format string.

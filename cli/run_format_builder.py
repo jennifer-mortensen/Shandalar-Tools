@@ -11,9 +11,8 @@ from pathlib import Path
 from format_builder import format_builder_const
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from common import args, log_utils, paths, runtime, settings
+from common import args, log_utils, runtime
 from format_builder import format_builder_pipeline
-from format_builder.format_builder_types import ForgeFormatInput, ForgeFormatOutput
 import logging
 
 logger = logging.getLogger(__name__)
@@ -22,17 +21,18 @@ logger = logging.getLogger(__name__)
 # MAIN ENTRY POINT
 # ==============================
 def main() -> None:
+    """
+    Execute the format builder command-line application.
+
+    Initializes runtime services, processes command-line arguments,
+    executes the format generation pipeline, and reports any
+    unexpected errors.
+    """    
     try:
         runtime.initialize_runtime(format_builder_const.LOG_NAME)
         args.process_cli_args(format_builder_const.CLI_DEFINITION)
-
-        input_format: ForgeFormatInput = format_builder_pipeline.build_input_format(
-            paths.build_format_config_path(settings.get_format_config_file_name())
-        )
-        output_format: ForgeFormatOutput = format_builder_pipeline.build_output_format(input_format)
-        format_builder_pipeline.write_output_format(output_format)
-
-        logger.info("Compilation completed successfully!")
+        format_builder_pipeline.run_pipeline()
+        logger.info("Format generation complete!")
     except ValueError as e:
         logger.error("%s", e)
         sys.exit(1)

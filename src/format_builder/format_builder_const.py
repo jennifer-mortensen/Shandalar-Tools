@@ -17,7 +17,14 @@ LOG_NAME: str = MODULE_NAME
 CLI_DEFINITION: CliDefinition = CliDefinition(
     prog="format-builder",
     description="Generate Shandalar-compatible formats for use with Forge.",
-    epilog="Examples:\n  %(prog)s\n  %(prog)s -i my_format.toml\n  %(prog)s -o modern\n  %(prog)s -s full",
+    epilog=(
+        "Examples:\n"
+        "  %(prog)s\n"
+        "  %(prog)s -i my_format\n"
+        "  %(prog)s -i formats/custom_format -d output/formats\n"
+        "  %(prog)s -o modern\n"
+        "  %(prog)s -s full"
+    ),
     arguments = (
         # Common
         args_types.ARGUMENT_ENCODING_SCAN_MODE,
