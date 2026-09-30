@@ -6,24 +6,40 @@ Forge edition names. The generated map is used to resolve edition
 identifiers across data sources and is written to the Forge data
 directory as JSON.
 """
-from common import args, file_utils, log_utils, paths, path_const, runtime, settings
-from common.file_types import EncodingScanMode
+from common import args, args_types, file_utils, log_utils, paths, path_const, runtime, settings
+from common.args_types import CliDefinition
 from mtg import forge_const
 from pathlib import Path
 from resources import data_map_const
 from resources.data_map import DataMap
-import argparse, logging, sys
+import logging, sys
 
 logger = logging.getLogger(__name__)
 
 # ==============================
 # CONSTANTS
 # ==============================
-TOOL_NAME: str = "forge_code_map_generator"
-LOG_NAME: str = TOOL_NAME
-CLI_PROG: str = TOOL_NAME
-CLI_DESCRIPTION: str = "Generate a Forge edition to code map by scanning Forge edition files."
-CLI_EPILOG: str = "Examples:\n  %(prog)s\n  %(prog)s -s auto\n  %(prog)s -s fast\n  %(prog)s -s full"
+LOG_NAME: str = "forge_code_map_generator"
+
+CLI_DEFINITION: CliDefinition = CliDefinition(
+    prog="forge-code-map-generator",
+    description="Generate a Forge edition to code map by scanning Forge edition files.",
+    epilog=(
+        "Examples:\n"
+        "  %(prog)s\n"
+        "  %(prog)s -s auto\n"
+        "  %(prog)s -s fast\n  "
+        "  %(prog)s -s full"
+    ),
+    arguments = (
+        # Common
+        args_types.ARGUMENT_ENCODING_SCAN_MODE,
+        args_types.ARGUMENT_LOG_FILE_NAME,
+        args_types.ARGUMENT_LOG_OVERWRITE,
+        args_types.ARGUMENT_LOG_PREVIEW_LIMIT,
+        args_types.ARGUMENT_SHANDALAR_DATASET      
+    )
+)
 
 # ==============================
 # MAIN ENTRY POINT
@@ -36,9 +52,8 @@ def main() -> None:
     Forge edition files.
     """    
     try:
-        runtime.initialize_runtime(LOG_NAME)    
-        cli_args = parse_cli_args()
-        apply_cli_args(cli_args)
+        runtime.initialize_runtime(LOG_NAME)
+        args.process_cli_args(CLI_DEFINITION)
 
         edition_code_map: DataMap = DataMap(
             display_name=data_map_const.FORGE_EDITION_TO_CODE_MAP_DISPLAY_NAME,
@@ -73,39 +88,6 @@ def main() -> None:
 # ==============================
 # HIGH LEVEL FUNCTIONS
 # ==============================
-def parse_cli_args() -> argparse.Namespace:
-    """
-    Parse command-line arguments for the CLI.
-
-    Returns:
-        An argparse.Namespace containing encoding scan options.
-    """        
-    parser = argparse.ArgumentParser(
-        prog=CLI_PROG,
-        description=CLI_DESCRIPTION,
-        epilog=CLI_EPILOG,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-
-    args.add_encoding_scan_mode_argument(parser)
-
-    return parser.parse_args()
-
-def apply_cli_args(args: argparse.Namespace) -> None:
-    """
-    Apply command-line arguments on top of the loaded configuration.
-
-    CLI arguments take precedence over config.toml values. Only applies
-    arguments that were explicitly provided by the user, mutating the
-    provided configuration object in place.
-
-    Args:
-        args: The parsed command-line arguments.
-    """  
-    if args.encoding_scan is not None:
-        settings.set_encoding_scan_mode(EncodingScanMode(args.encoding_scan))      
-
-
 def extract_edition_code(edition_file: Path) -> str | None:
     """
     Read the Forge edition code from a Forge edition file.

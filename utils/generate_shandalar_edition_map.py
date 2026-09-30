@@ -7,7 +7,8 @@ attempting to resolve them to Forge edition names. Editions
 that cannot be resolved automatically are marked for manual
 review.
 """
-from common import log_utils, paths, runtime, settings, string_utils
+from common import args, args_types, log_utils, paths, runtime, settings, string_utils
+from common.args_types import CliDefinition
 from mtg import forge_data
 from resources import data_map_const, lookup_loader
 from resources.data_map import DataMap
@@ -20,6 +21,27 @@ logger = logging.getLogger(__name__)
 # CONSTANTS
 # ==============================
 LOG_NAME: str = "shandalar_edition_map_generator"
+
+CLI_DEFINITION: CliDefinition = CliDefinition(
+    prog="shandalar-edition-map-generator",
+    description="Generate Shandalar edition to Forge edition map by resolving editions from the Shandalar card pool.",
+    epilog=(
+        "Examples:\n"
+        "  %(prog)s\n"
+        "  %(prog)s -s auto\n"
+        "  %(prog)s -s fast\n  "
+        "  %(prog)s -s full"
+    ),
+    arguments = (
+        # Common
+        args_types.ARGUMENT_ENCODING_SCAN_MODE,
+        args_types.ARGUMENT_LOG_FILE_NAME,
+        args_types.ARGUMENT_LOG_OVERWRITE,
+        args_types.ARGUMENT_LOG_PREVIEW_LIMIT,
+        args_types.ARGUMENT_SHANDALAR_DATASET
+    )
+)
+
 UNRESOLVED_EDITION_FLAG: str = "[UNRESOLVED EDITION]"
 
 # ==============================
@@ -35,13 +57,14 @@ def main() -> None:
     """    
     try:
         runtime.initialize_runtime(LOG_NAME)
+        args.process_cli_args(CLI_DEFINITION)
 
         dataset: str = settings.get_shandalar_dataset()
-        shandalar_lookup: ShandalarCardLookup = lookup_loader.get_shandalar_card_lookup()
+        shandalar_lookup: ShandalarCardLookup = lookup_loader.get_shandalar_card_lookup(dataset)
         edition_map: DataMap = DataMap(
             display_name=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_DISPLAY_NAME,
-            map_key=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_KEY,
-            version=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_VERSION
+            map_key=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_KEY,
+            version=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_VERSION
         )
 
         logger.info("Collecting editions from dataset '%s'...", dataset)

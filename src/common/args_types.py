@@ -5,7 +5,7 @@ Defines dataclasses and other shared types used by CLI
 argument definitions and parsing helpers.
 """
 from collections.abc import Callable, Sequence
-from common import file_utils, parse_utils, path_const, path_utils, settings
+from common import file_utils, parse_utils, path_const, settings
 from common.file_types import EncodingScanMode
 from dataclasses import dataclass
 from functools import cached_property

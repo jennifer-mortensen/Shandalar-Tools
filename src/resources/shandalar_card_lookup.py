@@ -135,6 +135,12 @@ class ShandalarCardLookup(ManagedResource):
         key = shandalar_data.normalize_shandalar_card_id(key)
         return self._cards.get(key, default)
 
+    def values(self):
+        """
+        Return an iterable of all Shandalar cards in the lookup.
+        """
+        return self._cards.values()    
+
     def __contains__(self, key: str) -> bool:
         """
         Return whether the specified Shandalar card ID exists.

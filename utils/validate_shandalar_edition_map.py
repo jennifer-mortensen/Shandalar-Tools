@@ -5,26 +5,38 @@ Ensures that every Forge edition referenced by the Shandalar
 edition map exists as a Forge edition file. Reports any invalid
 mappings found during validation.
 """
+from common import args, args_types, log_utils, runtime, settings
+from common.args_types import CliDefinition
+from mtg import forge_data
 from resources import data_map_loader
 from resources.data_map import DataMap
-from common import log_utils, runtime
-from mtg import forge_data
-import argparse
 import logging
 import sys
-
 
 logger = logging.getLogger(__name__)
 
 # ==============================
 # CONSTANTS
 # ==============================
-MODULE_NAME: str = "edition_map_validator"
-LOG_NAME: str = MODULE_NAME
-CLI_PROG: str = "edition-map-validator"
-CLI_DESCRIPTION: str = "Validate the contents of a Shandalar edition map against existing Forge edition files."
-CLI_EPILOG: str = "Examples:\n  %(prog)s\n  %(prog)s -d shandalar_2016"
+LOG_NAME: str = "edition_map_validator"
 
+CLI_DEFINITION: CliDefinition = CliDefinition(
+    prog="edition-map-validator",
+    description="Validate the contents of a Shandalar edition map against existing Forge edition files.",
+    epilog=(
+        "Examples:\n"
+        "  %(prog)s\n"
+        "  %(prog)s -d shandalar_2016"
+    ),
+    arguments = (
+        # Common
+        args_types.ARGUMENT_ENCODING_SCAN_MODE,
+        args_types.ARGUMENT_LOG_FILE_NAME,
+        args_types.ARGUMENT_LOG_OVERWRITE,
+        args_types.ARGUMENT_LOG_PREVIEW_LIMIT,
+        args_types.ARGUMENT_SHANDALAR_DATASET
+    )
+)
 # ==============================
 # MAIN ENTRY POINT
 # ==============================
@@ -39,11 +51,11 @@ def main() -> None:
     logged if all mappings are valid.
     """ 
     try:
-        runtime.initialize_runtime(LOG_NAME)    
+        runtime.initialize_runtime(LOG_NAME)
+        args.process_cli_args(CLI_DEFINITION) 
 
-        args = parse_cli_args()
         edition_validation_cache: dict[str, bool] = {}
-        shandalar_edition_map: DataMap | None = data_map_loader.get_shandalar_to_forge_edition_map(args.dataset)
+        shandalar_edition_map: DataMap | None = (data_map_loader.get_shandalar_to_forge_edition_map(settings.get_shandalar_dataset()))
 
         if shandalar_edition_map is None:
             logger.error("Requested edition map could not be loaded. Program will now terminate.")
@@ -71,24 +83,10 @@ def main() -> None:
             invalid_keys_display: str = "\n  ".join(invalid_mappings)
             logger.error("Validation failed. Invalid Shandalar -> Forge edition mappings:\n  %s", invalid_keys_display)
         else:
-            logger.info("Validation passed.")      
+            logger.info("Validation passed.")
 
     except Exception:
         log_utils.log_unexpected_and_exit()
-
-def parse_cli_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(
-        prog=CLI_PROG,
-        description=CLI_DESCRIPTION,
-        epilog=CLI_EPILOG,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-d", "--dataset",
-        help="The dataset to validate the edition map for. Validates the default map if not specified."
-    )
-
-    return parser.parse_args()        
 
 if __name__ == "__main__":
     main()
