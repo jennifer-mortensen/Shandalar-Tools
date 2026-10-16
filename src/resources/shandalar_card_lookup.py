@@ -107,7 +107,7 @@ class ShandalarCardLookup(ManagedResource):
 
         file_path: Path = paths.build_shandalar_dataset_file_path(self.dataset)
 
-        for row in file_utils.read_csv_rows(file_path=file_path, encoding_full_scan=settings.get_encoding_full_scan(True)):
+        for row in file_utils.read_csv_rows(file_path=file_path, encoding_full_scan=settings.get_encoding_full_scan(True), cache=False):
             card_id: str = shandalar_data.normalize_shandalar_card_id(
                 row[shandalar_const.SHANDALAR_DATA_FIELD_SHANDALAR_ID]
             )

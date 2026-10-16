@@ -7,6 +7,7 @@ codes.
 """
 from collections.abc import Iterable
 from common import file_utils, paths, settings, string_utils
+from datetime import date
 from mtg import forge_const
 from pathlib import Path
 from resources import data_map_loader
@@ -134,9 +135,75 @@ def get_edition_code(edition_name: str) -> str:
     edition_code: str | None = code_map.get(edition_name)
 
     if edition_code is not None:
-        return edition_code
+        return edition_code.upper()
     
-    raise ValueError(f"Edition code undefined for edition '{edition_name}'") 
+    raise ValueError(f"Edition code undefined for edition '{edition_name}'.")
+
+def get_edition_release_date(edition_name: str) -> date | None:
+    """
+    Retrieve the release date for an edition.
+
+    The release date is read from the Forge edition data and
+    converted to a date object. Editions without a defined release
+    date are supported and return None.
+
+    Args:
+        edition_name: The name of the edition to look up.
+
+    Returns:
+        The release date associated with the edition, or None if no
+        release date is defined.
+    """    
+    file_path: Path = paths.build_edition_file_path(edition_name)
+
+    date_string: str | None = file_utils.read_text_field(
+        file_path=file_path,
+        field_prefix=forge_const.FORGE_DATE_PREFIX,
+        encoding_full_scan=settings.get_encoding_full_scan()
+    )
+
+    if date_string is not None:
+        return date.fromisoformat(date_string)
+
+    logger.warning(
+        "Date field undefined for edition '%s'. Release date cannot be determined for this edition, "
+        "which may influence resolved edition priority.",
+        edition_name
+    )
+    return None
+
+def get_scryfall_code(edition_name: str) -> str | None:
+    """
+    Retrieve the Scryfall code for an edition.
+
+    The Scryfall code uniquely identifies a Forge edition using the
+    corresponding code defined in the Forge edition data. Editions
+    without a Scryfall code are supported and return None.
+
+    Args:
+        edition_name: The name of the edition to look up.
+
+    Returns:
+        The uppercase Scryfall code associated with the edition,
+        or None if no Scryfall code is defined.
+    """
+    file_path: Path = paths.build_edition_file_path(edition_name)
+
+    scryfall_code: str | None = file_utils.read_text_field(
+        file_path=file_path,
+        field_prefix=forge_const.FORGE_SCRYFALL_CODE_PREFIX,
+        encoding_full_scan=settings.get_encoding_full_scan()
+    )
+
+    if scryfall_code is not None:
+        return scryfall_code.upper()
+
+    logger.warning(
+        "Scryfall code undefined for edition '%s'. Canonicity cannot be resolved for this edition, "
+        "which may influence resolved edition priority.",
+        edition_name
+    )
+    return None
 
 # ==============================
 # PRIVATE FUNCTIONS

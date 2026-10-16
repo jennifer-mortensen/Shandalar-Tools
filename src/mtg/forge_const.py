@@ -32,6 +32,8 @@ ART_VARIANT_MINIMUM_VALUE: int = 1
 FORGE_EDITION_CARDS_HEADER: str = "[cards]"
 # Section: [metadata]
 FORGE_EDITION_CODE_PREFIX: str = "Code="
+FORGE_DATE_PREFIX: str = "Date="
+FORGE_SCRYFALL_CODE_PREFIX: str = "ScryfallCode="
 # Card Fields
 FORGE_EDITION_CARD_NAME_TERMINATOR: str = "@"
 FORGE_EDITION_CARD_NAME_FIELD: int = 2

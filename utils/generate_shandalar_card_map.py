@@ -1,10 +1,11 @@
-# 1. Shandalar Card ID
-# 2. Shandalar Card Data Row
-# 3. Edition in Row
-# 4. Shandalar Edition Map
-# 5. Forge/Scryfall Edition Code
-# 6. Expected Forge Edition
-# 7. Generate map if not found. Prioritize: Date > Canonical > Alphabetical.
+
+# 1. Use the Shandalar card name as the lookup key.
+# 2. Consult the Forge card lookup for ALL editions containing that name.
+# 3. Build a set of candidate Forge editions.
+# 4. If there is only one candidate, use it.
+# 5. If there are multiple candidates, rank the editions:
+#       release date > canonical edition > alphabetical
+# 6. Store the selected Forge edition for the Shandalar Card ID.
 
 from common import runtime, settings
 from resources import data_map_loader, lookup_loader

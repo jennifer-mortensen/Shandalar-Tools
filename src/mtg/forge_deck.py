@@ -302,7 +302,7 @@ def _load_sideboard(sideboard_path: Path) -> ColorSideboard:
     Raises:
         OSError: If the sideboard file could not be read.
     """    
-    raw_deck: str = file_utils.load_raw_file(sideboard_path)
+    raw_deck: str = file_utils.load_raw_file(file_path=sideboard_path, cache=False)
     sideboard = ColorSideboard()
     sideboard.set_cards(_parse_forge_main_deck(raw_deck))
     return sideboard

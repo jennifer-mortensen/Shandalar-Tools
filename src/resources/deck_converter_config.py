@@ -55,15 +55,19 @@ class DeckConverterConfig(ManagedResource):
         Ensure that a deck file name has the expected file extension.
 
         Appends the default deck file extension when one is not
-        already present.
+        already present. Empty file names are preserved.
 
         Args:
             file_name: The deck file name, with or without extension.
 
         Returns:
-            The normalized deck file name.
-        """        
-        return str(file_utils.ensure_extension(Path(file_name), path_const.FILE_EXTENSION_DECK))
+            The normalized deck file name, or an empty string if no
+            file name was specified.
+        """
+        if file_name == "":
+            return ""
+
+        return str(file_utils.ensure_extension(Path(file_name),path_const.FILE_EXTENSION_DECK))
 
     def _load(self) -> None:  
         """

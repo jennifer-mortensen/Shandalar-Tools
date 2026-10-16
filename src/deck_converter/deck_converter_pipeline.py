@@ -48,7 +48,7 @@ def _build_deck() -> Deck:
     logger.info("Preparing to build deck '%s'...", deck_name) 
 
     file_path: Path = paths.build_input_deck_file_path(deck_name)
-    raw_deck: str = file_utils.load_raw_file(file_path)
+    raw_deck: str = file_utils.load_raw_file(file_path=file_path, cache=False)
     deck_type: DeckType = _get_deck_type(raw_deck)
 
     if deck_type is DeckType.FORGE:
@@ -91,8 +91,18 @@ def _write_translated_deck(deck: Deck) -> None:
     Args:
         deck: The deck to write.
     """
-    translated_type = deck.type.inverse()    
+    translated_type = deck.type.inverse()
+    output_deck_file_name: str
+
     if translated_type is DeckType.FORGE:
-        forge_deck.write_forge_deck(deck=deck, file_name=settings.get_output_forge_deck_file_name())
+        output_deck_file_name = settings.get_output_forge_deck_file_name()
+        forge_deck.write_forge_deck(
+            deck=deck,
+            file_name=output_deck_file_name or settings.get_input_deck_file_name()
+        )
     else:
-        shandalar_deck.write_shandalar_deck(deck=deck, file_name=settings.get_output_shandalar_deck_file_name())
+        output_deck_file_name = settings.get_output_shandalar_deck_file_name()     
+        shandalar_deck.write_shandalar_deck(
+            deck=deck,
+            file_name=output_deck_file_name or settings.get_input_deck_file_name()
+        )

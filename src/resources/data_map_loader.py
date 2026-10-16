@@ -20,20 +20,27 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# Resolved active edition map. Prevents multiple resolution logs.
 _active_edition_map_cache: dict[str, DataMap] = {}
+# Missing file cache. Prevents repeated failed file lookups.
 _missing_shandalar_to_forge_edition_map_cache: set[str] = set()
 _missing_shandalar_card_to_forge_edition_map_cache: set[str] = set()
 
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def get_active_shandalar_to_forge_edition_map() -> DataMap:
+def get_active_shandalar_to_forge_edition_map(cache: bool = True) -> DataMap:
     """
     Retrieve the active Shandalar-to-Forge edition map.
 
     Returns the dataset-specific edition map for the active
     Shandalar dataset when available. Otherwise, returns the
     default edition map.
+
+    Args:
+        cache: If True, retrieve and register the map through the
+            runtime resource cache. If False, always load a new map
+            without registering it.    
 
     Returns:
         The active Shandalar-to-Forge edition map.
@@ -43,12 +50,14 @@ def get_active_shandalar_to_forge_edition_map() -> DataMap:
             default edition map exists.
     """
     dataset: str = settings.get_shandalar_dataset()
-    cached_map: DataMap = _active_edition_map_cache.get(dataset)
+    
+    if cache:
+        cached_map: DataMap = _active_edition_map_cache.get(dataset)
 
-    if cached_map:
-        return cached_map
+        if cached_map:
+            return cached_map
 
-    data_map: DataMap | None = get_shandalar_to_forge_edition_map(dataset)
+    data_map: DataMap | None = get_shandalar_to_forge_edition_map(dataset=dataset, cache=cache)
 
     if data_map is None:
         logger.info("Dataset-specific edition map not found. Falling back to default edition map.")
@@ -57,10 +66,12 @@ def get_active_shandalar_to_forge_edition_map() -> DataMap:
     # Satisfy the type checker. This value can never be None.
     assert data_map is not None
 
-    _active_edition_map_cache[dataset] = data_map
+    if cache:
+        _active_edition_map_cache[dataset] = data_map
+
     return data_map
 
-def get_shandalar_to_forge_edition_map(dataset: str | None = None) -> DataMap | None:
+def get_shandalar_to_forge_edition_map(dataset: str | None = None, cache: bool = True) -> DataMap | None:
     """
     Retrieve a Shandalar-to-Forge edition map.
 
@@ -74,6 +85,9 @@ def get_shandalar_to_forge_edition_map(dataset: str | None = None) -> DataMap | 
     Args:
         dataset: Optional dataset whose edition map should be
             retrieved.
+        cache: If True, retrieve and register the map through the
+            runtime resource cache. If False, always load a new map
+            without registering it.
 
     Returns:
         The requested Shandalar-to-Forge edition map, or None if
@@ -88,7 +102,8 @@ def get_shandalar_to_forge_edition_map(dataset: str | None = None) -> DataMap | 
             display_name=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_DISPLAY_NAME,
             map_key=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_KEY,
             version=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_VERSION,
-            file_path=file_path
+            file_path=file_path,
+            cache=cache
         )
     except FileNotFoundError:
         # Default map must exist.
@@ -98,7 +113,7 @@ def get_shandalar_to_forge_edition_map(dataset: str | None = None) -> DataMap | 
         _missing_shandalar_to_forge_edition_map_cache.add(dataset)
         return None
 
-def get_forge_edition_to_code_map() -> DataMap:
+def get_forge_edition_to_code_map(cache: bool = True) -> DataMap:
     """
     Retrieve the Forge edition-to-code map.
 
@@ -108,6 +123,11 @@ def get_forge_edition_to_code_map() -> DataMap:
 
     The Forge edition-to-code map is used to translate Forge
     edition names into their corresponding Forge edition codes.
+
+    Args:
+        cache: If True, retrieve and register the map through the
+            runtime resource cache. If False, always load a new map
+            without registering it.        
 
     Returns:
         The Forge edition-to-code map.
@@ -120,10 +140,11 @@ def get_forge_edition_to_code_map() -> DataMap:
         display_name=data_map_const.FORGE_EDITION_TO_CODE_MAP_DISPLAY_NAME,
         map_key=data_map_const.FORGE_EDITION_TO_CODE_MAP_KEY,
         version=data_map_const.FORGE_EDITION_TO_CODE_MAP_VERSION,
-        file_path=paths.build_forge_edition_to_code_map_path()        
+        file_path=paths.build_forge_edition_to_code_map_path(),
+        cache=cache     
     )
 
-def get_name_to_normalized_name_map() -> DataMap:
+def get_name_to_normalized_name_map(cache: bool = True) -> DataMap:
     """
     Retrieve the project name normalization map.
 
@@ -133,6 +154,11 @@ def get_name_to_normalized_name_map() -> DataMap:
 
     The project name normalization map is used to reconcile known
     naming inconsistencies between external data sources.
+
+    Args:
+        cache: If True, retrieve and register the map through the
+            runtime resource cache. If False, always load a new map
+            without registering it.        
 
     Returns:
         The project name normalization map.
@@ -145,10 +171,11 @@ def get_name_to_normalized_name_map() -> DataMap:
         display_name=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_DISPLAY_NAME,
         map_key=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_KEY,
         version=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_VERSION,
-        file_path=paths.build_name_to_normalized_name_map_path()
+        file_path=paths.build_name_to_normalized_name_map_path(),
+        cache=cache
     )    
 
-def get_shandalar_card_to_forge_edition_map(dataset: str) -> DataMap | None:
+def get_shandalar_card_to_forge_edition_map(dataset: str, cache: bool = True) -> DataMap | None:
     """
     Retrieve the Shandalar card-to-Forge edition map.
 
@@ -159,6 +186,11 @@ def get_shandalar_card_to_forge_edition_map(dataset: str) -> DataMap | None:
     The Shandalar card-to-Forge edition map functions as a
     persistent cache for card resolution. Cache misses may be
     added during execution and persisted to disk.
+
+    Args:
+        cache: If True, retrieve and register the map through the
+            runtime resource cache. If False, always load a new map
+            without registering it.        
 
     Returns:
         The Shandalar card-to-Forge edition map, or None if no
@@ -173,7 +205,8 @@ def get_shandalar_card_to_forge_edition_map(dataset: str) -> DataMap | None:
             display_name=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_DISPLAY_NAME,
             map_key=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_KEY,
             version=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_VERSION,
-            file_path=file_path     
+            file_path=file_path,
+            cache=cache
         )
     except FileNotFoundError:
         logger.info("Shandalar card to Forge edition map for dataset '%s' does not exist at path: %s", dataset, file_path)
@@ -183,7 +216,7 @@ def get_shandalar_card_to_forge_edition_map(dataset: str) -> DataMap | None:
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
-def _get_data_map(display_name: str, map_key: str, version: str, file_path: Path) -> DataMap:
+def _get_data_map(display_name: str, map_key: str, version: str, file_path: Path, cache: bool = True) -> DataMap:
     """
     Retrieve a managed data map.
 
@@ -195,7 +228,11 @@ def _get_data_map(display_name: str, map_key: str, version: str, file_path: Path
         display_name: User-friendly name used for logging.
         map_key: JSON field containing the map's key-value data.        
         version: Expected data map schema version.
-        file_path: Path to the data map file.        
+        file_path: Path to the data map file.
+        
+        cache: If True, retrieve and register the map through the
+            runtime resource cache. If False, always load a new map
+            without registering it.                      
 
     Returns:
         The requested data map.
@@ -204,12 +241,17 @@ def _get_data_map(display_name: str, map_key: str, version: str, file_path: Path
         FileNotFoundError: If the data map file does not exist.
     """    
     key: ResourceKey = ResourceKey(resource_type=DataMap, path=file_path)
-    data_map: DataMap | None = runtime.get_resource(key)
+    data_map: DataMap | None
+    
+    if cache:
+        data_map = runtime.get_resource(key)
 
-    if data_map:
-        return data_map
+        if data_map:
+            return data_map
     
     data_map = DataMap(display_name=display_name, map_key=map_key, version=version, init_path=file_path)
-    runtime.register_resource(key=key, resource=data_map)
+
+    if cache:
+        runtime.register_resource(key=key, resource=data_map)
 
     return data_map

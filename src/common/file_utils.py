@@ -5,10 +5,12 @@ Provides helpers for detecting file encodings, opening files with
 automatic encoding detection, reading CSV data, and extracting
 structured content from text files.
 """
-from collections.abc import Iterator
+from collections.abc import  Generator, Iterator
 from common import collection_utils, file_const, paths, string_utils
 from contextlib import contextmanager
 from pathlib import Path
+from resources import file_loader
+from resources.file_loader import FileResource
 from typing import TextIO
 import csv, logging
 
@@ -37,7 +39,7 @@ def archive(file_path: Path) -> None:
         backup_path.unlink()
 
     logger.info("Archiving '%s' to '%s'.", file_path, backup_path)
-    file_path.replace(backup_path)    
+    file_path.replace(backup_path)
 
 def detect_file_encoding(file_path: Path, full_scan: bool = False) -> str:
     """
@@ -114,7 +116,7 @@ def is_section_header(line: str) -> bool:
     line = line.strip()    
     return line.startswith("[") and line.endswith("]")
 
-def load_raw_file(file_path: Path, encoding_full_scan: bool = False) -> str:
+def load_raw_file(file_path: Path, encoding_full_scan: bool = False, cache: bool = True) -> str:
     """
     Read and return the full contents of a text file.
 
@@ -125,6 +127,8 @@ def load_raw_file(file_path: Path, encoding_full_scan: bool = False) -> str:
         file_path: Path to the file to read.
         encoding_full_scan: If True, scans the entire file when detecting
             encoding. If False, scans only a partial portion of the file.
+        cache: If True, caches the file contents for subsequent reads.
+            If False, reads the file without caching the resource.
 
     Returns:
         The full contents of the file as a string.
@@ -132,40 +136,55 @@ def load_raw_file(file_path: Path, encoding_full_scan: bool = False) -> str:
     Raises:
         OSError: If the file cannot be opened or read.
     """
-    logger.info("Loading '%s'...", file_path) 
-    with open_file(file_path, encoding_full_scan=encoding_full_scan) as file:
+    logger.info("Loading '%s'...", file_path)
+
+    with open_file(file_path, encoding_full_scan=encoding_full_scan, cache=cache) as file:
         return file.read()
 
 @contextmanager
-def open_file(file_path: Path, encoding_full_scan: bool = False, newline: str | None = None) -> Iterator[TextIO]:
+def open_file(
+    file_path: Path,
+    encoding_full_scan: bool = False,
+    newline: str | None = None,
+    cache: bool = True
+) -> Generator[TextIO, None, None]:
     """
-    Context manager for opening a file with automatic encoding detection.
+    Open a file using its cached file resource.
 
-    Detects the file encoding before opening, either from a partial or full
-    read depending on encoding_full_scan.
+    Detects the file encoding before retrieving the resource and
+    returns a fresh text stream containing the file contents.
 
     Args:
         file_path: Path to the file to open.
         encoding_full_scan: If True, reads the entire file to detect encoding.
             If False, reads only the first 10,240 bytes.
-        newline: Newline handling mode passed to the file open call.
+        newline: Newline handling mode for the text stream.
+        cache: If True, caches the file contents for subsequent reads.
+            If False, reads the file without caching the resource.
+
+    Yields:
+        A text stream containing the file contents.
 
     Raises:
-        OSError: If the file cannot be opened.
-    """    
+        OSError: If the file cannot be opened or read.
+    """
     encoding: str = detect_file_encoding(file_path=file_path, full_scan=encoding_full_scan)
-    try:
-        with file_path.open(mode="r", encoding=encoding, newline=newline) as file:
-            yield file
-    except OSError as e:
-        raise OSError(f"Could not open '{file_path}': {e}") from e
+
+    file_resource: FileResource = file_loader.get_file_resource(
+        path=file_path,
+        encoding=encoding,
+        cache=cache
+    )
+
+    yield file_resource.get_contents(newline=newline)
 
 def read_csv_column(
     file_path: Path,
     column_number: int,
-    csv_delimiter: str = file_const.DEFAULT_CSV_DELIMITER, 
+    csv_delimiter: str = file_const.DEFAULT_CSV_DELIMITER,
     skip_prefixes: str | list[str] | None = None,
-    encoding_full_scan: bool = False
+    encoding_full_scan: bool = False,
+    cache: bool = True
 ) -> Iterator[str]:
     """
     Read a single column from a CSV file, yielding one value per row.
@@ -182,10 +201,12 @@ def read_csv_column(
             Comparison is case-insensitive.
         encoding_full_scan: If True, reads the entire file to detect encoding.
             If False, reads only the first 10,240 bytes.
-    """    
+        cache: If True, caches the file contents for subsequent reads.
+            If False, reads the file without caching the resource.
+    """  
     skip_prefixes = [p.lower() for p in collection_utils.to_list(skip_prefixes)]
 
-    with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, newline="") as file:
+    with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, newline="", cache=cache) as file:
         reader = csv.reader(file, delimiter=csv_delimiter)
 
         for i, row in enumerate(reader):
@@ -206,7 +227,8 @@ def read_csv_column(
 def read_csv_rows(
     file_path: Path,
     csv_delimiter: str = file_const.DEFAULT_CSV_DELIMITER,
-    encoding_full_scan: bool = False
+    encoding_full_scan: bool = False,
+    cache: bool = True
 ) -> Iterator[list[str]]:
     """
     Read a CSV file and yield rows as lists of fields.
@@ -219,11 +241,13 @@ def read_csv_rows(
         csv_delimiter: Delimiter character used in the CSV file.
         encoding_full_scan: If True, reads the entire file to detect
             encoding. If False, reads only the first 10,240 bytes.
+        cache: If True, caches the file contents for subsequent reads.
+            If False, reads the file without caching the resource.
 
     Yields:
         Parsed CSV rows as lists of string fields.
-    """    
-    with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, newline="") as file:
+    """  
+    with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, newline="", cache=cache) as file:
         reader = csv.reader(file, delimiter=csv_delimiter)
 
         for row in reader:
@@ -235,7 +259,8 @@ def read_text_section(
     end_prefixes: str | list[str] | None = None,
     skip_prefixes: str | list[str] | None = "#",
     skip_first_line: bool = False,
-    encoding_full_scan: bool = False
+    encoding_full_scan: bool = False,
+    cache: bool = True
 ) -> Iterator[str]:
     """
     Read a section of a text file, yielding one line at a time.
@@ -257,13 +282,15 @@ def read_text_section(
             before yielding. Useful when the header line itself is not needed.
         encoding_full_scan: If True, reads the entire file to detect encoding.
             If False, reads only the first 10,240 bytes.
-    """    
+        cache: If True, caches the file contents for subsequent reads.
+            If False, reads the file without caching the resource.
+    """   
     is_reading: bool = start_prefix is None
     start_prefix = start_prefix.lower() if start_prefix else None
     end_prefixes = [p.lower() for p in collection_utils.to_list(end_prefixes)]
     skip_prefixes = [p.lower() for p in collection_utils.to_list(skip_prefixes)]
 
-    with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan) as file:
+    with open_file(file_path=file_path, encoding_full_scan=encoding_full_scan, cache=cache) as file:
         for line in file:
             if not (clean_line := line.strip()):
                 continue
@@ -289,7 +316,7 @@ def read_text_section(
             
             yield clean_line
 
-def read_text_field(file_path: Path, field_prefix: str, encoding_full_scan: bool = False) -> str | None:
+def read_text_field(file_path: Path, field_prefix: str, encoding_full_scan: bool = False, cache: bool = True) -> str | None:
     """
     Read a text field from a file.
 
@@ -300,12 +327,14 @@ def read_text_field(file_path: Path, field_prefix: str, encoding_full_scan: bool
         file_path: The file to read.
         field_prefix: The field prefix to search for.
         encoding_full_scan: Whether to use full encoding detection.
+        cache: If True, caches the file contents for subsequent reads.
+            If False, reads the file without caching the resource.
 
     Returns:
         The field value if found, otherwise None.
-    """    
+    """ 
     line = next(
-        read_text_section(file_path=file_path, start_prefix=field_prefix, encoding_full_scan=encoding_full_scan), None
+        read_text_section(file_path=file_path, start_prefix=field_prefix, encoding_full_scan=encoding_full_scan, cache=cache), None
     )
 
     return line[len(field_prefix):] if line is not None else None
