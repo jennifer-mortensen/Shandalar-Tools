@@ -10,7 +10,7 @@ review.
 from common import args, args_types, log_utils, paths, runtime, settings, string_utils
 from common.args_types import CliDefinition
 from mtg import forge_data
-from resources import data_map_const, lookup_loader
+from resources import data_map_const, data_map_loader, lookup_loader
 from resources.data_map import DataMap
 from resources.shandalar_card_lookup import ShandalarCardLookup
 import logging
@@ -61,11 +61,7 @@ def main() -> None:
 
         dataset: str = settings.get_shandalar_dataset()
         shandalar_lookup: ShandalarCardLookup = lookup_loader.get_shandalar_card_lookup(dataset)
-        edition_map: DataMap = DataMap(
-            display_name=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_DISPLAY_NAME,
-            map_key=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_KEY,
-            version=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_VERSION
-        )
+        edition_map: DataMap = data_map_loader.create_shandalar_to_forge_edition_map(register=False)
 
         logger.info("Collecting editions from dataset '%s'...", dataset)
         for card in shandalar_lookup.values():

@@ -61,7 +61,37 @@ class ForgeEdition:
         """
         Return the edition name as its string representation.
         """
-        return self.name       
+        return self.name
+
+    def __hash__(self) -> int:
+        """
+        Return a hash based on the edition name.
+
+        The edition name uniquely identifies a ForgeEdition and remains
+        consistent with the equality comparison.
+
+        Returns:
+            The hash of the edition name.
+        """        
+        return hash(self.name)
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Determine whether another ForgeEdition represents the same edition.
+
+        Forge editions are considered equal when they have the same name.
+
+        Args:
+            other: The object to compare against.
+
+        Returns:
+            True if the other object is a ForgeEdition with the same name,
+            otherwise False.
+        """        
+        if not isinstance(other, ForgeEdition):
+            return NotImplemented
+
+        return self.name == other.name    
 
     @property
     def cards(self) -> set[str]:

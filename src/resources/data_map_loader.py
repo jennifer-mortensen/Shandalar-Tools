@@ -112,6 +112,29 @@ def get_shandalar_to_forge_edition_map(dataset: str | None = None, cache: bool =
         logger.info("Shandalar to Forge edition map for dataset '%s' does not exist at path: %s", dataset, file_path)
         _missing_shandalar_to_forge_edition_map_cache.add(dataset)
         return None
+    
+
+def create_shandalar_to_forge_edition_map(dataset: str | None = None, register: bool = True) -> DataMap:
+    """
+    Create a Shandalar-to-Forge edition data map.
+
+    Args:
+        dataset: The Shandalar dataset associated with the map. If None,
+            the default dataset is used.
+        register: Whether to register the data map with the runtime
+            resource manager.
+
+    Returns:
+        The newly created Shandalar-to-Forge edition data map.
+    """    
+    return _create_data_map(
+            display_name=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_DISPLAY_NAME,
+            map_key=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_KEY,
+            version=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_VERSION,
+            file_path=paths.build_shandalar_to_forge_edition_map_file_path(dataset),
+            register=register       
+    )
+
 
 def get_forge_edition_to_code_map(cache: bool = True) -> DataMap:
     """
@@ -144,6 +167,25 @@ def get_forge_edition_to_code_map(cache: bool = True) -> DataMap:
         cache=cache     
     )
 
+def create_forge_edition_to_code_map(register: bool = True) -> DataMap:
+    """
+    Create a Forge edition-to-code data map.
+
+    Args:
+        register: Whether to register the data map with the runtime
+            resource manager.
+
+    Returns:
+        The newly created Forge edition-to-code data map.
+    """    
+    return _create_data_map(
+        display_name=data_map_const.FORGE_EDITION_TO_CODE_MAP_DISPLAY_NAME,
+        map_key=data_map_const.FORGE_EDITION_TO_CODE_MAP_KEY,
+        version=data_map_const.FORGE_EDITION_TO_CODE_MAP_VERSION,
+        file_path=paths.build_forge_edition_to_code_map_path(),
+        register=register           
+    )
+
 def get_name_to_normalized_name_map(cache: bool = True) -> DataMap:
     """
     Retrieve the project name normalization map.
@@ -173,6 +215,25 @@ def get_name_to_normalized_name_map(cache: bool = True) -> DataMap:
         version=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_VERSION,
         file_path=paths.build_name_to_normalized_name_map_path(),
         cache=cache
+    )
+
+def create_name_to_normalized_name_map(register: bool = True) -> DataMap:
+    """
+    Create a name-to-normalized-name data map.
+
+    Args:
+        register: Whether to register the data map with the runtime
+            resource manager.
+
+    Returns:
+        The newly created name-to-normalized-name data map.
+    """    
+    return _create_data_map(
+        display_name=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_DISPLAY_NAME,
+        map_key=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_KEY,
+        version=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_VERSION,
+        file_path=paths.build_name_to_normalized_name_map_path(),
+        register=register        
     )    
 
 def get_shandalar_card_to_forge_edition_map(dataset: str, cache: bool = True) -> DataMap | None:
@@ -211,11 +272,65 @@ def get_shandalar_card_to_forge_edition_map(dataset: str, cache: bool = True) ->
     except FileNotFoundError:
         logger.info("Shandalar card to Forge edition map for dataset '%s' does not exist at path: %s", dataset, file_path)
         _missing_shandalar_card_to_forge_edition_map_cache.add(dataset)
-        return None    
+        return None
+
+def create_shandalar_card_to_forge_edition_map(dataset: str, register: bool = True) -> DataMap:
+    """
+    Create a Shandalar-card-to-Forge-edition data map.
+
+    Args:
+        dataset: The Shandalar dataset associated with the map.
+        register: Whether to register the data map with the runtime
+            resource manager.
+
+    Returns:
+        The newly created Shandalar-card-to-Forge-edition data map.
+    """    
+    return _create_data_map(
+            display_name=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_DISPLAY_NAME,
+            map_key=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_KEY,
+            version=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_VERSION,
+            file_path=paths.build_shandalar_card_to_forge_edition_map_file_path(dataset),
+            register=register       
+    )    
 
 # ==============================
 # PRIVATE FUNCTIONS
 # ==============================
+def _create_data_map(display_name: str, map_key: str, version: str, file_path: Path, register: bool = True) -> DataMap:
+    """
+    Create a DataMap and optionally register it with the runtime resource manager.
+
+    Args:
+        display_name: The display name of the data map.
+        map_key: The key used to identify the data map.
+        version: The version of the data map format.
+        file_path: The path associated with the data map resource.
+        register: Whether to register the data map with the runtime resource
+            manager.
+
+    Returns:
+        The newly created DataMap.
+
+    Raises:
+        AssertionError: If register is True and a DataMap already exists
+            for the same resource key.
+    """    
+    key: ResourceKey = ResourceKey(resource_type=DataMap, path=file_path)
+
+    if register:
+        assert runtime.get_resource(key) is None, (
+            f"Unable to register Data Map when a Data Map assigned to the same resource key '{key}' already exists."
+        )
+
+    data_map: DataMap = DataMap(display_name=display_name, map_key=map_key, version=version)
+
+    if register:
+        runtime.register_resource(key=key, resource=data_map)
+
+    return data_map
+    
+
 def _get_data_map(display_name: str, map_key: str, version: str, file_path: Path, cache: bool = True) -> DataMap:
     """
     Retrieve a managed data map.

@@ -10,7 +10,7 @@ from common import args, args_types, file_utils, log_utils, paths, path_const, r
 from common.args_types import CliDefinition
 from mtg import forge_const
 from pathlib import Path
-from resources import data_map_const
+from resources import data_map_const, data_map_loader
 from resources.data_map import DataMap
 import logging, sys
 
@@ -54,12 +54,8 @@ def main() -> None:
     try:
         runtime.initialize_runtime(LOG_NAME)
         args.process_cli_args(CLI_DEFINITION)
-
-        edition_code_map: DataMap = DataMap(
-            display_name=data_map_const.FORGE_EDITION_TO_CODE_MAP_DISPLAY_NAME,
-            map_key=data_map_const.FORGE_EDITION_TO_CODE_MAP_KEY,
-            version=data_map_const.FORGE_EDITION_TO_CODE_MAP_VERSION
-        )
+    
+        edition_code_map: DataMap = data_map_loader.create_forge_edition_to_code_map(False)
         
         logger.info("Iterating Forge editions directory to Forge edition to code map...")
         for file in paths.get_forge_editions_dir().glob(f"*.{path_const.FILE_EXTENSION_FORGE_EDITION}"):

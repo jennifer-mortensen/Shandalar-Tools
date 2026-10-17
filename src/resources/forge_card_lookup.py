@@ -55,6 +55,18 @@ class ForgeCardLookup(ManagedResource):
 
         return any(normalized_card in forge_edition.cards for forge_edition in self._editions.values())
 
+    def find_card(self, card_name: str) -> set[ForgeEdition]:
+        """
+        Find all Forge editions containing a card.
+
+        Args:
+            card_name: The name of the card to search for.
+
+        Returns:
+            A set of ForgeEdition objects containing the specified card.
+        """        
+        return {edition for edition in self._editions.values() if card_name in edition.cards}
+
     # Managed Resource Interface
     def on_terminate(self) -> None:
         """

@@ -12,6 +12,12 @@ from mtg import forge_const
 from pathlib import Path
 from resources import data_map_loader
 from resources.data_map import DataMap
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mtg.forge_edition import ForgeEdition
+
 import logging
 
 logger = logging.getLogger(__name__)
@@ -85,6 +91,32 @@ def edition_exists(edition_name: str) -> bool:
         True if the edition exists; otherwise False.
     """    
     return paths.build_edition_file_path(edition_name).exists()
+
+def get_earliest_edition(editions: set[ForgeEdition]) -> ForgeEdition:
+    """
+    Determine the earliest Forge edition from a set of candidates.
+
+    Editions are prioritized by earliest release date, followed by
+    canonical status and alphabetical order when earlier criteria are
+    tied.
+
+    Args:
+        editions: The Forge editions to evaluate.
+
+    Returns:
+        The Forge edition with the earliest release date. If multiple
+        editions share the earliest release date, the canonical edition
+        is preferred. If canonical status is also tied, the
+        alphabetically first edition is returned.
+    """    
+    return min(
+        editions,
+        key=lambda edition: (
+            edition.release_date or date.max,
+            not edition.is_canonical,
+            edition.name
+        )
+    )
 
 def get_edition_card_names(edition_name: str) -> Iterable[str]:
     """

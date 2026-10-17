@@ -24,19 +24,15 @@ logger = logging.getLogger(__name__)
 @dataclass  
 class ShandalarCardLookup(ManagedResource):
     """
-    Cached lookup of Shandalar card metadata.
+    Cached lookup of Shandalar card data.
 
-    Loads card data for a specific dataset and provides fast access
-    to card metadata by Shandalar card ID. Also maintains an
-    immutable set of normalized card names for efficient existence
-    checks during deck parsing, validation, and conversion
-    operations.
-
+    Loads card data for a specific dataset and provides lookup
+    structures for resolving Shandalar card IDs and normalized card
+    names to card data.
+    
     Attributes:
         dataset: The dataset from which card data was loaded.
-        names_normalized: Immutable set of normalized card names
-            contained in the dataset.
-    """  
+    """
     dataset: str
     _cards: dict[str, ShandalarCard] = field(default_factory=dict)
     _name_to_id: dict[str, str] = field(default_factory=dict)
