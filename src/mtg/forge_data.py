@@ -92,7 +92,7 @@ def edition_exists(edition_name: str) -> bool:
     """    
     return paths.build_edition_file_path(edition_name).exists()
 
-def get_earliest_edition(editions: set[ForgeEdition]) -> ForgeEdition:
+def get_earliest_edition(editions: set[ForgeEdition]) -> ForgeEdition | None:
     """
     Determine the earliest Forge edition from a set of candidates.
 
@@ -104,16 +104,20 @@ def get_earliest_edition(editions: set[ForgeEdition]) -> ForgeEdition:
         editions: The Forge editions to evaluate.
 
     Returns:
-        The Forge edition with the earliest release date. If multiple
-        editions share the earliest release date, the canonical edition
-        is preferred. If canonical status is also tied, the
-        alphabetically first edition is returned.
-    """    
+        The Forge edition with the earliest release date, or None if
+        no editions were provided. If multiple editions share the
+        earliest release date, the canonical edition is preferred. If
+        canonical status is also tied, the alphabetically first edition
+        is returned.
+    """
+    if not editions:
+        return None
+
     return min(
         editions,
         key=lambda edition: (
             edition.release_date or date.max,
-            not edition.is_canonical,
+            not edition.is_canonical(),
             edition.name
         )
     )

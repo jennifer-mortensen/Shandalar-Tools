@@ -7,6 +7,7 @@ MTG concepts without depending on format-specific parsing
 or workflow orchestration.
 """
 from common import paths
+from mtg import forge_data
 from mtg.forge_edition import ForgeEdition
 from mtg.shandalar_types import ShandalarCard
 from resources import data_map_const, data_map_loader, lookup_loader
@@ -21,18 +22,78 @@ logger = logging.getLogger(__name__)
 # PUBLIC FUNCTIONS
 # ==============================
 def map_card(shandalar_id: str, dataset: str | None = None, overwrite_existing: bool = False) -> None:
+    """
+    Create or update a Shandalar card-to-Forge edition mapping.
+
+    Resolves the Shandalar card by ID, finds the Forge editions containing
+    the card, selects the preferred edition, and adds the resulting link
+    to the Shandalar card-to-Forge edition data map.
+
+    Args:
+        shandalar_id: The Shandalar card ID to map.
+        dataset: The Shandalar dataset containing the card. If None, the
+            default dataset is used.
+        overwrite_existing: Whether to replace an existing mapping for
+            the specified Shandalar card ID.
+
+    Raises:
+        ValueError: If the specified Shandalar card cannot be found in
+            the dataset.
+    """    
     card_map: DataMap
+    dataset_name: str = "Default" if dataset is None else dataset
     
     try:
         card_map = data_map_loader.get_shandalar_card_to_forge_edition_map(dataset)
     except FileNotFoundError:
-        logger.info("Could not retrieve existing Shandalar card to Forge Edition map for dataset '%s'.\nCreating a new data map.", "Default" if dataset is None else dataset)
-        card_map = DataMap(
-            display_name=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_DISPLAY_NAME,
-            map_key=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_KEY,
-            version=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_VERSION
+        logger.info("Could not retrieve existing Shandalar card to Forge Edition map for dataset '%s'.\nCreating a new data map.", dataset_name)
+        card_map = data_map_loader.create_shandalar_card_to_forge_edition_map(dataset, True)
+
+    if shandalar_id in card_map:
+        if not overwrite_existing:
+            logger.warning(
+                "Unable to create new link for Shandalar card to Forge edition. Existing entry for card (Shandalar ID: '%s') already exists "
+                "in data map at: %s",
+                shandalar_id,
+                card_map.path
+            )
+
+        logger.info(
+            "Existing link for card (Shandalar ID: '%s') in Shandalar Card to Forge Edition map for dataset '%s' will be overwritten.",
+            shandalar_id,
+            dataset_name
         )
-        card_map.persist_to(paths.build_shandalar_card_to_forge_edition_map_file_path(dataset))
+
+    shandalar_lookup: ShandalarCardLookup = lookup_loader.get_shandalar_card_lookup(dataset)
+    forge_lookup: ForgeCardLookup = lookup_loader.get_forge_card_lookup()
+    shandalar_card: ShandalarCard | None = shandalar_lookup.get(shandalar_id)
+
+    if shandalar_card is None:
+        raise ValueError(f"Card data could not be found for Shandalar ID '{shandalar_id}' in dataset '{dataset_name}'.")
+
+    card_name: str = shandalar_card.normalized_name
+
+    candidate_editions: set[ForgeEdition] = forge_lookup.find_card(card_name)
+
+    if not candidate_editions:
+        logger.warning(
+            "Unable to create new link for Shandalar card to Forge edition. "
+            "Card (Shandalar ID: '%s', normalized name: '%s') cannot be found in Forge data.",
+            shandalar_id,
+            card_name
+        )
+        return
+
+    earliest_edition: ForgeEdition = forge_data.get_earliest_edition(candidate_editions)
+
+    logger.info(
+        "Generated link for Shandalar card (Shandalar ID: '%s', normalized name: '%s') to Forge edition '%s'.",
+        shandalar_id,
+        card_name,
+        earliest_edition.name
+        )
+    
+    card_map[shandalar_id] = earliest_edition.name
 
 def shandalar_id_to_forge_edition_code(shandalar_id: str, dataset: str | None = None) -> str:
     """
