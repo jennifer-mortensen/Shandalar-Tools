@@ -85,6 +85,8 @@ def main() -> None:
         else:
             logger.info("Validation passed.")
 
+        runtime.terminate_resources()
+
     except Exception:
         log_utils.log_unexpected_and_exit()
 

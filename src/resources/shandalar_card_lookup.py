@@ -115,6 +115,18 @@ class ShandalarCardLookup(ManagedResource):
             cost: str = row[shandalar_const.SHANDALAR_DATA_FIELD_COST]
             edition: str = row[shandalar_const.SHANDALAR_DATA_FIELD_SET]
 
+            if card_id in self._cards:
+                logger.warning(
+                    "Multiple cards found for ID '%s' in dataset '%s'\n"
+                    "Card 1: name = '%s', normalized name = '%s', cost = '%s', edition = '%s'\n"
+                    "Card 2: name = '%s', normalized name = '%s', cost = '%s', edition = '%s'\n"
+                    "Skipping new entry.",
+                    card_id, dataset_display_name,
+                    self._cards[card_id].name, self._cards[card_id].normalized_name, self._cards[card_id].cost, self._cards[card_id].edition,
+                    name, name_normalized, cost, edition
+                )
+                continue
+
             self._cards[card_id] = ShandalarCard(id=card_id, name=name, cost=cost, edition=edition)
             self._name_to_id[name_normalized] = card_id
         

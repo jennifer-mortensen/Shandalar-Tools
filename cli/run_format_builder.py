@@ -33,6 +33,7 @@ def main() -> None:
         args.process_cli_args(format_builder_const.CLI_DEFINITION)
         format_builder_pipeline.run_pipeline()
         logger.info("Format generation complete!")
+        runtime.terminate_resources()        
     except ValueError as e:
         logger.error("%s", e)
         sys.exit(1)

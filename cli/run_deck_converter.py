@@ -30,6 +30,7 @@ def main() -> None:
         args.process_cli_args(deck_converter_const.CLI_DEFINITION)
         deck_converter_pipeline.run_pipeline()
         logger.info("Deck conversion complete!")
+        runtime.terminate_resources()        
     except Exception:
         log_utils.log_unexpected_and_exit()
 

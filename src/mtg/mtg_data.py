@@ -6,11 +6,10 @@ across shared resources. These functions expose normalized
 MTG concepts without depending on format-specific parsing
 or workflow orchestration.
 """
-from common import paths
 from mtg import forge_data
 from mtg.forge_edition import ForgeEdition
 from mtg.shandalar_types import ShandalarCard
-from resources import data_map_const, data_map_loader, lookup_loader
+from resources import data_map_loader, lookup_loader
 from resources.data_map import DataMap
 from resources.forge_card_lookup import ForgeCardLookup
 from resources.shandalar_card_lookup import ShandalarCardLookup
@@ -21,12 +20,12 @@ logger = logging.getLogger(__name__)
 # ==============================
 # PUBLIC FUNCTIONS
 # ==============================
-def map_card(shandalar_id: str, dataset: str | None = None, overwrite_existing: bool = False) -> None:
+def map_card(shandalar_id: str, dataset: str | None = None, overwrite_existing: bool = False) -> bool:
     """
     Create or update a Shandalar card-to-Forge edition mapping.
 
     Resolves the Shandalar card by ID, finds the Forge editions containing
-    the card, selects the preferred edition, and adds the resulting link
+    the card, selects the preferred edition, and adds the resulting reference
     to the Shandalar card-to-Forge edition data map.
 
     Args:
@@ -36,30 +35,42 @@ def map_card(shandalar_id: str, dataset: str | None = None, overwrite_existing: 
         overwrite_existing: Whether to replace an existing mapping for
             the specified Shandalar card ID.
 
+    Returns:
+        True if a new reference was created or an existing reference was
+        overwritten; otherwise False.
+
     Raises:
         ValueError: If the specified Shandalar card cannot be found in
             the dataset.
-    """    
-    card_map: DataMap
+    """
+    card_map: DataMap | None = data_map_loader.get_shandalar_card_to_forge_edition_map(dataset)
     dataset_name: str = "Default" if dataset is None else dataset
-    
-    try:
-        card_map = data_map_loader.get_shandalar_card_to_forge_edition_map(dataset)
-    except FileNotFoundError:
-        logger.info("Could not retrieve existing Shandalar card to Forge Edition map for dataset '%s'.\nCreating a new data map.", dataset_name)
-        card_map = data_map_loader.create_shandalar_card_to_forge_edition_map(dataset, True)
+
+    if card_map is None:
+        logger.info(
+            "Could not retrieve existing Shandalar card to Forge Edition map for dataset '%s'.\n"
+            "Creating a new data map.",
+            dataset_name
+        )
+        card_map = data_map_loader.create_shandalar_card_to_forge_edition_map(
+            dataset,
+            True
+        )
 
     if shandalar_id in card_map:
         if not overwrite_existing:
             logger.warning(
-                "Unable to create new link for Shandalar card to Forge edition. Existing entry for card (Shandalar ID: '%s') already exists "
-                "in data map at: %s",
+                "Unable to create new reference for Shandalar card to Forge edition. "
+                "Existing entry for card (Shandalar ID: '%s') already exists in "
+                "data map at: %s",
                 shandalar_id,
                 card_map.path
             )
+            return False
 
         logger.info(
-            "Existing link for card (Shandalar ID: '%s') in Shandalar Card to Forge Edition map for dataset '%s' will be overwritten.",
+            "Existing reference for card (Shandalar ID: '%s') in Shandalar Card "
+            "to Forge Edition map for dataset '%s' will be overwritten.",
             shandalar_id,
             dataset_name
         )
@@ -69,7 +80,10 @@ def map_card(shandalar_id: str, dataset: str | None = None, overwrite_existing: 
     shandalar_card: ShandalarCard | None = shandalar_lookup.get(shandalar_id)
 
     if shandalar_card is None:
-        raise ValueError(f"Card data could not be found for Shandalar ID '{shandalar_id}' in dataset '{dataset_name}'.")
+        raise ValueError(
+            f"Card data could not be found for Shandalar ID '{shandalar_id}' "
+            f"in dataset '{dataset_name}'."
+        )
 
     card_name: str = shandalar_card.normalized_name
 
@@ -77,23 +91,26 @@ def map_card(shandalar_id: str, dataset: str | None = None, overwrite_existing: 
 
     if not candidate_editions:
         logger.warning(
-            "Unable to create new link for Shandalar card to Forge edition. "
+            "Unable to create new reference for Shandalar card to Forge edition. "
             "Card (Shandalar ID: '%s', normalized name: '%s') cannot be found in Forge data.",
             shandalar_id,
             card_name
         )
-        return
+        return False
 
     earliest_edition: ForgeEdition = forge_data.get_earliest_edition(candidate_editions)
 
     logger.info(
-        "Generated link for Shandalar card (Shandalar ID: '%s', normalized name: '%s') to Forge edition '%s'.",
+        "Generated new reference for Shandalar card (Shandalar ID: '%s', normalized name: '%s') "
+        "to Forge edition '%s'.",
         shandalar_id,
         card_name,
         earliest_edition.name
-        )
-    
+    )
+
     card_map[shandalar_id] = earliest_edition.name
+
+    return True
 
 def shandalar_id_to_forge_edition_code(shandalar_id: str, dataset: str | None = None) -> str:
     """
@@ -121,9 +138,9 @@ def shandalar_id_to_forge_edition_code(shandalar_id: str, dataset: str | None = 
 
     return card.get_forge_code(dataset)
 
-def validate_card_link(shandalar_id: str, dataset: str | None = None) -> bool:
+def validate_card_reference(shandalar_id: str, dataset: str | None = None) -> bool:
     """
-    Validate the Forge edition linked to a Shandalar card.
+    Validate the Forge edition reference for a Shandalar card.
 
     Resolves the Shandalar card and its mapped Forge edition, then
     determines whether the card exists in the mapped Forge edition.
@@ -144,7 +161,7 @@ def validate_card_link(shandalar_id: str, dataset: str | None = None) -> bool:
     if shandalar_card is None:
         return False
 
-    edition_map: DataMap = data_map_loader.get_shandalar_to_forge_edition_map(dataset)
+    edition_map: DataMap = data_map_loader.get_active_shandalar_to_forge_edition_map(dataset)
     shandalar_edition: str = shandalar_card.edition
     forge_edition_name: str | None = edition_map.get(shandalar_edition)
 
@@ -156,4 +173,4 @@ def validate_card_link(shandalar_id: str, dataset: str | None = None) -> bool:
     if forge_edition is None:
         return False
 
-    return shandalar_card.name in forge_edition.cards
+    return shandalar_card.normalized_name in forge_edition.cards

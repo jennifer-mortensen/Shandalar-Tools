@@ -10,7 +10,7 @@ review.
 from common import args, args_types, log_utils, paths, runtime, settings, string_utils
 from common.args_types import CliDefinition
 from mtg import forge_data
-from resources import data_map_const, data_map_loader, lookup_loader
+from resources import data_map_loader, lookup_loader
 from resources.data_map import DataMap
 from resources.shandalar_card_lookup import ShandalarCardLookup
 import logging
@@ -61,7 +61,7 @@ def main() -> None:
 
         dataset: str = settings.get_shandalar_dataset()
         shandalar_lookup: ShandalarCardLookup = lookup_loader.get_shandalar_card_lookup(dataset)
-        edition_map: DataMap = data_map_loader.create_shandalar_to_forge_edition_map(register=False)
+        edition_map: DataMap = data_map_loader.create_shandalar_to_forge_edition_map()
 
         logger.info("Collecting editions from dataset '%s'...", dataset)
         for card in shandalar_lookup.values():
@@ -72,8 +72,8 @@ def main() -> None:
             edition_map[card.edition] = forge_edition
 
         log_edition_map_results(edition_map)
-        edition_map.persist_to(paths.build_shandalar_to_forge_edition_map_file_path(dataset))
         logger.info("Compilation complete!")
+        runtime.terminate_resources()        
     except Exception:
         log_utils.log_unexpected_and_exit()
 

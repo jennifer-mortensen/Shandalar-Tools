@@ -103,7 +103,8 @@ def get_shandalar_to_forge_edition_map(dataset: str | None = None, cache: bool =
             map_key=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_KEY,
             version=data_map_const.SHANDALAR_TO_FORGE_EDITION_MAP_VERSION,
             file_path=file_path,
-            cache=cache
+            cache=cache,
+            create_if_missing=False
         )
     except FileNotFoundError:
         # Default map must exist.
@@ -136,7 +137,7 @@ def create_shandalar_to_forge_edition_map(dataset: str | None = None, register: 
     )
 
 
-def get_forge_edition_to_code_map(cache: bool = True) -> DataMap:
+def get_forge_edition_to_code_map(cache: bool = True, create_if_missing: bool = True) -> DataMap:
     """
     Retrieve the Forge edition-to-code map.
 
@@ -150,7 +151,10 @@ def get_forge_edition_to_code_map(cache: bool = True) -> DataMap:
     Args:
         cache: If True, retrieve and register the map through the
             runtime resource cache. If False, always load a new map
-            without registering it.        
+            without registering it.
+        create_if_missing: If True, create a new map when the backing
+            file does not exist. If False, return None when the file
+            does not exist.                   
 
     Returns:
         The Forge edition-to-code map.
@@ -164,7 +168,8 @@ def get_forge_edition_to_code_map(cache: bool = True) -> DataMap:
         map_key=data_map_const.FORGE_EDITION_TO_CODE_MAP_KEY,
         version=data_map_const.FORGE_EDITION_TO_CODE_MAP_VERSION,
         file_path=paths.build_forge_edition_to_code_map_path(),
-        cache=cache     
+        cache=cache,
+        create_if_missing=create_if_missing   
     )
 
 def create_forge_edition_to_code_map(register: bool = True) -> DataMap:
@@ -186,7 +191,7 @@ def create_forge_edition_to_code_map(register: bool = True) -> DataMap:
         register=register           
     )
 
-def get_name_to_normalized_name_map(cache: bool = True) -> DataMap:
+def get_name_to_normalized_name_map(cache: bool = True, create_if_missing: bool = True) -> DataMap:
     """
     Retrieve the project name normalization map.
 
@@ -200,8 +205,11 @@ def get_name_to_normalized_name_map(cache: bool = True) -> DataMap:
     Args:
         cache: If True, retrieve and register the map through the
             runtime resource cache. If False, always load a new map
-            without registering it.        
-
+            without registering it.
+        create_if_missing: If True, create a new map when the backing
+            file does not exist. If False, return None when the file
+            does not exist.              
+i
     Returns:
         The project name normalization map.
 
@@ -214,7 +222,8 @@ def get_name_to_normalized_name_map(cache: bool = True) -> DataMap:
         map_key=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_KEY,
         version=data_map_const.NAME_TO_NORMALIZED_NAME_MAP_VERSION,
         file_path=paths.build_name_to_normalized_name_map_path(),
-        cache=cache
+        cache=cache,
+        create_if_missing=create_if_missing          
     )
 
 def create_name_to_normalized_name_map(register: bool = True) -> DataMap:
@@ -267,7 +276,8 @@ def get_shandalar_card_to_forge_edition_map(dataset: str, cache: bool = True) ->
             map_key=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_KEY,
             version=data_map_const.SHANDALAR_CARD_TO_FORGE_EDITION_MAP_VERSION,
             file_path=file_path,
-            cache=cache
+            cache=cache,
+            create_if_missing=False
         )
     except FileNotFoundError:
         logger.info("Shandalar card to Forge edition map for dataset '%s' does not exist at path: %s", dataset, file_path)
@@ -321,52 +331,81 @@ def _create_data_map(display_name: str, map_key: str, version: str, file_path: P
     if register:
         assert runtime.get_resource(key) is None, (
             f"Unable to register Data Map when a Data Map assigned to the same resource key '{key}' already exists."
-        )
+        ) 
 
     data_map: DataMap = DataMap(display_name=display_name, map_key=map_key, version=version)
 
     if register:
-        runtime.register_resource(key=key, resource=data_map)
+        data_map.persist_to(file_path)
 
     return data_map
-    
 
-def _get_data_map(display_name: str, map_key: str, version: str, file_path: Path, cache: bool = True) -> DataMap:
+def _get_data_map(
+    display_name: str,
+    map_key: str,
+    version: str,
+    file_path: Path,
+    cache: bool = True,
+    create_if_missing: bool = True
+) -> DataMap | None:
     """
     Retrieve a managed data map.
 
-    Returns the registered data map associated with the specified
-    file when available. Otherwise, loads, registers, and returns
-    the data map from disk.
+    Returns the cached map when available. Otherwise, attempts to load
+    the map from disk. If the backing file does not exist, creates a
+    new map when create_if_missing is True.
 
     Args:
         display_name: User-friendly name used for logging.
-        map_key: JSON field containing the map's key-value data.        
+        map_key: JSON field containing the map's key-value data.
         version: Expected data map schema version.
         file_path: Path to the data map file.
-        
         cache: If True, retrieve and register the map through the
-            runtime resource cache. If False, always load a new map
-            without registering it.                      
+            runtime resource cache. If False, load a new map without
+            registering it.
+        create_if_missing: If True, create a new map when the backing
+            file does not exist. If False, return None when the file
+            does not exist.
 
     Returns:
-        The requested data map.
-
-    Raises:
-        FileNotFoundError: If the data map file does not exist.
-    """    
+        The requested data map, or None if the backing file does not 
+        exist and create_if_missing is False.
+    """
     key: ResourceKey = ResourceKey(resource_type=DataMap, path=file_path)
     data_map: DataMap | None
-    
+
     if cache:
         data_map = runtime.get_resource(key)
 
-        if data_map:
+        if data_map is not None:
             return data_map
-    
-    data_map = DataMap(display_name=display_name, map_key=map_key, version=version, init_path=file_path)
 
-    if cache:
+    try:
+        data_map = DataMap(
+            display_name=display_name,
+            map_key=map_key,
+            version=version,
+            init_path=file_path
+        )
+    except FileNotFoundError:
+        if not create_if_missing:
+            return None
+
+        logger.info(
+            "Creating data map. Cache: %s, Existing resource: %s, Key: %s",
+            cache,
+            runtime.get_resource(key),
+            key
+        )
+        data_map = _create_data_map(
+            display_name=display_name,
+            map_key=map_key,
+            version=version,
+            file_path=file_path,
+            register=cache
+        )
+
+    if cache and runtime.get_resource(key) is None:
         runtime.register_resource(key=key, resource=data_map)
 
     return data_map

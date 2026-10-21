@@ -10,7 +10,7 @@ from common import args, args_types, file_utils, log_utils, paths, path_const, r
 from common.args_types import CliDefinition
 from mtg import forge_const
 from pathlib import Path
-from resources import data_map_const, data_map_loader
+from resources import data_map_loader
 from resources.data_map import DataMap
 import logging, sys
 
@@ -55,7 +55,7 @@ def main() -> None:
         runtime.initialize_runtime(LOG_NAME)
         args.process_cli_args(CLI_DEFINITION)
     
-        edition_code_map: DataMap = data_map_loader.create_forge_edition_to_code_map(False)
+        edition_code_map: DataMap = data_map_loader.create_forge_edition_to_code_map()
         
         logger.info("Iterating Forge editions directory to Forge edition to code map...")
         for file in paths.get_forge_editions_dir().glob(f"*.{path_const.FILE_EXTENSION_FORGE_EDITION}"):
@@ -76,8 +76,8 @@ def main() -> None:
             edition_code_map[edition_name] = edition_code
 
         logger.info("Mapped %d editions.", len(edition_code_map))
-        edition_code_map.persist_to(paths.build_forge_edition_to_code_map_path())
         logger.info("Compilation complete!")
+        runtime.terminate_resources()        
     except Exception:
         log_utils.log_unexpected_and_exit()
 
